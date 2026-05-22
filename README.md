@@ -1,24 +1,32 @@
-# Night Ninjas — Shadow Tracker
+# VELOCITY
 
-> Local-first running training analyser for the Night Ninjas community.
+> Local-first marathon training console for serious runners.
+
+> **Note:** this product was originally branded *Night Ninjas Shadow Tracker*.
+> As of 2026, it has been rebranded to **VELOCITY**. The codebase folder,
+> `package.json` name, and GitHub repository retain the original name to
+> avoid disruptive renames; all UI surfaces show VELOCITY.
+> See [`BRAND.md`](./BRAND.md) for the rebrand spec.
 
 This README is for **installing and running** the app. If you want to know
-how to *use* it as a runner — what the screens do, what the words mean,
-what to do when life happens — the in-app **Help** page is where to look.
-Open `http://localhost:3000/help` once you have the dev server running, or
-read the source at `app/(app)/help/page.tsx`.
+how to *use* it as a runner - what the screens do, what the words mean,
+what to do when life happens - the in-app **Reference** page is where to
+look. Open `http://localhost:3000/help` once you have the dev server
+running, or read the source at `app/(app)/help/page.tsx`.
 
 ---
 
 ## What it does (one paragraph)
 
 Pulls your training data from Strava and compares it against a real plan
-(Hansons, Lydiard, or Custom). Tells you what you were meant to do, what
-you actually did, and where the gaps are. No cloud, no subscription, no
-telemetry. Your data stays on your machine.
+(Hansons, Pfitzinger, Daniels, Lydiard, Higdon, Polarised, Ultra, or Custom).
+Tells you what you were meant to do, what you actually did, and where the
+gaps are. No cloud, no subscription, no telemetry. Your data stays on
+your machine.
 
 For where the product is going, see [`ROADMAP.md`](./ROADMAP.md). For
-brand and design tokens, see [`DESIGN.md`](./DESIGN.md).
+brand identity, see [`BRAND.md`](./BRAND.md). For visual tokens and
+design rules, see [`DESIGN.md`](./DESIGN.md).
 
 ---
 
@@ -215,3 +223,15 @@ these automatically on next run.
 Personal use. Built for and used by the Night Ninjas community
 (`nightninjas.run`, est. 2016). The Night Ninjas brand and "est. 2016" mark
 are not licensed for redistribution outside the community.
+
+## Current Position
+
+Snapshot: 2026-05-21
+
+- Branch: `main`, **27 dirty files**
+- Last commit: 2026-05-05 — *Initial commit - Update to bundle de512de*
+- Modified docs: `DESIGN.md`, `README.md`, `ROADMAP.md`
+- Modified pages: `patrol`, `recon`, `dojo`, `calendar`, `journal`, `settings`, `shoes`, `help`, `(app)/layout.tsx`
+- Recent work: `lib/analysis/recent-weeks.ts`, `observations.ts`, `weekly-history.ts` (2026-05-11)
+- State: VELOCITY rebrand + heavy rework since baseline; baseline no longer representative
+- Next: checkpoint commit; the May 5 "initial commit" is now stale against two weeks of work
