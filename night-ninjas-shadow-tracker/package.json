@@ -10,7 +10,9 @@
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "next": "15.0.3",
@@ -26,7 +28,8 @@
     "lucide-react": "^0.460.0",
     "recharts": "^2.13.3",
     "date-fns": "^4.1.0",
-    "date-fns-tz": "^3.2.0"
+    "date-fns-tz": "^3.2.0",
+    "garmin-connect": "^1.6.2"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
@@ -39,7 +42,8 @@
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.28.1",
     "eslint": "^9.14.0",
-    "eslint-config-next": "15.0.3"
+    "eslint-config-next": "15.0.3",
+    "vitest": "^2.1.4"
   },
   "engines": {
     "node": ">=20.11.0"

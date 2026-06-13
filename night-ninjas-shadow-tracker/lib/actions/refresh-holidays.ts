@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { getDb, schema } from '@/lib/db';
 import { fetchNzHolidaysFromIcal } from '@/lib/sources/nz-holidays';
 
@@ -143,4 +143,40 @@ export async function getRefreshStatus(): Promise<{
     lastError: lastError || null,
     nextAutoRefreshAt: nextSept.toISOString().slice(0, 10),
   };
+}
+
+/* ----------------------------------------------------------------------------
+ * Hide a holiday from the upcoming list.
+ *
+ * Hard-deletes the row from nz_holidays cache. If sohnemann iCal still
+ * lists it on the next refresh, it'll come back. Users can use the
+ * "Refresh" button to restore.
+ * -------------------------------------------------------------------------- */
+export async function deleteHoliday(formData: FormData) {
+  const date = formData.get('date')?.toString();
+  const name = formData.get('name')?.toString();
+  if (!date || !name) return;
+
+  const db = getDb();
+  await db
+    .delete(schema.nzHolidays)
+    .where(
+      and(
+        eq(schema.nzHolidays.date, date),
+        eq(schema.nzHolidays.name, name)
+      )
+    );
+
+  // Also remove any auto-created Ninja Loop on that date
+  await db
+    .delete(schema.calendarEvents)
+    .where(
+      and(
+        eq(schema.calendarEvents.eventType, 'ninja_loop_holiday'),
+        eq(schema.calendarEvents.startDate, date)
+      )
+    );
+
+  revalidatePath('/calendar');
+  revalidatePath('/setup/weekly');
 }

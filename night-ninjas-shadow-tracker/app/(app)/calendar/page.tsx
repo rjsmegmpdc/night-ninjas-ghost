@@ -4,6 +4,8 @@ import { NinjaLoopSection } from '@/components/calendar/ninja-loop-section';
 import { CommitmentSection } from '@/components/calendar/commitment-section';
 import { CapacitySection } from '@/components/calendar/capacity-section';
 import { autoRefreshIfDue } from '@/lib/actions/refresh-holidays';
+import { SyncStatusBanner } from '@/components/sync/sync-status-banner';
+import { logPageView } from '@/lib/store/instrument';
 
 /**
  * Calendar — the always-on CRUD surface.
@@ -13,16 +15,18 @@ import { autoRefreshIfDue } from '@/lib/actions/refresh-holidays';
  * on or off when life changes. This is the planning brain of the app.
  */
 export default async function CalendarPage() {
-  // Trigger auto-refresh of NZ holidays from govt.nz if due (Sept 1 trigger,
-  // or first ever boot when cache is empty). Cheap no-op the rest of the year.
+  logPageView('/calendar');
+  // Trigger auto-refresh of NZ holidays from sohnemann iCal if due (Sept 1
+  // trigger, or first ever boot when cache is empty).
   await autoRefreshIfDue();
 
   return (
     <div className="px-12 py-10 max-w-7xl mx-auto space-y-8">
+      <SyncStatusBanner />
       <header className="border-b border-ink-line pb-6 space-y-1">
-        <span className="nn-caps">calendar · plan around real life</span>
+        <span className="nn-caps">training - schedule</span>
         <h1 className="font-display tracking-wide-display text-5xl uppercase">
-          Calendar
+          Schedule
         </h1>
         <div className="font-mono text-bone-dim text-sm max-w-2xl">
           Races, group runs, holidays, work trips, sickness — every input the

@@ -3,10 +3,13 @@ import type {
   PlanEngine,
   PlanParams,
   WeekTemplate,
+  WeekContext,
+  CalendarConfig,
   DayPlan,
   SessionTarget,
 } from './types';
 import { band, marathonPaceSpk, offset } from './derive';
+import { applyStructuredCalendar } from './calendar-blocks';
 
 /* ----------------------------------------------------------------------------
  * Hansons Marathon Method.
@@ -170,7 +173,38 @@ function renderDay(
   }
 }
 
-function renderWeek(params: PlanParams, weekNumber: number): WeekTemplate {
+/* ----------------------------------------------------------------------------
+ * Hansons calendar opinion.
+ *
+ * Conventional 14-day taper: 15% reduction at 14 days, 30% at 7 days.
+ * Race week uses two-day-rest structure (Hansons' "rest is part of training"
+ * principle — full rest two days before, not strides or shakeouts).
+ * Reduced impact = 50% volume; travel = 30%.
+ * Honours recurring sessions and Ninja Loop annotations.
+ * -------------------------------------------------------------------------- */
+const HANSONS_CALENDAR: CalendarConfig = {
+  taper: {
+    schedule: [
+      { withinDays: 14, factor: 0.85 },
+      { withinDays: 7, factor: 0.7 },
+    ],
+    raceWeekStyle: 'two-day-rest',
+  },
+  volumeScale: {
+    reducedFactor: 0.5,
+    travelOnlyFactor: 0.3,
+    noTrainingZeroesOut: true,
+  },
+  tuneups: {
+    enabled: true,
+    taperDays: 1,
+    recoveryDays: 1,
+  },
+  honourRecurringSessions: true,
+  annotateNinjaLoops: true,
+};
+
+function renderWeek(params: PlanParams, weekNumber: number, context?: WeekContext): WeekTemplate {
   const zones = paceZones(params);
   const programWeeks = params.programWeeks ?? 18;
   const peak = isPeakPhase(weekNumber, programWeeks);
@@ -180,7 +214,7 @@ function renderWeek(params: PlanParams, weekNumber: number): WeekTemplate {
 
   const phaseName = taper ? 'Taper' : peak ? 'Peak' : 'Build';
 
-  return {
+  const raw: WeekTemplate = {
     weekNumber,
     phaseName,
     totalKmTarget: totalKm,
@@ -188,18 +222,42 @@ function renderWeek(params: PlanParams, weekNumber: number): WeekTemplate {
     days: ([0, 1, 2, 3, 4, 5, 6] as const).map((d) =>
       renderDay(zones, d, longKm, peak)
     ),
+    adaptations: [],
   };
+
+  return applyStructuredCalendar(raw, context, zones, HANSONS_CALENDAR);
 }
 
 /* ----------------------------------------------------------------------------
  * Engine export.
  * -------------------------------------------------------------------------- */
+
+/**
+ * Entry weekly load: Hansons Marathon Method "beginner" plan starts ~25km/wk; "advanced" plan ~40km/wk minimum.
+ */
+function entryWeeklyLoadKm(level: 'beginner' | 'intermediate' | 'advanced'): number {
+  switch (level) {
+    case 'beginner':     return 25;
+    case 'intermediate': return 35;
+    case 'advanced':     return 45;
+  }
+}
+
 export const hansons: PlanEngine = {
   dojo: 'hansons',
+  stateProfile: {
+    // Cumulative fatigue IS the method - deep TSB mid-block is intended.
+    tsbFloor: { base: -20, build: -30, peak: -30, taper: -10 },
+    protectedTypes: ['tempo', 'long'],
+    preferIntensityCut: false,
+  },
   displayName: 'Hansons Marathon Method',
   philosophy: PHILOSOPHY,
   defaultProgramWeeks: 18,
   defaultLongRunCapKm: 26,
+  status: 'full',
+  calendarConfig: HANSONS_CALENDAR,
   derivePaceZones: paceZones,
   renderWeek,
+  entryWeeklyLoadKm,
 };

@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Bebas_Neue, IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+import { ThemeProvider, NO_FLASH_SCRIPT } from '@/components/theme/theme-provider';
+import { BundleVersionChip } from '@/components/brand/bundle-version-chip';
+import packageJson from '../package.json';
 
 const bebas = Bebas_Neue({
   weight: '400',
@@ -39,8 +43,28 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${bebas.variable} ${plex.variable} ${jetbrains.variable}`}
+      suppressHydrationWarning
     >
-      <body className="bg-ink text-bone min-h-screen">{children}</body>
+      <head>
+        {/* No-flash theme script — runs synchronously before hydration to
+            set the data-theme attribute from localStorage. Prevents the
+            dark→light flash that happens if we waited for React.
+
+            Uses next/script with strategy="beforeInteractive" because
+            Next 16 / React 19 no longer accepts bare <script> tags
+            inside the React render tree (they're silently dropped
+            client-side). beforeInteractive injects synchronously into
+            the document <head> during HTML streaming. */}
+        <Script
+          id="no-flash-theme"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }}
+        />
+      </head>
+      <body className="bg-ink text-bone min-h-screen">
+        <ThemeProvider>{children}</ThemeProvider>
+        <BundleVersionChip appVersion={packageJson.version} />
+      </body>
     </html>
   );
 }

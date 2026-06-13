@@ -29,7 +29,7 @@ export default function StravaAppPage() {
         <ol className="space-y-5 text-bone">
           {STRAVA_STEPS.map((step, i) => (
             <li key={i} className="flex gap-4">
-              <span className="font-mono text-ninja-red font-medium flex-shrink-0 w-6">
+              <span className="font-mono text-accent font-medium flex-shrink-0 w-6">
                 {(i + 1).toString().padStart(2, '0')}
               </span>
               <div className="space-y-1">

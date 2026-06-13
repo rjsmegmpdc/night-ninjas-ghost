@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
  * A simplified, geometric reinterpretation of the existing brand mark —
  * the mask shape with crossed bones above. Designed at 32px and scales
  * cleanly. No fills or outlines; uses currentColor so it inherits text
- * colour from the parent (pair with `text-bone` or `text-ninja-red`).
+ * colour from the parent (pair with `text-bone` or `text-accent`).
  */
 export function Logo({ className, size = 32 }: { className?: string; size?: number }) {
   return (

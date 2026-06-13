@@ -5,23 +5,23 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  // Base — brutalist: no rounding except 2px, uppercase display font, tracked
-  'inline-flex items-center justify-center font-display uppercase tracking-wide-display text-sm transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ninja-red focus-visible:ring-offset-2 focus-visible:ring-offset-ink',
+  // Base - VELOCITY rounded-lg, body sans for legibility, transitions kept fast
+  'inline-flex items-center justify-center font-display uppercase tracking-wide-display text-sm rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-ink',
   {
     variants: {
       variant: {
-        // Primary — bone fill, ink text. The "default action" button.
+        // Primary - accent fill, ink text. The "do this" CTA.
         primary:
-          'bg-bone text-ink hover:bg-bone-dim border border-bone',
-        // Critical — ninja-red. Used for destructive or final-step actions.
+          'bg-accent text-ink hover:bg-accent-hover border border-accent',
+        // Critical - destructive. Now uses signal-miss; accent reserved for primary CTAs.
         critical:
-          'bg-ninja-red text-bone hover:bg-ninja-red-hover border border-ninja-red',
-        // Outline — bone border, transparent. Default secondary action.
+          'bg-signal-miss/10 text-signal-miss hover:bg-signal-miss/20 border border-signal-miss/40',
+        // Outline - default secondary action. Sits on ink-shadow surfaces.
         outline:
-          'bg-transparent text-bone border border-bone hover:bg-bone hover:text-ink',
-        // Ghost — no border, hover background. For tertiary actions.
+          'bg-ink-shadow text-bone border border-ink-line hover:border-ink-line-bold hover:text-bone',
+        // Ghost - tertiary. No border. For back/dismiss actions.
         ghost:
-          'bg-transparent text-bone hover:bg-ink-shadow border border-transparent',
+          'bg-transparent text-bone-dim hover:text-bone hover:bg-ink-shadow border border-transparent',
       },
       size: {
         sm: 'h-8 px-3 text-xs',

@@ -20,7 +20,7 @@ export default function WelcomePage() {
             <span className="nn-caps">welcome</span>
             <h1 className="font-display tracking-wide-display text-6xl leading-none uppercase">
               Train in the<br />
-              <span className="text-ninja-red">Shadows.</span>
+              <span className="text-accent">Shadows.</span>
             </h1>
           </div>
 

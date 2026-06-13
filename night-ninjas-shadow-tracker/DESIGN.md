@@ -1,30 +1,44 @@
 # DESIGN.md
 
-The Night Ninjas — Shadow Tracker design system. Single source of truth for
-brand tokens, type, motion, and aesthetic intent. If a component doesn't
+The VELOCITY design system. Single source of truth for brand tokens, type,
+motion, surface treatment, and aesthetic intent. If a component doesn't
 match this document, the component is wrong.
+
+> **Note on history:** this product was originally branded *Night Ninjas
+> Shadow Tracker*. As of bundle 8074e01+, the product is rebranded to
+> **VELOCITY** with a refined visual system. Some legacy code paths
+> (folder names, package.json) still use the old name; UI surfaces should
+> all reflect VELOCITY going forward. See BRAND.md for the rebrand spec.
 
 ---
 
 ## Aesthetic intent
 
-Brutalist-industrial with a stealth / spec-ops veneer. The product is for
-people who train when no one is watching — dawn runs, dark winter sessions,
-the discipline of showing up. The UI honours that mood:
+**Performance-cockpit precision.** The product is for runners who train
+deliberately - dawn intervals, long Sunday efforts, 18-week marathon
+blocks. The interface should feel like a high-end training console:
+calm, dense with signal, never decorative for its own sake.
 
-- Hard edges, almost no rounding (2px max, only on inputs and buttons)
-- Heavy weight contrast in type (display very heavy, body normal)
-- Monochrome dominance — the screen is mostly black and bone
-- Red is surgical. It marks PBs, current state, and missed compliance.
-  Never decorative. Never used for "fun."
-- Data is tabular, mono-spaced, terminal-like
-- Motion is fast and decisive (150–240ms). No springs. No bounce.
+The visual language:
 
-What the product is NOT:
+- **Soft-rounded surfaces** - cards use 12px radius. Inputs and buttons
+  match. No sharp corners, no aggressive bevels.
+- **Layered depth** - cards sit on a slightly elevated tone vs the page
+  background. Active states get a subtle inner glow accent.
+- **Single-purpose accent** - VELOCITY orange `#FF5F00` for active state,
+  current focus, primary CTAs only. Never decorative.
+- **Semantic colour pairs** - teal for stable/optimal/recovery, red for
+  alert/elevated, amber for caution. Each colour has one job.
+- **Mono-data, sans-prose, display-headers** - type roles are strict
+  and consistent.
+- **Motion is decisive** - 150-240ms ease-out. No springs. No bounce.
 
-- Not Strava-cheery (kudos, fire emojis, gradients)
-- Not Apple-Fitness-medical (rings, soft pastels)
-- Not Whoop-clinical (deep blue, lots of percentages with no character)
+What VELOCITY is NOT:
+
+- Not Strava-cheery (kudos, fire emojis, gradients on everything)
+- Not Apple Fitness (rings, pastels, "celebrate the small wins")
+- Not Whoop-clinical (deep navy and percentages without character)
+- Not the previous Night Ninjas brutalist look (hard edges, all-mono)
 
 ---
 
@@ -34,165 +48,200 @@ All colours live as CSS custom properties on `:root` in `app/globals.css`.
 Components reference them through Tailwind classes mapped to these tokens
 in `tailwind.config.ts`. Never use raw hex in components.
 
-### Ink (backgrounds + structure)
+### Ink (page + surface)
 
-| Token              | Hex       | Usage                                |
-| ------------------ | --------- | ------------------------------------ |
-| `--nn-ink`         | `#0A0A0A` | Page background — true black-leaning |
-| `--nn-ink-shadow`  | `#121212` | Surface 1 — cards, panels            |
-| `--nn-ink-panel`   | `#1A1A1A` | Surface 2 — elevated panels, modals  |
-| `--nn-ink-line`    | `#262626` | Borders, dividers, hairlines         |
+| Token            | Hex       | Usage                                     |
+| ---------------- | --------- | ----------------------------------------- |
+| `ink`            | `#0A0A0A` | True page background                      |
+| `ink-shadow`     | `#141414` | Surface 1 - card backgrounds              |
+| `ink-panel`      | `#1C1C1C` | Surface 2 - elevated panels, modals       |
+| `ink-line`       | `#2A2A2A` | Borders, dividers (subtle)                |
+| `ink-line-bold`  | `#3A3A3A` | Borders that need emphasis (active state) |
 
-### Bone (text)
+### Bone (foreground / type)
 
-| Token              | Hex       | Usage                                |
-| ------------------ | --------- | ------------------------------------ |
-| `--nn-bone`        | `#F5F5F0` | Primary text — body, headings        |
-| `--nn-bone-dim`    | `#A3A3A0` | Secondary text — labels, captions    |
-| `--nn-bone-mute`   | `#5C5C5A` | Tertiary, disabled, decorative meta  |
+| Token        | Hex       | Usage                                  |
+| ------------ | --------- | -------------------------------------- |
+| `bone`       | `#F5F5F0` | Primary text, hero numbers             |
+| `bone-dim`   | `#A5A5A0` | Secondary text, descriptive copy       |
+| `bone-mute`  | `#6E6E6A` | Tertiary text, labels, muted captions  |
 
-### Ninja Red (surgical accent)
+### Accent (VELOCITY orange - the canonical brand colour)
 
-| Token                  | Hex       | Usage                              |
-| ---------------------- | --------- | ---------------------------------- |
-| `--nn-ninja-red`       | `#DC2626` | PBs, current week marker, missed compliance, primary CTA on critical screens |
-| `--nn-ninja-red-hover` | `#EF4444` | Interactive hover for ninja-red    |
+| Token           | Hex       | Usage                                                  |
+| --------------- | --------- | ------------------------------------------------------ |
+| `accent`        | `#FF5F00` | Active nav, primary CTAs, today indicator, current focus |
+| `accent-hover`  | `#FF7A2B` | Hover state on accent surfaces                         |
+| `accent-glow`   | `rgba(255, 95, 0, 0.18)` | Soft inner glow on active cards         |
+| `accent-faint`  | `rgba(255, 95, 0, 0.08)` | Background tint on selected pills       |
 
-### Signal (compliance)
+### Signal (semantic state)
 
-| Token              | Hex       | Usage                                |
-| ------------------ | --------- | ------------------------------------ |
-| `--nn-signal-ok`   | `#84CC16` | Compliance hit — used **sparingly**  |
-| `--nn-signal-warn` | `#EAB308` | Borderline — within 10% of target    |
-| `--nn-signal-miss` | `#DC2626` | Same as ninja-red — missed target    |
+| Token          | Hex       | Usage                                              |
+| -------------- | --------- | -------------------------------------------------- |
+| `signal-ok`    | `#26D0AE` | Stable, optimal, recovery, polarised intensity     |
+| `signal-warn`  | `#EAB308` | Caution, mixed intensity, borderline compliance    |
+| `signal-miss`  | `#DC2626` | Alert, elevated RHR, missed compliance, overreach  |
 
-> Green is the only colour beyond black/bone/red. Used only on compliance
-> indicators. Never as a fill, only as a small dot or short bar. Resist any
-> temptation to use it elsewhere.
+### Matrix (training-context overrides)
+
+| Token              | Hex       | Usage                                  |
+| ------------------ | --------- | -------------------------------------- |
+| `matrix-long`      | `#FF5F00` | Long runs in the program matrix        |
+| `matrix-strength`  | `#7B6BFF` | Cross/strength sessions in the matrix  |
 
 ---
 
 ## Typography
 
-Three faces. Never more.
+Three-family system. Every text element belongs to exactly one family.
 
-### Display — Bebas Neue
+| Family          | Font            | Weight    | Use                                      |
+| --------------- | --------------- | --------- | ---------------------------------------- |
+| Display         | Bebas Neue      | 400       | H1/H2 page titles, hero numbers, ribbons |
+| Body            | IBM Plex Sans   | 400 / 500 | Prose, descriptive copy, button text     |
+| Mono            | JetBrains Mono  | 400 / 500 | Data, labels, paces, distances, times    |
 
-Heavy condensed sans. Matches the existing Night Ninjas wordmark. Used for:
+Type rules:
 
-- All H1–H3 page titles
-- Stat values (paces, distances, times) when over 24px
-- Navigation labels
-- Buttons (uppercase, tracked)
+- **Display is uppercase by default.** Letter-spacing 0.04em (`tracking-wide-display`)
+- **Mono is tabular** - use `tabular-nums` on stat blocks
+- **Caps eyebrows** above page titles use the `nn-caps` utility
+- **Body sentence-case for prose**, never uppercase except for buttons
 
-Tracking adjustments (in `tailwind.config.ts`):
-- `tracking-wide-display` (+0.04em) for body-sized display text
-- `tracking-wider-display` (+0.08em) for tiny caps labels (10–12px)
-
-### Body — IBM Plex Sans
-
-Technical, characterful, distinctive. Used for:
-
-- All body copy
-- Form inputs
-- Captions and labels
-- Anything that isn't display or data
-
-Weights used: 400 (normal), 500 (medium), 600 (semibold). No 700+.
-
-### Data — JetBrains Mono
-
-Terminal aesthetic. Tabular figures. Used for:
-
-- Pace strings (`5:43/km`)
-- Time strings (`1:32:14`)
-- Distance with decimals (`12.4 km`)
-- Any numeric column in a table
-- Code/config display (CLI fragments, JSON snippets)
-
-Always use `font-mono` with `tabular-nums` so columns align.
+Sizing scale is Tailwind defaults. Hero numbers use `text-5xl` to `text-7xl`.
 
 ---
 
-## Spacing & layout
+## Surface treatment
 
-8px base grid. Everything derives from it.
+### Card
 
-| Scale | px  | Tailwind | Use                              |
-| ----- | --- | -------- | -------------------------------- |
-| `0.5` | 4   | `p-0.5`  | Hairline gaps                    |
-| `1`   | 8   | `p-2`    | Tight component padding          |
-| `2`   | 16  | `p-4`    | Default card padding             |
-| `3`   | 24  | `p-6`    | Section padding                  |
-| `4`   | 32  | `p-8`    | Page section breaks              |
-| `6`   | 48  | `p-12`   | Major section breaks             |
-| `8`   | 64  | `p-16`   | Hero / wizard step padding       |
+The fundamental container. Replaces the previous flat-and-borderless approach.
 
-Card pattern: `bg-ink-shadow border border-ink-line p-6`. No drop shadows.
-Depth comes from the shade gradient between ink levels, not from glow.
+```
+- Background: bg-ink-shadow
+- Border: border-ink-line (1px)
+- Radius: rounded-xl (12px)
+- Padding: p-5 or p-6 depending on density
+- Optional: ring-1 ring-accent/20 + inner glow when active or selected
+- Optional: subtle drop shadow shadow-card on elevated surfaces
+```
+
+**Active card** has an accent border and slight inner glow:
+```
+border-accent ring-1 ring-accent/20 bg-ink-shadow
++ inset box-shadow with accent-glow colour
+```
+
+### Pill / chip
+
+Smaller info containers, used for status indicators and metadata.
+
+```
+- Background: bg-ink-panel
+- Border: optional border-ink-line
+- Radius: rounded-md (also 8px)
+- Padding: px-2.5 py-1
+- Text: font-mono text-[10px] uppercase tracking-widest
+```
+
+### Button
+
+| Variant     | Background       | Border          | Text        | Use                          |
+| ----------- | ---------------- | --------------- | ----------- | ---------------------------- |
+| Primary     | bg-accent        | none            | text-ink    | The primary CTA on a screen  |
+| Secondary   | bg-ink-shadow    | border-ink-line | text-bone   | Most actions                 |
+| Ghost       | transparent      | none            | text-bone-dim | Tertiary, footer, back nav |
+| Destructive | bg-signal-miss/10| border-signal-miss | text-signal-miss | Delete, reset      |
+
+All buttons are `rounded-lg` (also 12px). No 2px-radius rule any more.
+
+### Input
+
+```
+- Background: bg-ink-shadow
+- Border: border-ink-line, focus:border-accent
+- Radius: rounded-lg
+- Padding: px-3 py-2
+- Font: font-mono for data, font-sans for prose inputs
+```
+
+---
+
+## Layout
+
+### Page-level structure
+
+- Top nav is **horizontal**, full-width, sticky to top
+- 4-item top nav: Dashboard / Training / Analytics / Profile
+- Wordmark anchors the left of the top nav
+- Avatar + streak flame indicator anchor the right
+- Page content max-width `max-w-7xl` (1280px) for app pages
+- Page padding `px-12 py-10` on desktop, narrows on mobile
+
+### Vertical rhythm
+
+- `space-y-8` between major sections within a page
+- `space-y-4` between cards within a section
+- `space-y-1.5` between rows in a list
+
+### Sidebar (deprecated)
+
+The previous left sidebar is retired. Components and references to it
+should be removed during the rebrand restyle pass. Some files may still
+import from `@/components/nav/sidebar` - these are stale.
 
 ---
 
 ## Motion
 
-Three approved animations only. Anything else gets pushback.
+| Token          | Duration | Use                              |
+| -------------- | -------- | -------------------------------- |
+| `fade-in`      | 200ms    | Card mount, lazy-loaded content  |
+| `slide-up`     | 240ms    | Modal, sheet, drawer entrance    |
+| `pulse-subtle` | 1.6s     | Active recording indicator       |
 
-| Name         | Duration | Easing         | Use                                       |
-| ------------ | -------- | -------------- | ----------------------------------------- |
-| `fade-in`    | 200ms    | `ease-out`     | Initial content reveal                    |
-| `slide-up`   | 240ms    | `ease-out`     | Step transitions (wizard, modals)         |
-| `pulse-red`  | 1600ms   | `ease-in-out`  | Live current-state markers (current week) |
-
-Page transitions: instant. No "spinner of doom." If something is loading,
-show a single thin red line at the top of the page (1px tall, full-width).
+Easing is `ease-out` for entrances, `ease-in` for exits. No springs.
+No bounces. The product is precise, not playful.
 
 ---
 
 ## Iconography
 
-Lucide icons exclusively. Stripped to `strokeWidth={1.5}`. No filled
-variants. Default size 16px in body, 20px in buttons, 24px in nav.
+- Library: lucide-react
+- Stroke: 1.5px (always - never 1px or 2px)
+- Size scale: 14, 16, 18, 20, 24
+- Default size in nav: 18px
+- Icons within text: 14px, vertically centred via flex
 
 ---
 
-## Voice & copy
+## What changed from the Night Ninjas era
 
-Direct. Terse. Imperative when prescribing.
+The previous *Night Ninjas Shadow Tracker* design system used:
 
-- "TONIGHT'S MISSION" not "Today's recommended workout"
-- "12.4 KM AT 5:32/KM" not "You ran 12.4 km at an average pace of 5:32/km"
-- "MISSED" not "You did not complete this session"
-- Empty states: "NO DATA. RUN MORE." (yes, really.)
+- Hard 2px-max edges with no rounding
+- "Brutalist-industrial" stealth aesthetic
+- Single canonical accent (`#FF5F00`) without semantic teal
+- 9-item left sidebar nav
+- No card shadows, no inner glow
+- "Red is surgical" rule (now: red is alerts only, teal is stable, amber is caution)
 
-Naming patterns used through the product:
-
-| Term      | Means                                          |
-| --------- | ---------------------------------------------- |
-| Patrol    | The current week's training loop               |
-| Mission   | A planned session                              |
-| Recon     | The weekly compliance report                   |
-| Strike    | Best week / PB                                 |
-| Dojo      | Plan / training method                         |
-| Shadow    | Activities not assigned to any plan            |
-
-Use these consistently across nav and copy. Don't slip into "Workout" or
-"Training Plan."
+These rules are explicitly retired as of the VELOCITY rebrand. Code paths
+that still follow them are pending restyle and should be brought into line.
 
 ---
 
-## What this design system rejects
+## Locked decisions (don't violate without conversation)
 
-If you find yourself reaching for any of these, stop. Reconsider.
+1. The accent is `#FF5F00`. No salmon, no lime, no teal-as-primary.
+2. 4-item top nav. Not 3, not 5. Sub-navigation lives within sections.
+3. Cards are rounded-xl. Inputs and buttons are rounded-lg.
+4. Three font families. No display in body, no body in stats.
+5. Distances in km, paces in min/km. Never miles. NZ default.
+6. Date format: DD/MM/YYYY. NZ default.
+7. First day of week: Monday default, Sunday opt-in via Settings.
 
-- Soft pastels of any kind
-- Purple → pink → blue gradients
-- Rounded cards with `rounded-2xl`
-- Glassmorphism / frosted blur
-- Friendly emoji in core UI (🏃 ❤️ 🔥)
-- "Confetti" celebrations for PBs (a single red ring is enough)
-- Skeleton loaders that pulse for 2+ seconds
-- Hero images of stock-photo runners
-- Floating gradient orbs in the background
-
-The product is for runners who train in the dark.
-The interface should feel like it.
+If a designer or developer proposes violating any of the above, they
+must update DESIGN.md first and have the change reviewed.

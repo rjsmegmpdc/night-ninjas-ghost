@@ -1,15 +1,23 @@
-import { eq, asc } from 'drizzle-orm';
-import { Trash2, Trophy, Flag } from 'lucide-react';
+import { asc } from 'drizzle-orm';
+import { Trophy, Flag } from 'lucide-react';
 import { getDb, schema } from '@/lib/db';
-import { createRace, deleteRace } from '@/lib/actions/races';
+import { createRace } from '@/lib/actions/races';
 import { Card, CardLabel } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
-import { formatDuration } from '@/lib/plans/derive';
+import { GoalRaceEditor } from './goal-race-editor';
+import { TuneUpRow } from './tune-up-row';
 
 /**
  * RaceSection — goal race + tune-up races, with full CRUD inline.
- * Server component: queries DB directly, posts via server actions.
+ *
+ * Server component: queries DB directly, renders into client editor
+ * components (GoalRaceEditor, TuneUpRow) that own their own toggle
+ * state. Server actions (createRace, updateRace, deleteRace) handle
+ * persistence and revalidation.
+ *
+ * Anchor: the goal race card has id="goal-race" so the Patrol race
+ * countdown header link can deep-link to it.
  */
 export async function RaceSection() {
   const races = await getDb()
@@ -23,40 +31,17 @@ export async function RaceSection() {
 
   return (
     <div className="space-y-6">
-      {/* Goal race — single, prominent */}
-      <Card className="space-y-5 border-ninja-red/40">
-        <div className="flex items-center justify-between">
-          <CardLabel className="text-ninja-red flex items-center gap-2">
-            <Trophy size={14} strokeWidth={1.5} />
-            goal race · A-race
-          </CardLabel>
-          {goalRace && <DeleteButton id={goalRace.id} action={deleteRace} />}
-        </div>
+      {/* Goal race — single, prominent. Anchored for deep-links. */}
+      <Card id="goal-race" className="space-y-5 border-accent/40 scroll-mt-6">
+        <CardLabel className="text-accent flex items-center gap-2">
+          <Trophy size={14} strokeWidth={1.5} />
+          goal race · A-race
+        </CardLabel>
 
         {goalRace ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Field label="Race" value={goalRace.name} mono={false} />
-            <Field
-              label="Date"
-              value={goalRace.raceDate}
-              mono
-            />
-            <Field
-              label="Distance"
-              value={`${goalRace.distanceKm} km`}
-              mono
-            />
-            <Field
-              label="Target"
-              value={goalRace.targetTimeS ? formatDuration(goalRace.targetTimeS) : '—'}
-              mono
-              accent
-            />
-            {goalRace.level && (
-              <Field label="Level" value={goalRace.level} />
-            )}
-          </div>
+          <GoalRaceEditor race={goalRace} />
         ) : (
+          /* Goal race not yet set — full create form */
           <form action={createRace} className="space-y-4">
             <input type="hidden" name="isGoal" value="true" />
             <div className="grid md:grid-cols-2 gap-4">
@@ -96,7 +81,11 @@ export async function RaceSection() {
                   name="targetTime"
                   type="text"
                   placeholder="3:30:00"
+                  required
                 />
+                <p className="font-mono text-[10px] text-bone-mute mt-1">
+                  ↳ required — pace zones derive from goal pace
+                </p>
               </div>
               <div className="md:col-span-2">
                 <Label htmlFor="goal-level">Experience level</Label>
@@ -104,7 +93,7 @@ export async function RaceSection() {
                   id="goal-level"
                   name="level"
                   defaultValue="intermediate"
-                  className="flex h-10 w-full bg-ink-panel border border-ink-line px-3 text-sm text-bone font-mono focus-visible:outline-none focus-visible:border-ninja-red"
+                  className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone focus-visible:outline-none focus-visible:border-accent"
                 >
                   <option value="beginner">Beginner</option>
                   <option value="intermediate">Intermediate</option>
@@ -112,15 +101,15 @@ export async function RaceSection() {
                 </select>
               </div>
             </div>
-            <Button variant="primary" type="submit">
-              Set Goal Race
+            <Button variant="critical" size="md" type="submit">
+              Set goal race
             </Button>
           </form>
         )}
       </Card>
 
       {/* Tune-up races */}
-      <Card className="space-y-5">
+      <Card id="tune-ups" className="space-y-5 scroll-mt-6">
         <div className="flex items-center justify-between">
           <CardLabel className="flex items-center gap-2">
             <Flag size={14} strokeWidth={1.5} />
@@ -134,22 +123,7 @@ export async function RaceSection() {
         {tuneUps.length > 0 && (
           <div className="divide-y divide-ink-line border-y border-ink-line">
             {tuneUps.map((r) => (
-              <div
-                key={r.id}
-                className="py-3 grid grid-cols-[1fr_90px_70px_70px_28px] gap-4 items-center"
-              >
-                <div className="text-bone truncate">{r.name}</div>
-                <span className="font-mono text-xs text-bone-dim tabular-nums">
-                  {r.raceDate}
-                </span>
-                <span className="font-mono text-xs text-bone-dim tabular-nums">
-                  {r.distanceKm} km
-                </span>
-                <span className="font-mono text-xs text-bone-dim tabular-nums">
-                  {r.targetTimeS ? formatDuration(r.targetTimeS) : '—'}
-                </span>
-                <DeleteButton id={r.id} action={deleteRace} />
-              </div>
+              <TuneUpRow key={r.id} race={r} />
             ))}
           </div>
         )}
@@ -168,53 +142,5 @@ export async function RaceSection() {
         </form>
       </Card>
     </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  mono = true,
-  accent = false,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  accent?: boolean;
-}) {
-  return (
-    <div>
-      <div className="nn-caps mb-1">{label}</div>
-      <div
-        className={
-          (mono ? 'font-mono tabular-nums ' : 'font-sans ') +
-          'text-base ' +
-          (accent ? 'text-ninja-red' : 'text-bone')
-        }
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function DeleteButton({
-  id,
-  action,
-}: {
-  id: number;
-  action: (fd: FormData) => Promise<void>;
-}) {
-  return (
-    <form action={action}>
-      <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
-        className="text-bone-mute hover:text-ninja-red transition-colors p-1"
-        title="Delete"
-      >
-        <Trash2 size={16} strokeWidth={1.5} />
-      </button>
-    </form>
   );
 }

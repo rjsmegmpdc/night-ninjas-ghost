@@ -1,28 +1,25 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { syncActivities } from '@/lib/sources/strava';
-import { markSetupComplete, setLastSyncAt } from '@/lib/store/settings';
+import { startInitial90dSync, startIncrementalSync } from '@/lib/actions/sync';
 
 /**
  * POST /api/strava/sync
  *
- * Form-submitted from the wizard's last step (with full=true) and from
- * the settings page (manual sync). On success, marks setup complete and
- * redirects to /patrol.
+ * Form-submitted from the wizard's last step. Kicks off an initial_90d job
+ * and redirects to the live progress page. The POST returns quickly because
+ * `startInitial90dSync` doesn't await the runner (fire-and-forget).
  */
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const full = formData.get('full') === 'true';
 
   try {
-    const result = await syncActivities({ full });
-    await setLastSyncAt(new Date());
-    await markSetupComplete();
-
-    // First-run sync from wizard → straight to dashboard.
-    return NextResponse.redirect(new URL('/patrol', req.url), { status: 303 });
+    const { jobId } = full ? await startInitial90dSync() : await startIncrementalSync();
+    return NextResponse.redirect(
+      new URL(`/setup/sync?jobId=${jobId}`, req.url),
+      { status: 303 }
+    );
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'sync_failed';
-    // Bounce back to sync step with error info — UI can render it.
     return NextResponse.redirect(
       new URL(`/setup/sync?error=${encodeURIComponent(msg)}`, req.url),
       { status: 303 }
@@ -30,17 +27,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/**
- * GET /api/strava/sync
- *
- * For dashboard-triggered manual syncs that want a JSON response rather
- * than a redirect.
- */
+/** GET — returns JSON for client-triggered manual sync */
 export async function GET() {
   try {
-    const result = await syncActivities({ full: false });
-    await setLastSyncAt(new Date());
-    return NextResponse.json({ ok: true, ...result });
+    const { jobId } = await startIncrementalSync();
+    return NextResponse.json({ ok: true, jobId });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'sync_failed';
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });

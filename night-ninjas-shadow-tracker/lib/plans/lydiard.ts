@@ -3,10 +3,13 @@ import type {
   PlanEngine,
   PlanParams,
   WeekTemplate,
+  WeekContext,
+  CalendarConfig,
   DayPlan,
   SessionTarget,
 } from './types';
 import { band, marathonPaceSpk, offset } from './derive';
+import { applyStructuredCalendar } from './calendar-blocks';
 
 /* ----------------------------------------------------------------------------
  * Arthur Lydiard Method.
@@ -81,7 +84,7 @@ function phase(name: string, flags: Partial<ReturnType<typeof getPhase>>) {
   };
 }
 
-function renderWeek(params: PlanParams, weekNumber: number): WeekTemplate {
+function renderWeek(params: PlanParams, weekNumber: number, context?: WeekContext): WeekTemplate {
   const zones = paceZones(params);
   const programWeeks = params.programWeeks ?? 24;
   const ph = getPhase(weekNumber, programWeeks);
@@ -146,7 +149,7 @@ function renderWeek(params: PlanParams, weekNumber: number): WeekTemplate {
     },
   ];
 
-  return {
+  const raw: WeekTemplate = {
     weekNumber,
     phaseName: ph.name,
     totalKmTarget: Math.round(baseKm),
@@ -156,15 +159,70 @@ function renderWeek(params: PlanParams, weekNumber: number): WeekTemplate {
       ph.isAerobic
         ? 'Aerobic phase: stay relaxed, run by effort. Do not push pace.'
         : undefined,
+    adaptations: [],
   };
+
+  return applyStructuredCalendar(raw, context, zones, LYDIARD_CALENDAR);
+}
+
+/* ----------------------------------------------------------------------------
+ * Lydiard calendar opinion.
+ *
+ * Lydiard tapers more gradually but more deeply — 21-day taper rather than
+ * 14-day. Race week emphasises sharpening (strides) rather than full rest.
+ * Reduced impact = 60% (Lydiard's approach is to keep the aerobic stimulus
+ * even when life intervenes).
+ * -------------------------------------------------------------------------- */
+const LYDIARD_CALENDAR: CalendarConfig = {
+  taper: {
+    schedule: [
+      { withinDays: 21, factor: 0.85 },
+      { withinDays: 14, factor: 0.7 },
+      { withinDays: 7, factor: 0.55 },
+    ],
+    raceWeekStyle: 'lydiard-fast-finish',
+  },
+  volumeScale: {
+    reducedFactor: 0.6,
+    travelOnlyFactor: 0.4,
+    noTrainingZeroesOut: true,
+  },
+  tuneups: {
+    enabled: true,
+    taperDays: 1,
+    recoveryDays: 2,
+  },
+  honourRecurringSessions: true,
+  annotateNinjaLoops: true,
+};
+
+
+/**
+ * Entry weekly load: Lydiard requires substantial aerobic base; minimum entry assumes consistent base running.
+ */
+function entryWeeklyLoadKm(level: 'beginner' | 'intermediate' | 'advanced'): number {
+  switch (level) {
+    case 'beginner':     return 35;
+    case 'intermediate': return 50;
+    case 'advanced':     return 65;
+  }
 }
 
 export const lydiard: PlanEngine = {
   dojo: 'lydiard',
+  stateProfile: {
+    // Aerobic volume is sacred; anaerobic work is the first thing eased.
+    tsbFloor: { base: -25, build: -20, peak: -18, taper: -8 },
+    protectedTypes: ['long'],
+    preferIntensityCut: true,
+  },
   displayName: 'Arthur Lydiard Method',
   philosophy: PHILOSOPHY,
   defaultProgramWeeks: 24,
   defaultLongRunCapKm: 35,
+  status: 'scaffold',
+  calendarConfig: LYDIARD_CALENDAR,
   derivePaceZones: paceZones,
   renderWeek,
+  entryWeeklyLoadKm,
 };

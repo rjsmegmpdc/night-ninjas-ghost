@@ -3,9 +3,12 @@ import type {
   PlanEngine,
   PlanParams,
   WeekTemplate,
+  WeekContext,
+  CalendarConfig,
   DayPlan,
 } from './types';
 import { band, marathonPaceSpk, offset } from './derive';
+import { applyStructuredCalendar } from './calendar-blocks';
 
 /* ----------------------------------------------------------------------------
  * Custom dojo.
@@ -47,28 +50,76 @@ function defaultWeek(params: PlanParams): DayPlan[] {
   ];
 }
 
-function renderWeek(params: PlanParams, weekNumber: number): WeekTemplate {
+function renderWeek(params: PlanParams, weekNumber: number, context?: WeekContext): WeekTemplate {
   // For custom dojo, the same week structure repeats every week unless
   // the user has saved variations. Volume cap respects user setting.
   const cap = params.weeklyVolumeCapKm ?? 70;
   const longCap = params.longRunCapKm ?? 24;
+  const zones = paceZones(params);
 
-  return {
+  const raw: WeekTemplate = {
     weekNumber,
     phaseName: 'Custom',
     totalKmTarget: cap,
     longRunKmTarget: longCap,
     days: defaultWeek(params),
     notes: 'Custom plan. Edit your weekly structure in the Dojo screen.',
+    adaptations: [],
   };
+
+  return applyStructuredCalendar(raw, context, zones, CUSTOM_CALENDAR);
+}
+
+/* ----------------------------------------------------------------------------
+ * Custom calendar opinion.
+ *
+ * Conservative defaults — small taper, gentle scaling. Eventually the
+ * Dojo screen will let users edit this themselves.
+ * -------------------------------------------------------------------------- */
+const CUSTOM_CALENDAR: CalendarConfig = {
+  taper: {
+    schedule: [
+      { withinDays: 7, factor: 0.7 },
+    ],
+    raceWeekStyle: 'short-shakeouts',
+  },
+  volumeScale: {
+    reducedFactor: 0.5,
+    travelOnlyFactor: 0.3,
+    noTrainingZeroesOut: true,
+  },
+  tuneups: {
+    enabled: true,
+    taperDays: 1,
+    recoveryDays: 1,
+  },
+  honourRecurringSessions: true,
+  annotateNinjaLoops: true,
+};
+
+
+/**
+ * Entry weekly load: Custom returns 0 - the ramp UI treats 0 as "no expected entry, no warning".
+ */
+function entryWeeklyLoadKm(_level: 'beginner' | 'intermediate' | 'advanced'): number {
+  return 0;
 }
 
 export const custom: PlanEngine = {
   dojo: 'custom',
+  stateProfile: {
+    // No philosophy to honour - conservative defaults.
+    tsbFloor: { base: -15, build: -20, peak: -20, taper: -5 },
+    protectedTypes: ['long'],
+    preferIntensityCut: false,
+  },
   displayName: 'Custom',
   philosophy: PHILOSOPHY,
   defaultProgramWeeks: 16,
   defaultLongRunCapKm: 24,
+  status: 'full',
+  calendarConfig: CUSTOM_CALENDAR,
   derivePaceZones: paceZones,
   renderWeek,
+  entryWeeklyLoadKm,
 };

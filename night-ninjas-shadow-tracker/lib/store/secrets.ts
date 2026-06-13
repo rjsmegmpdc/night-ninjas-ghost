@@ -26,6 +26,7 @@ const KEY = {
   STRAVA_ACCESS_TOKEN: 'strava-access-token',
   STRAVA_REFRESH_TOKEN: 'strava-refresh-token',
   STRAVA_EXPIRES_AT: 'strava-expires-at',
+  GARMIN_SESSION_TOKENS: 'garmin-session-tokens',
 } as const;
 
 // Lazy-load keytar — it's a native module and we want to gracefully
@@ -111,4 +112,26 @@ export async function clearStravaSecrets(): Promise<void> {
     deleteSecret(KEY.STRAVA_REFRESH_TOKEN),
     deleteSecret(KEY.STRAVA_EXPIRES_AT),
   ]);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Public API - Garmin-specific helpers (Phase 12).
+ *
+ * We never store the athlete's Garmin password. The password is used once
+ * at login; what we persist is the exported OAuth1+OAuth2 session token
+ * pair from the garmin-connect library (valid ~1 year, auto-refreshed by
+ * the library on use). Stored as a single JSON blob in the OS keychain.
+ * -------------------------------------------------------------------------- */
+
+export async function setGarminSessionTokens(tokensJson: string): Promise<void> {
+  await setSecret(KEY.GARMIN_SESSION_TOKENS, tokensJson);
+}
+
+export async function getGarminSessionTokens(): Promise<string | null> {
+  return getSecret(KEY.GARMIN_SESSION_TOKENS);
+}
+
+export async function clearGarminSecrets(): Promise<void> {
+  await deleteSecret(KEY.GARMIN_SESSION_TOKENS);
 }

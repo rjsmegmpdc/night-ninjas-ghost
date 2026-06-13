@@ -31,7 +31,7 @@ export function PageStub({
       <Card className="max-w-2xl space-y-4">
         <CardLabel>build status</CardLabel>
         <div className="space-y-2">
-          <div className="font-display tracking-wide-display text-2xl uppercase text-ninja-red">
+          <div className="font-display tracking-wide-display text-2xl uppercase text-accent">
             Phase 1 · Pending
           </div>
           <p className="font-mono text-xs text-bone-dim leading-relaxed">
@@ -42,7 +42,7 @@ export function PageStub({
         <ol className="space-y-2 pt-3 border-t border-ink-line">
           {pendingItems.map((item, i) => (
             <li key={i} className="flex gap-3 text-sm">
-              <span className="font-mono text-ninja-red w-6 flex-shrink-0">
+              <span className="font-mono text-accent w-6 flex-shrink-0">
                 {(i + 1).toString().padStart(2, '0')}
               </span>
               <span className="text-bone-dim">{item}</span>

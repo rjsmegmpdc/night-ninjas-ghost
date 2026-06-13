@@ -1,60 +1,331 @@
+import Link from 'next/link';
+import { eq } from 'drizzle-orm';
 import { Card, CardLabel } from '@/components/ui/card';
 import { Stat } from '@/components/ui/stat';
-import { Button } from '@/components/ui/button';
-import { Check, X, AlertCircle, Minus } from 'lucide-react';
+import { Check, AlertCircle, Minus, MoveDown, Minimize2 } from 'lucide-react';
+import { SyncStatusBanner } from '@/components/sync/sync-status-banner';
+import { EmptyState } from '@/components/ui/empty-state';
+import { getDb, schema } from '@/lib/db';
+import {
+  getActivePlan,
+  currentWeekNumber,
+  currentWeekRange,
+} from '@/lib/plans/active-plan';
+import { getActivitiesInRange, aggregateWeekStats } from '@/lib/analysis/week-queries';
+import { evaluateWeek, type SessionCompliance } from '@/lib/analysis/compliance';
+import { formatSpk, formatBand } from '@/lib/plans/derive';
+import type { SessionTarget, WeekTemplate } from '@/lib/plans/types';
+import { resolveWeekContext } from '@/lib/plans/week-context';
+import { logPageView } from '@/lib/store/instrument';
+import { ShoeNudgeBanner } from '@/components/shoes/shoe-nudge-banner';
+import { RaceCountdown } from '@/components/patrol/race-countdown';
+import { StreakCounter } from '@/components/patrol/streak-counter';
+import { SyncButton } from '@/components/patrol/sync-button';
+import { WeekComplianceChip } from '@/components/patrol/week-compliance-chip';
+import { ProgramMatrix } from '@/components/patrol/program-matrix';
+import { FreshnessChip } from '@/components/patrol/freshness-chip';
+import { IntensityChip } from '@/components/patrol/intensity-chip';
+import { ProgressionFlagCard } from '@/components/patrol/progression-flag-card';
+import { getAthleteState } from '@/lib/analysis/athlete-state';
+import { getIntensityDistribution } from '@/lib/analysis/intensity-distribution';
+import {
+  checkMileageProgression,
+  checkLongRunProportion,
+} from '@/lib/analysis/progression';
+import { getProgramPhase } from '@/lib/plans/program-phase';
+import { getRampPlanForActivePeriod } from '@/lib/plans/ramp-loader';
+import { RampCard } from '@/components/patrol/ramp-card';
+import { CoachAdjustmentCard } from '@/components/patrol/coach-adjustment-card';
+import { resolveCoachAdjustment } from '@/lib/plans/state-aware-week';
 
 /**
  * Patrol — this week's training loop.
  *
- * Currently rendering MOCK DATA to showcase the design system. Will wire
- * to live DB queries + plan engine output in next iteration.
+ * Live data version. Three render branches:
+ *   1. No synced activities  -> Empty state, point to /setup/sync
+ *   2. No active plan        -> "Plan not configured" state, point to wizard
+ *   3. Activities + plan     -> Full dashboard with live compliance
+ *
+ * Wellness data is still mocked — the journal table exists but the entry
+ * UI hasn't been built yet, so there's nothing to read. We mark this
+ * clearly until Journal lands.
  */
-export default function PatrolPage() {
+export default async function PatrolPage() {
+  logPageView('/patrol');
+  const activityCount = await getDb().$count(schema.activities);
+  const hasData = activityCount > 0;
+
   return (
     <div className="px-12 py-10 max-w-7xl mx-auto space-y-10">
-      {/* Header */}
-      <header className="flex items-end justify-between border-b border-ink-line pb-6">
-        <div className="space-y-1">
-          <span className="nn-caps">this week's patrol</span>
-          <h1 className="font-display tracking-wide-display text-5xl uppercase">
-            Week 7 — <span className="text-ninja-red">Build Phase</span>
-          </h1>
-          <div className="font-mono text-bone-dim text-sm">
-            28 Apr — 04 May 2026 · Hansons Marathon Method · Goal 3:30
+      <SyncStatusBanner />
+
+      {!hasData && (
+        <>
+          <EmptyState
+            label="patrol · no data yet"
+            title="No activities synced"
+            reason="Patrol shows your current week — sessions, paces, compliance flags. To see anything here, you need to pull your activity history from Strava first."
+            action={{ href: '/setup/sync', label: 'Run initial sync' }}
+          />
+          <p className="font-mono text-xs text-bone-mute max-w-2xl">
+            ↳ new to the app? <a href="/help" className="text-bone-dim hover:text-accent transition-colors underline">Read the help</a> for a 2-minute orientation
+          </p>
+        </>
+      )}
+
+      {hasData && <PatrolDashboard />}
+    </div>
+  );
+}
+
+async function PatrolDashboard() {
+  const activePlan = await getActivePlan();
+
+  if (!activePlan) {
+    // Diagnose what's actually missing rather than show a generic message.
+    // getActivePlan() returns null if either the goal race is missing OR
+    // it's missing a target time. The user has reasonably enough context
+    // to know which one to fix when we tell them precisely.
+    const goalRace = await getDb()
+      .select()
+      .from(schema.races)
+      .where(eq(schema.races.isGoal, true))
+      .get();
+
+    if (!goalRace) {
+      return (
+        <EmptyState
+          label="patrol · no goal race"
+          title="No goal race set"
+          reason="Patrol needs a goal race to know what you're training for. Pick a dojo and add a goal race in the wizard."
+          action={{ href: '/setup/dojo', label: 'Configure plan' }}
+        />
+      );
+    }
+
+    if (!goalRace.targetTimeS) {
+      return (
+        <EmptyState
+          label="patrol · target time missing"
+          title="Target time needed"
+          reason={`Your goal race (${goalRace.name}) doesn't have a target time set. Pace zones — easy, tempo, interval — are derived from goal pace, so the plan engine can't run without it. Add a target time on the Calendar page and Patrol will activate.`}
+          action={{ href: '/calendar', label: 'Set target time' }}
+        />
+      );
+    }
+
+    // Fallback — shouldn't normally hit this since the two checks above
+    // cover what getActivePlan() blocks on
+    return (
+      <EmptyState
+        label="patrol · plan not configured"
+        title="Plan not set up yet"
+        reason="Patrol compares your activities against a plan. Configuration is incomplete — pick a dojo and set a goal race with a target time to see compliance."
+        action={{ href: '/setup/dojo', label: 'Configure plan' }}
+      />
+    );
+  }
+
+  const { engine, params } = activePlan;
+  const weekNumber = currentWeekNumber(params) ?? 1;
+  const { startIso, endIso } = currentWeekRange();
+  const context = await resolveWeekContext({ weekStartIso: startIso, weekEndIso: endIso });
+  const rawTemplate = engine.renderWeek(params, weekNumber, context);
+
+  // Phase 3b - state-aware pipeline. In automatic mode (or once a proposal
+  // is applied) the adjusted template becomes the week's prescription;
+  // compliance and volume targets follow it.
+  const coach = await resolveCoachAdjustment({
+    dojo: engine.dojo,
+    weekStartIso: startIso,
+    weekNumber,
+    programWeeks: params.programWeeks ?? engine.defaultProgramWeeks,
+    rawTemplate,
+  });
+  const template = coach.template;
+
+  const activities = await getActivitiesInRange(startIso, endIso);
+  const stats = aggregateWeekStats(activities);
+  const compliance = evaluateWeek(template, activities);
+
+  // Phase 2 athlete state surfaces + Phase 3a phase + ramp.
+  // All run in parallel.
+  const [athleteState, intensityDist, mileageProg, longRunCheck, programPhase] = await Promise.all([
+    getAthleteState({}),
+    getIntensityDistribution(startIso, endIso, {}),
+    checkMileageProgression(startIso),
+    checkLongRunProportion(startIso),
+    getProgramPhase(),
+  ]);
+  // Ramp depends on programPhase, so it sequences after - but only triggers
+  // a real fetch when phase is pre-program.
+  const rampPlan = await getRampPlanForActivePeriod(programPhase);
+
+  const today = new Date();
+  const todayDow = (today.getDay() + 6) % 7; // Mon=0..Sun=6
+  const todayPlan = template.days.find((d) => d.dow === todayDow);
+  const tonightSession = todayPlan?.sessions[0] ?? null;
+
+  // Volume cell: actual / target with %
+  const volumePct = template.totalKmTarget > 0
+    ? Math.round((stats.totalKm / template.totalKmTarget) * 100)
+    : 0;
+
+  // Long run cell: actual / target
+  const longPct = template.longRunKmTarget > 0
+    ? Math.round((stats.longRunKm / template.longRunKmTarget) * 100)
+    : 0;
+
+  return (
+    <>
+      {/* Header — compact title strip with streak counter + sync on right */}
+      <header className="space-y-4 border-b border-ink-line pb-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <span className="nn-caps">dashboard - this week</span>
+            <h1 className="font-display tracking-wide-display text-4xl uppercase leading-none">
+              {programPhase.kind === 'pre-program' ? (
+                <>
+                  Pre-program <span className="text-accent">base</span>
+                </>
+              ) : programPhase.kind === 'taper' ? (
+                <>
+                  Taper - <span className="text-accent">week {programPhase.programWeekNumber} of {programPhase.programWeeks}</span>
+                </>
+              ) : programPhase.kind === 'race-week' ? (
+                <>
+                  Race <span className="text-accent">week</span>
+                </>
+              ) : programPhase.kind === 'post-race' ? (
+                <>
+                  Post-race <span className="text-accent">recovery</span>
+                </>
+              ) : programPhase.kind === 'no-program' ? (
+                <>No program</>
+              ) : (
+                <>
+                  Week {weekNumber} - <span className="text-accent">{template.phaseName} Phase</span>
+                </>
+              )}
+            </h1>
+            <div className="font-mono text-bone-dim text-xs">
+              {formatRange(startIso, endIso)} · {programPhase.subline}
+            </div>
+          </div>
+
+          {/* Right cluster: state chips + compliance + streak + sync button */}
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+            <FreshnessChip state={athleteState} />
+            <IntensityChip distribution={intensityDist} />
+            <WeekComplianceChip compliance={compliance} />
+            <StreakCounter />
+            <SyncButton />
           </div>
         </div>
-        <Button variant="outline" size="sm">
-          Sync now
-        </Button>
+
+        {/* Compact race row + book-a-race CTA */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <RaceCountdown />
+          <Link
+            href="/calendar#tune-ups"
+            className="inline-flex items-center gap-1.5 font-display tracking-wide-display uppercase text-xs text-bone-mute hover:text-accent transition-colors border border-ink-line hover:border-accent px-2.5 py-1"
+            title="Book a race on Calendar"
+          >
+            + Book a race
+          </Link>
+        </div>
+
+        {template.adaptations && template.adaptations.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {template.adaptations.map((a, i) => (
+              <span
+                key={i}
+                className={
+                  'inline-flex items-center gap-1.5 px-2 py-1 border text-[10px] font-mono uppercase tracking-widest ' +
+                  adaptationStyle(a.kind)
+                }
+                title={a.detail}
+              >
+                {a.label}
+              </span>
+            ))}
+          </div>
+        )}
       </header>
 
-      {/* Top stats row */}
+      {/* Phase 3b - coach proposal / auto-adjustment notice */}
+      <CoachAdjustmentCard
+        adjustmentId={coach.adjustmentId}
+        status={coach.status}
+        rail={coach.rail}
+        trigger={coach.trigger}
+        rationale={coach.rationale}
+        changes={coach.changes}
+        rawTotalKm={coach.rawTotalKm}
+        adjustedTotalKm={coach.adjustedTotalKm}
+      />
+
+      {/* Top stats row — live. Above matrix so the eye lands on
+          this-week numbers first. Width matches the matrix below. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-ink-line border border-ink-line">
         <div className="bg-ink p-6">
-          <Stat label="this week" value="62.4" unit="km" size="lg" accent />
+          <Stat
+            label="this week"
+            value={stats.totalKm > 0 ? stats.totalKm.toFixed(1) : '0.0'}
+            unit="km"
+            size="lg"
+            accent={stats.totalKm > 0}
+          />
           <div className="font-mono text-xs text-bone-mute mt-2">
-            target 80 · 78%
+            target {template.totalKmTarget} · {volumePct}%
           </div>
         </div>
         <div className="bg-ink p-6">
-          <Stat label="long run" value="22.8" unit="km" size="lg" />
+          <Stat
+            label="long run"
+            value={stats.longRunKm > 0 ? stats.longRunKm.toFixed(1) : '0.0'}
+            unit="km"
+            size="lg"
+          />
           <div className="font-mono text-xs text-bone-mute mt-2">
-            target 26 · short
+            target {template.longRunKmTarget} · {longLabel(stats.longRunKm, template.longRunKmTarget, longPct)}
           </div>
         </div>
         <div className="bg-ink p-6">
-          <Stat label="avg pace" value="5:24" unit="/km" size="lg" />
+          <Stat
+            label="avg pace"
+            value={stats.avgPaceSpk ? formatSpk(stats.avgPaceSpk) : '—:—'}
+            unit="/km"
+            size="lg"
+          />
           <div className="font-mono text-xs text-bone-mute mt-2">
-            5 sessions completed
+            {stats.totalSessions} session{stats.totalSessions === 1 ? '' : 's'} this week
           </div>
         </div>
         <div className="bg-ink p-6">
-          <Stat label="avg HR" value="142" unit="bpm" size="lg" />
+          <Stat
+            label="avg HR"
+            value={stats.avgHr ? Math.round(stats.avgHr).toString() : '—'}
+            unit="bpm"
+            size="lg"
+          />
           <div className="font-mono text-xs text-bone-mute mt-2">
-            zone 2 dominant
+            {stats.avgHr ? 'weighted by time' : 'no HR data'}
           </div>
         </div>
       </div>
+
+      {/* Program matrix — coach's-spreadsheet view of the training block */}
+      <ProgramMatrix activePlan={activePlan} />
+
+      {/* Progression flags - render only when caution/risk thresholds crossed.
+          Stays silent during normal training weeks. */}
+      <ProgressionFlagCard mileage={mileageProg} longRun={longRunCheck} />
+
+      {/* Ramp card - visible only during pre-program base.
+          Shows the gap between current chronic load and program entry
+          expectation, with state-aware verdict. */}
+      <RampCard ramp={rampPlan} />
 
       {/* Two-column body */}
       <div className="grid lg:grid-cols-[3fr_2fr] gap-8">
@@ -63,151 +334,173 @@ export default function PatrolPage() {
           <div className="flex items-center justify-between">
             <CardLabel>session compliance</CardLabel>
             <span className="font-mono text-xs text-bone-mute">
-              5 of 6 logged
+              {compliance.daysWithSessions} of {template.days.filter((d) => d.sessions.some((s) => s.type !== 'rest')).length} logged
             </span>
           </div>
           <div className="divide-y divide-ink-line">
-            {SESSIONS.map((s, i) => (
-              <SessionRow key={i} session={s} />
-            ))}
+            {compliance.days.map((day) => {
+              const sessionsToShow = day.sessions.filter((s) => s.target.type !== 'rest');
+              if (sessionsToShow.length === 0) return null;
+              return sessionsToShow.map((sess, i) => (
+                <ComplianceRow key={`${day.dow}-${i}`} dow={day.dow} sess={sess} />
+              ));
+            })}
           </div>
         </Card>
 
         {/* Side column — wellness + next mission */}
         <div className="space-y-5">
+          {/* Wellness card — currently still mocked, journal UI not built yet */}
           <Card className="space-y-4">
             <CardLabel>wellness · last 7 days</CardLabel>
-            <div className="space-y-3">
-              <WellnessBar label="Sleep quality" value={7.2} max={10} />
-              <WellnessBar label="Work stress" value={6.4} max={10} reversed />
-              <WellnessBar label="Energy" value={6.8} max={10} />
-              <WellnessBar label="Perceived effort" value={7.5} max={10} />
+            <div className="font-mono text-xs text-bone-mute leading-relaxed">
+              ↳ daily wellness logging not yet available. Until the Journal screen
+              lands, the heart rate and pace trends above are your best signal.
             </div>
-            <div className="pt-3 border-t border-ink-line font-mono text-xs text-bone-mute">
-              ↳ work stress trending up. consider easy day Wed.
-            </div>
+            <Link href="/help#tasks">
+              <span className="font-mono text-xs text-bone-dim hover:text-accent transition-colors">
+                Why this matters →
+              </span>
+            </Link>
           </Card>
 
-          <Card className="border-ninja-red/40 space-y-4">
-            <CardLabel className="text-ninja-red">
+          {/* Tonight's mission — derived from today's plan */}
+          <Card className="border-accent/40 space-y-4">
+            <CardLabel className="text-accent">
               tonight's mission
             </CardLabel>
-            <div>
-              <div className="font-display tracking-wide-display text-2xl uppercase mb-1">
-                Tempo at MP
+            {tonightSession ? (
+              <>
+                <div>
+                  <div className="font-display tracking-wide-display text-2xl uppercase mb-1">
+                    {tonightSession.label}
+                  </div>
+                  <div className="font-mono text-bone-dim text-sm">
+                    {sessionPrescription(tonightSession)}
+                  </div>
+                </div>
+                {tonightSession.notes && (
+                  <div className="font-mono text-xs text-bone-dim leading-relaxed">
+                    {tonightSession.notes}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-bone-dim text-sm">
+                Rest day. Recover.
               </div>
-              <div className="font-mono text-bone-dim text-sm">
-                3 × 3km @ 4:53–5:03/km · 12km total
-              </div>
-            </div>
-            <div className="font-mono text-xs text-bone-dim leading-relaxed">
-              The signature Hansons workout. Hold marathon goal pace through
-              all reps with 2-min jog recovery.
-            </div>
+            )}
           </Card>
         </div>
       </div>
-    </div>
+
+      {/* Demoted shoe nudges — useful but no longer part of the hero */}
+      <ShoeNudgeBanner />
+    </>
   );
 }
 
-/* ---------- Session row ---------------------------------------------------- */
+/* ---------- Helpers ---------- */
 
-type Flag = 'ok' | 'fast' | 'slow' | 'short' | 'none';
-
-interface SessionMock {
-  day: string;
-  label: string;
-  type: string;
-  km?: number;
-  pace?: string;
-  flag: Flag;
-  flagDetail: string;
+function formatRange(startIso: string, endIso: string): string {
+  const fmt = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-NZ', { day: '2-digit', month: 'short' });
+  };
+  return `${fmt(startIso)} — ${fmt(endIso)} ${new Date(endIso).getFullYear()}`;
 }
 
-const SESSIONS: SessionMock[] = [
-  { day: 'Mon', label: 'Easy run', type: 'easy', km: 8.4, pace: '5:51', flag: 'ok', flagDetail: 'in band' },
-  { day: 'Tue', label: 'Strength workout', type: 'tempo', km: 12.1, pace: '4:48', flag: 'ok', flagDetail: 'quality session' },
-  { day: 'Wed', label: 'Optional cross-train', type: 'cross', flag: 'none', flagDetail: 'rest taken' },
-  { day: 'Thu', label: 'Tempo at MP', type: 'tempo', km: 11.0, pace: '5:08', flag: 'slow', flagDetail: '5s/km off MP' },
-  { day: 'Fri', label: 'Easy run', type: 'easy', km: 6.2, pace: '5:42', flag: 'ok', flagDetail: 'in band' },
-  { day: 'Sat', label: 'Easy run (cumulative fatigue)', type: 'easy', km: 8.7, pace: '5:38', flag: 'ok', flagDetail: 'in band' },
-  { day: 'Sun', label: 'Long run', type: 'long', km: 22.8, pace: '5:31', flag: 'short', flagDetail: '3.2km short' },
-];
+function formatGoal(km: number, timeS: number): string {
+  const distLabel =
+    Math.abs(km - 42.195) < 0.1 ? 'Marathon'
+    : Math.abs(km - 21.0975) < 0.1 ? 'Half'
+    : `${km}K`;
+  const h = Math.floor(timeS / 3600);
+  const m = Math.floor((timeS % 3600) / 60);
+  return h > 0 ? `${distLabel} ${h}:${m.toString().padStart(2, '0')}` : `${distLabel}`;
+}
 
-function SessionRow({ session }: { session: SessionMock }) {
+function longLabel(actual: number, target: number, pct: number): string {
+  if (actual === 0) return 'pending';
+  if (pct >= 90) return 'on target';
+  if (pct >= 70) return 'short';
+  return 'well short';
+}
+
+function adaptationStyle(kind: string): string {
+  switch (kind) {
+    case 'taper':
+      return 'border-accent/60 text-accent bg-accent/5';
+    case 'no-training':
+    case 'reduced':
+    case 'travel-only':
+      return 'border-signal-warn/60 text-signal-warn bg-signal-warn/5';
+    case 'tuneup-race':
+      return 'border-accent/60 text-accent bg-accent/5';
+    case 'group-run':
+      return 'border-bone-dim/60 text-bone bg-ink-shadow';
+    case 'ninja-loop':
+      return 'border-bone-mute/40 text-bone-mute bg-ink-shadow';
+    default:
+      return 'border-bone-mute/40 text-bone-mute';
+  }
+}
+
+function sessionPrescription(t: SessionTarget): string {
+  if (t.paceZone && t.distanceKmMin && t.distanceKmMax) {
+    const distRange = t.distanceKmMin === t.distanceKmMax
+      ? `${t.distanceKmMin.toFixed(1)} km`
+      : `${t.distanceKmMin.toFixed(1)}–${t.distanceKmMax.toFixed(1)} km`;
+    return `${distRange} @ ${formatBand(t.paceZone)}`;
+  }
+  if (t.durationMinMin && t.durationMinMax) {
+    return `${t.durationMinMin}–${t.durationMinMax} min`;
+  }
+  if (t.paceZone) return `pace ${formatBand(t.paceZone)}`;
+  return 'see plan';
+}
+
+const DOW_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function ComplianceRow({ dow, sess }: { dow: number; sess: SessionCompliance }) {
   const FlagIcon = {
     ok: Check,
+    warn: AlertCircle,
     fast: AlertCircle,
     slow: AlertCircle,
-    short: AlertCircle,
+    short: Minimize2,
+    miss: AlertCircle,
     none: Minus,
-  }[session.flag];
+  }[sess.flag];
 
   const flagColor = {
     ok: 'text-signal-ok',
+    warn: 'text-signal-warn',
     fast: 'text-signal-warn',
     slow: 'text-signal-warn',
-    short: 'text-signal-miss',
+    short: 'text-accent',
+    miss: 'text-accent',
     none: 'text-bone-mute',
-  }[session.flag];
+  }[sess.flag];
 
   return (
     <div className="py-3 grid grid-cols-[60px_1fr_120px_80px_28px] gap-4 items-center">
       <span className="font-display tracking-wide-display uppercase text-bone-dim text-sm">
-        {session.day}
+        {DOW_LABELS[dow]}
       </span>
       <div>
-        <div className="text-bone">{session.label}</div>
+        <div className="text-bone">{sess.target.label}</div>
         <div className="font-mono text-xs text-bone-mute mt-0.5">
-          {session.flagDetail}
+          {sess.message}
         </div>
       </div>
       <span className="font-mono tabular-nums text-bone">
-        {session.km ? `${session.km.toFixed(1)} km` : '—'}
+        {sess.actualKm != null ? `${sess.actualKm.toFixed(1)} km` : '—'}
       </span>
       <span className="font-mono tabular-nums text-bone-dim text-sm">
-        {session.pace ? `${session.pace}/km` : '—'}
+        {sess.actualPaceSpk ? `${formatSpk(sess.actualPaceSpk)}/km` : '—'}
       </span>
       <FlagIcon size={18} strokeWidth={1.5} className={flagColor} />
-    </div>
-  );
-}
-
-/* ---------- Wellness bar -------------------------------------------------- */
-
-function WellnessBar({
-  label,
-  value,
-  max,
-  reversed = false,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  reversed?: boolean;
-}) {
-  const pct = (value / max) * 100;
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <span className="font-mono text-xs text-bone-dim">{label}</span>
-        <span className="font-mono text-sm text-bone tabular-nums">
-          {value.toFixed(1)} / {max}
-        </span>
-      </div>
-      <div className="h-1 bg-ink-line">
-        <div
-          className={
-            reversed
-              ? value > max * 0.7
-                ? 'h-full bg-ninja-red'
-                : 'h-full bg-bone-dim'
-              : 'h-full bg-bone'
-          }
-          style={{ width: `${pct}%` }}
-        />
-      </div>
     </div>
   );
 }

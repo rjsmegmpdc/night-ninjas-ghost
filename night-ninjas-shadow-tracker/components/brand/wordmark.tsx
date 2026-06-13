@@ -1,29 +1,43 @@
 import { cn } from '@/lib/utils';
 
 /**
- * Night Ninjas wordmark — text only, paired with Logo or stacked.
+ * VELOCITY wordmark.
  *
- * Variants:
- *   default: full lockup with `est. 2016` baseline
- *   compact: just the wordmark (for nav, tight spaces)
+ * The wordmark stands alone. No tagline by default; an optional 'tagline'
+ * variant is available for hero / onboarding contexts only.
+ *
+ * The accent variant renders in VELOCITY orange. The bone variant renders
+ * in primary text colour for low-emphasis contexts.
  */
 export function Wordmark({
   className,
-  variant = 'default',
+  variant = 'accent',
+  size = 'md',
 }: {
   className?: string;
-  variant?: 'default' | 'compact';
+  variant?: 'accent' | 'bone';
+  /** Size: nav (24px), md (32px), lg (56px), xl (84px) */
+  size?: 'nav' | 'md' | 'lg' | 'xl';
 }) {
+  const sizeClass = {
+    nav: 'text-2xl',
+    md: 'text-3xl',
+    lg: 'text-5xl',
+    xl: 'text-7xl',
+  }[size];
+
+  const colourClass = variant === 'accent' ? 'text-accent' : 'text-bone';
+
   return (
-    <div className={cn('flex flex-col leading-none', className)}>
-      <span className="font-display tracking-wide-display text-2xl">
-        NIGHT NINJAS
-      </span>
-      {variant === 'default' && (
-        <span className="font-mono text-[10px] text-bone-mute mt-0.5 tracking-widest">
-          shadow tracker · est. 2016
-        </span>
+    <span
+      className={cn(
+        'font-display tracking-wide-display leading-none uppercase',
+        sizeClass,
+        colourClass,
+        className
       )}
-    </div>
+    >
+      VELOCITY
+    </span>
   );
 }

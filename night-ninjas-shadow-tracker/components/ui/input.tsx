@@ -11,7 +11,7 @@ export const Input = React.forwardRef<
     className={cn(
       'flex h-10 w-full bg-ink-panel border border-ink-line px-3 py-2 text-sm text-bone',
       'font-mono placeholder:text-bone-mute',
-      'focus-visible:outline-none focus-visible:border-ninja-red',
+      'focus-visible:outline-none focus-visible:border-accent',
       'disabled:cursor-not-allowed disabled:opacity-50',
       'transition-colors duration-150',
       className

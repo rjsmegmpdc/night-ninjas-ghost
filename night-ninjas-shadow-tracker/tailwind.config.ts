@@ -9,34 +9,41 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Night Ninjas palette — see DESIGN.md for the full token system.
+        // VELOCITY palette - see DESIGN.md for the full token system.
         // Always reference these via CSS variables in components, not raw hex,
         // so we can theme/skin without hunting for usages.
         ink: {
-          DEFAULT: 'var(--nn-ink)',          // True black, page background
-          shadow: 'var(--nn-ink-shadow)',    // Surface 1 — cards, panels
-          panel: 'var(--nn-ink-panel)',      // Surface 2 — elevated panels
-          line: 'var(--nn-ink-line)',        // Borders, dividers
+          DEFAULT: 'var(--nn-ink)',           // #0A0A0A page background
+          shadow: 'var(--nn-ink-shadow)',     // #141414 surface 1 - cards
+          panel: 'var(--nn-ink-panel)',       // #1C1C1C surface 2 - elevated
+          line: 'var(--nn-ink-line)',         // #2A2A2A subtle borders
+          'line-bold': 'var(--nn-ink-line-bold)', // #3A3A3A active borders
         },
         bone: {
-          DEFAULT: 'var(--nn-bone)',         // Primary text
-          dim: 'var(--nn-bone-dim)',         // Secondary text
-          mute: 'var(--nn-bone-mute)',       // Tertiary / disabled
+          DEFAULT: 'var(--nn-bone)',          // #F5F5F0 primary text
+          dim: 'var(--nn-bone-dim)',          // #A5A5A0 secondary text
+          mute: 'var(--nn-bone-mute)',        // #6E6E6A tertiary text
         },
-        ninja: {
-          red: 'var(--nn-ninja-red)',        // Surgical accent — PBs, alerts, current
-          'red-hover': 'var(--nn-ninja-red-hover)',
+        accent: {
+          DEFAULT: 'var(--nn-accent)',          // #FF5F00 VELOCITY orange
+          hover: 'var(--nn-accent-hover)',      // #FF7A2B hover state
+          glow: 'var(--nn-accent-glow)',        // rgba 18% inner glow
+          faint: 'var(--nn-accent-faint)',      // rgba 8% subtle tint
         },
         signal: {
-          ok: 'var(--nn-signal-ok)',         // Compliance hit
-          warn: 'var(--nn-signal-warn)',     // Borderline
-          miss: 'var(--nn-signal-miss)',     // Compliance missed (uses ninja-red)
+          ok: 'var(--nn-signal-ok)',          // #26D0AE teal stable/optimal
+          warn: 'var(--nn-signal-warn)',      // #EAB308 amber caution
+          miss: 'var(--nn-signal-miss)',      // #DC2626 red alert
+        },
+        matrix: {
+          long: 'var(--nn-matrix-long)',           // long runs in matrix
+          strength: 'var(--nn-matrix-strength)',   // cross/strength sessions
         },
       },
       fontFamily: {
-        // Bebas Neue — display & wordmark match.
-        // IBM Plex Sans — body & UI.
-        // JetBrains Mono — paces, distances, times. Tabular figures.
+        // Bebas Neue - display & wordmark.
+        // IBM Plex Sans - body & UI.
+        // JetBrains Mono - paces, distances, times. Tabular figures.
         display: ['var(--font-bebas)', 'sans-serif'],
         sans: ['var(--font-plex)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-jetbrains)', 'ui-monospace', 'monospace'],
@@ -47,18 +54,30 @@ const config: Config = {
         'wider-display': '0.08em',
       },
       borderRadius: {
-        // Brutalist - no soft edges. 2px max for inputs/buttons.
+        // VELOCITY uses soft-rounded surfaces. The previous brutalist
+        // 2px-max rule is retired.
         none: '0',
-        sm: '2px',
-        DEFAULT: '2px',
-        md: '2px',
-        lg: '0',
-        full: '9999px', // Only for circles (avatars, stat dots)
+        sm: '4px',
+        DEFAULT: '8px',
+        md: '8px',
+        lg: '12px',     // buttons, inputs
+        xl: '12px',     // cards (DESIGN.md spec)
+        '2xl': '16px',  // hero panels, modals
+        full: '9999px', // circles only (avatars, dots)
+      },
+      boxShadow: {
+        // Subtle layered depth for cards. Avoid harsh shadows.
+        card: '0 1px 2px 0 rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+        'card-elevated': '0 4px 12px 0 rgba(0, 0, 0, 0.5)',
+        // Active card inner glow
+        'accent-inset': 'inset 0 0 24px 0 var(--nn-accent-glow)',
+        // Active border ring
+        'accent-ring': '0 0 0 1px var(--nn-accent)',
       },
       animation: {
         'fade-in': 'fade-in 200ms ease-out',
         'slide-up': 'slide-up 240ms ease-out',
-        'pulse-red': 'pulse-red 1.6s ease-in-out infinite',
+        'pulse-subtle': 'pulse-subtle 1.6s ease-in-out infinite',
       },
       keyframes: {
         'fade-in': {
@@ -69,9 +88,9 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        'pulse-red': {
+        'pulse-subtle': {
           '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.55' },
+          '50%': { opacity: '0.65' },
         },
       },
     },

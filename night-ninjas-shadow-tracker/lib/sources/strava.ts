@@ -119,17 +119,14 @@ export async function getValidAccessToken(): Promise<string> {
 }
 
 /* ----------------------------------------------------------------------------
- * Activity sync — STUB.
+ * Activity sync — see lib/sources/sync-runner.ts for the real implementation.
  *
- * Fetches paginated /athlete/activities, upserts into local DB. To be
- * fleshed out in next iteration. Structure is in place.
+ * sync-runner provides:
+ *   - createInitial90dJob() — wizard's first sync
+ *   - createExtendedHistoryJob() — pull older data
+ *   - createIncrementalJob() — pull new since last sync
+ *   - runJob() — execute paginated sync with rate limit handling
+ *   - resumeJob() — pick up a paused/rate_limited job
+ *
+ * This file keeps OAuth handshake + token management only.
  * -------------------------------------------------------------------------- */
-export async function syncActivities(opts: { full?: boolean } = {}): Promise<{
-  added: number;
-  updated: number;
-}> {
-  const _token = await getValidAccessToken();
-  // TODO: paginate /athlete/activities, map to schema.activities, upsert.
-  // See the Python `sync.py` for the reference algorithm.
-  return { added: 0, updated: 0 };
-}

@@ -96,7 +96,7 @@ export async function GroupRunSection() {
               id="gr-dow"
               name="dow"
               defaultValue="1"
-              className="flex h-10 w-full bg-ink-panel border border-ink-line px-3 text-sm text-bone font-mono focus-visible:outline-none focus-visible:border-ninja-red"
+              className="flex h-10 w-full bg-ink-panel border border-ink-line px-3 text-sm text-bone font-mono focus-visible:outline-none focus-visible:border-accent"
             >
               {DOW_LABELS.map((d, i) => (
                 <option key={d} value={i}>
@@ -111,7 +111,7 @@ export async function GroupRunSection() {
               id="gr-type"
               name="sessionType"
               defaultValue="easy"
-              className="flex h-10 w-full bg-ink-panel border border-ink-line px-3 text-sm text-bone font-mono focus-visible:outline-none focus-visible:border-ninja-red"
+              className="flex h-10 w-full bg-ink-panel border border-ink-line px-3 text-sm text-bone font-mono focus-visible:outline-none focus-visible:border-accent"
             >
               {SESSION_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -179,7 +179,7 @@ function DeleteButton({
       <input type="hidden" name="id" value={id} />
       <button
         type="submit"
-        className="text-bone-mute hover:text-ninja-red transition-colors p-1"
+        className="text-bone-mute hover:text-accent transition-colors p-1"
         title="Delete"
       >
         <Trash2 size={16} strokeWidth={1.5} />

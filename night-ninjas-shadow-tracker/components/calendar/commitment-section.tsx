@@ -29,8 +29,8 @@ const TYPE_COLORS: Record<string, string> = {
   holiday: 'text-signal-warn',
   work_trip: 'text-bone-dim',
   birthday: 'text-bone',
-  sickness: 'text-ninja-red',
-  caregiving: 'text-ninja-red',
+  sickness: 'text-accent',
+  caregiving: 'text-accent',
   other: 'text-bone-dim',
 };
 
@@ -107,7 +107,7 @@ export async function CommitmentSection() {
               id="ev-type"
               name="eventType"
               defaultValue="holiday"
-              className="flex h-10 w-full bg-ink-panel border border-ink-line px-3 text-sm text-bone font-mono focus-visible:outline-none focus-visible:border-ninja-red"
+              className="flex h-10 w-full bg-ink-panel border border-ink-line px-3 text-sm text-bone font-mono focus-visible:outline-none focus-visible:border-accent"
             >
               {EVENT_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -130,7 +130,7 @@ export async function CommitmentSection() {
               id="ev-impact"
               name="impact"
               defaultValue="reduced"
-              className="flex h-10 w-full bg-ink-panel border border-ink-line px-3 text-sm text-bone font-mono focus-visible:outline-none focus-visible:border-ninja-red"
+              className="flex h-10 w-full bg-ink-panel border border-ink-line px-3 text-sm text-bone font-mono focus-visible:outline-none focus-visible:border-accent"
             >
               {IMPACTS.map((i) => (
                 <option key={i.value} value={i.value}>
@@ -178,7 +178,7 @@ function DeleteButton({
       <input type="hidden" name="id" value={id} />
       <button
         type="submit"
-        className="text-bone-mute hover:text-ninja-red transition-colors p-1"
+        className="text-bone-mute hover:text-accent transition-colors p-1"
         title="Delete"
       >
         <Trash2 size={16} strokeWidth={1.5} />

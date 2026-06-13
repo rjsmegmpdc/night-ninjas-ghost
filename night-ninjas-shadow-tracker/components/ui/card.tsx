@@ -3,12 +3,17 @@ import { cn } from '@/lib/utils';
 
 export const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { elevated?: boolean }
->(({ className, elevated = false, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & {
+    /** Use ink-panel background for elevated surfaces (modals, hero cards) */
+    elevated?: boolean;
+    /** Render the accent border + inner-glow active state */
+    active?: boolean;
+  }
+>(({ className, elevated = false, active = false, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      elevated ? 'nn-card-elevated' : 'nn-card',
+      active ? 'nn-card-active' : elevated ? 'nn-card-elevated' : 'nn-card',
       'p-6',
       className
     )}

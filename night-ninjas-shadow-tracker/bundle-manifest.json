@@ -1,0 +1,894 @@
+{
+  ".env.example": {
+    "sha256": "fc3dde2b599b711052c81f9bc4796a570b8f1ef13c31a73b56d3bb860f823eaf",
+    "size": 591
+  },
+  ".gitignore": {
+    "sha256": "38821ef9ce8f8939c2d9a66cce4f3e084db3557aadd79747a5fcc5b7c54ca7da",
+    "size": 443
+  },
+  ".npmrc": {
+    "sha256": "ed6d2f00fab1c8022b8e830cdb3b8a0d55426817d0abc6d4d7fab02a30fa61c8",
+    "size": 861
+  },
+  "BRAND.md": {
+    "sha256": "4dac8e3c279408df4f94ca44afc4b0641cd6fd27f627b17f7dc8fdc82e82a159",
+    "size": 5125
+  },
+  "DESIGN.md": {
+    "sha256": "1191b2fc25d99bbf266cee96316131470f03745a68820d891393e7409ea90e96",
+    "size": 9624
+  },
+  "README.md": {
+    "sha256": "1e5598323afe49e3e90f749ac922676a8b921da36524c3d83b946678ddc05413",
+    "size": 8775
+  },
+  "ROADMAP.md": {
+    "sha256": "e451e6c670ee1b0f592dfa04d1202259eaeff0efb7bb521289d6959d8f3cb376",
+    "size": 34597
+  },
+  "app\\(app)\\calendar\\page.tsx": {
+    "sha256": "27ecc50a1d820c78930037497fff081ba337f8cdcdc85e9c6c8d27567ef0823b",
+    "size": 2768
+  },
+  "app\\(app)\\dojo\\page.tsx": {
+    "sha256": "ae7c52ecc326342c2c2a37897cb4b48c783bbf2fb5c3af833c80c492c7aa6456",
+    "size": 2869
+  },
+  "app\\(app)\\help\\page.tsx": {
+    "sha256": "edaf65b5dd8c7d03e4312d338ff5920b676afb2c744920e4a4efce635ed4ab24",
+    "size": 23705
+  },
+  "app\\(app)\\journal\\page.tsx": {
+    "sha256": "00e5c651b7c33823eef60f10755e343db585ced7f9d9b4f34b0f670689393ebd",
+    "size": 1814
+  },
+  "app\\(app)\\layout.tsx": {
+    "sha256": "8483d88c268bfd88b3a94b3c60d9c24311c0b84e6cfc2a0a25b75e4748ce1eca",
+    "size": 585
+  },
+  "app\\(app)\\patrol\\page.tsx": {
+    "sha256": "d80bc6b93052bb4eb384b3d6fe2bd0cd0dab046bfd4c464cea3f6e76a0fea2b3",
+    "size": 19842
+  },
+  "app\\(app)\\recon\\page.tsx": {
+    "sha256": "05ea591269d6006c1c559e2fe562d37f5772e723f1470a3c7b4414aa1e736fdc",
+    "size": 18036
+  },
+  "app\\(app)\\settings\\page.tsx": {
+    "sha256": "fc6d55540a68a5be1dd2257e0a8a9788a52c214b7cd1ae56746fd77a9e211543",
+    "size": 17226
+  },
+  "app\\(app)\\shoes\\page.tsx": {
+    "sha256": "7e8c00a2f85e77842840d68d7079fe087757e7a3a3265e25cb111ef489fd1d2c",
+    "size": 5539
+  },
+  "app\\(app)\\strike\\page.tsx": {
+    "sha256": "41941f99e13d57dbd3191079c8a1a904ea3d940de904a75c970caed795c92025",
+    "size": 4558
+  },
+  "app\\api\\feedback\\log-summary\\route.ts": {
+    "sha256": "a6cf2070ebea215243b9aa8594064782fa0c0dd78453cbafd17d4cb9fd2ee722",
+    "size": 376
+  },
+  "app\\api\\feedback\\reveal-log\\route.ts": {
+    "sha256": "f8cf4461065cc491a579d8ef02ee0fd7803ccf3dfd31f40e107720ba0a4afc14",
+    "size": 1751
+  },
+  "app\\api\\setup\\status\\route.ts": {
+    "sha256": "ef245744ea9b20dbb9dd0ed886e3de9eb8361b2c83e32ec4246cb6b8780064ea",
+    "size": 706
+  },
+  "app\\api\\shoes\\photo\\route.ts": {
+    "sha256": "25b2621ef46bce5f51853efc8ac4a48767992e519212bfc67e5296a91123e006",
+    "size": 1306
+  },
+  "app\\api\\strava\\auth\\route.ts": {
+    "sha256": "456d65416ec76f24fc87c7ca20bb006a2e8f521c904af8003efb4fe5ceda9072",
+    "size": 1171
+  },
+  "app\\api\\strava\\callback\\route.ts": {
+    "sha256": "59d1ca5d8bb96a7457a4d10bbde0ab1782de10bbe2475e2a39ee7beed5a7d355",
+    "size": 1535
+  },
+  "app\\api\\strava\\sync\\route.ts": {
+    "sha256": "82eee61b7523a9294396b57a021b623921523b5ca24db212e392bedf3e4fab71",
+    "size": 1348
+  },
+  "app\\api\\strava\\sync\\status\\route.ts": {
+    "sha256": "1b17f514e2b01aa8889601d185f4f094be597dc6cc30d7ad792cdd03031d5032",
+    "size": 2098
+  },
+  "app\\globals.css": {
+    "sha256": "392b92758d7d680feaac42677d5b48e5cfa4628b0ab832b9f64186f2b3079397",
+    "size": 7123
+  },
+  "app\\layout.tsx": {
+    "sha256": "cf4ac46c7fc07cfab41aea61c3c9a3d9dfdcf22739cbf12653dec177719d9e31",
+    "size": 2199
+  },
+  "app\\page.tsx": {
+    "sha256": "d30c1a5a0e68c73a63e3a960c9ec9c6c2d26316814977b63d9b869c1633c0a9e",
+    "size": 363
+  },
+  "app\\setup\\connect\\page.tsx": {
+    "sha256": "120462a0d908b31a92a80a35942b2f9da8a95a945ebdc6fd6f8a21c1faced850",
+    "size": 2264
+  },
+  "app\\setup\\dojo\\page.tsx": {
+    "sha256": "fe8429a0e67db44f04089dd0496b41f0b8d3827bfa355bea0faf4f4aa1ad7b5d",
+    "size": 1783
+  },
+  "app\\setup\\goal\\page.tsx": {
+    "sha256": "b1a0818ac0cffd792ab7046b57a4ae89a17a7c2a4e9ce276d79aaf0d1e393b07",
+    "size": 198
+  },
+  "app\\setup\\layout.tsx": {
+    "sha256": "8d2ea23b278557b901cffe186c4795550b0accfae5a8d33f2f18b94244c6009e",
+    "size": 1077
+  },
+  "app\\setup\\page.tsx": {
+    "sha256": "d7b817048a94a2b31e0198c82a488493eaa860ae090ce85c2222c59d162f9e20",
+    "size": 2647
+  },
+  "app\\setup\\races\\page.tsx": {
+    "sha256": "aeb11fab15d5895d303ab385804ce6a6292beef3fba257c7b14acdebe87ba854",
+    "size": 1610
+  },
+  "app\\setup\\strava-app\\page.tsx": {
+    "sha256": "d8faf2668f7f4d468ef8b1a307c0bd6323356aa325de6787a23325ea8939a563",
+    "size": 3194
+  },
+  "app\\setup\\sync\\page.tsx": {
+    "sha256": "c2802a39d0ad1bade97fcec6474c2e18c1dc91e7307c3393f43f9c77bb391d8b",
+    "size": 3823
+  },
+  "app\\setup\\volume\\page.tsx": {
+    "sha256": "f97c733530d730eba9d28f2b5065097b3bd80d800c41f820058c51643cd689ef",
+    "size": 202
+  },
+  "app\\setup\\weekly\\page.tsx": {
+    "sha256": "2cf0afc46096895438289cbf72a2f601ecb9ee9f33eeb2d56a841834e7ddde63",
+    "size": 2282
+  },
+  "check.ps1": {
+    "sha256": "e732581daddca62d5e8dbe4285a8d69373e5afcb75db77500b278f03bc28a0e3",
+    "size": 24540
+  },
+  "cleanup-stray-home-files.ps1": {
+    "sha256": "fb0af7e9007d3d6292776cf83141d4eca0431ab718e8641e6b5fcfd40cfe9365",
+    "size": 3106
+  },
+  "components\\brand\\bundle-version-chip.tsx": {
+    "sha256": "d491d73acc1347a9d7335b9f6a3de362d24a766aee1dfd6509906697f2883b47",
+    "size": 1450
+  },
+  "components\\brand\\logo.tsx": {
+    "sha256": "8ae15c59c6f4a272bb241f571ca9a8b14de0cb5aaf9f0f9ceb1cf8199a3cb87f",
+    "size": 1688
+  },
+  "components\\brand\\wordmark.tsx": {
+    "sha256": "9830f76d5c5367362aaf5e244a05d6cccebca18c9e843ff1904f7d0ae96cd38f",
+    "size": 979
+  },
+  "components\\calendar\\add-personal-day-form.tsx": {
+    "sha256": "4b87c06a21b2b0ccd21fe298342ef2df9a13477fc9b3751327c7cdc7b47cd88a",
+    "size": 2524
+  },
+  "components\\calendar\\capacity-section.tsx": {
+    "sha256": "1323fa5fd27d5c2aee2879f39fa369ad8af195a4d58557273996dffb858d9747",
+    "size": 2615
+  },
+  "components\\calendar\\commitment-section.tsx": {
+    "sha256": "970c82a83563fd60730b8f66bc82aee70e69b9b169d783c5af460ef257b226d7",
+    "size": 6268
+  },
+  "components\\calendar\\goal-race-editor.tsx": {
+    "sha256": "ebccaa2e88f27c9d8a5172f24a69385685ccc2975a133f2c34938983e12a0ed2",
+    "size": 8335
+  },
+  "components\\calendar\\group-run-section.tsx": {
+    "sha256": "d6f80d8b0bcdd7270f8820646a8ab543f957a35fe7f9eae289f9a74552dc6d02",
+    "size": 6234
+  },
+  "components\\calendar\\ninja-loop-section.tsx": {
+    "sha256": "502707f494a44c1eb334c536557a6e5a0e7a330930b8721d4a4c6d1b3540de9a",
+    "size": 9903
+  },
+  "components\\calendar\\race-section.tsx": {
+    "sha256": "f339c2d5a2936701e0b6ff1016e9600071b9d043e44d96628c38121971d0ae81",
+    "size": 5394
+  },
+  "components\\calendar\\tune-up-row.tsx": {
+    "sha256": "e469c9bc94f8e828c99fc05fd3ad81dbf5d2c78cf605c9f377c672c247222bac",
+    "size": 4820
+  },
+  "components\\club-share\\club-share-section.tsx": {
+    "sha256": "36fa1ef5b80994b1099fbcd9842e7393dbe99978cef74611f48177ef9a0afe8b",
+    "size": 10260
+  },
+  "components\\club-share\\terms-modal.tsx": {
+    "sha256": "49fe78e891121b71651673edc4928ec972156f5ba9d6850209e6f35bdedf639c",
+    "size": 9053
+  },
+  "components\\dojo\\backfill-plan-period-button.tsx": {
+    "sha256": "868832a9055f626d0cd26689927a64cd3949e5ca6ce58290c54475717625367e",
+    "size": 3775
+  },
+  "components\\dojo\\dojo-card.tsx": {
+    "sha256": "f7534b8066a0fdb888645e66b32b4cf6c81bdad58bd8d140811dfa6f3df6ebd8",
+    "size": 4309
+  },
+  "components\\dojo\\dojo-picker.tsx": {
+    "sha256": "8be976283cd26ce1d40d3189ca6ebc794c75ccf871c844e8cc27247c3c319909",
+    "size": 3754
+  },
+  "components\\dojo\\level-toggle.tsx": {
+    "sha256": "aa8f6730fcc492a58bc4c9b05d626d44c5c7edc024e4ae4158f2e2dc24846246",
+    "size": 1165
+  },
+  "components\\feedback\\feedback-button.tsx": {
+    "sha256": "8a423e78a7d045c2e21d95c46fec5ffb38071a7986eb9f174ec8506ca3c658c9",
+    "size": 11254
+  },
+  "components\\garmin\\garmin-section.tsx": {
+    "sha256": "9f3e25c2f8918ff58251aeedfbec3a429a35a504338c674bb293dea62f35f5b2",
+    "size": 10637
+  },
+  "components\\nav\\topnav.tsx": {
+    "sha256": "1b222294dea3fcc178dcf592838c568c333eb15c323508197d3b8ce4aa981083",
+    "size": 3484
+  },
+  "components\\patrol\\coach-adjustment-card.tsx": {
+    "sha256": "aa2dd7e533ba8d1dfe8975c4199f05da9b12528a59814815695135deb485cc01",
+    "size": 5424
+  },
+  "components\\patrol\\freshness-chip.tsx": {
+    "sha256": "ff66179ffb062e826a5014a9e76fe846037c00d65a4c60329849bd0ff29f55d7",
+    "size": 5448
+  },
+  "components\\patrol\\intensity-chip.tsx": {
+    "sha256": "8a8fb84c9c92bee84b6ab82cfcde6f4b805a90bec647869cd3d4c006b63bd507",
+    "size": 4089
+  },
+  "components\\patrol\\matrix-cells.tsx": {
+    "sha256": "38fd824f5877de6497c81ba01d63a1368a8531f346cc0f58115d9ad63bfcbc59",
+    "size": 25106
+  },
+  "components\\patrol\\matrix-filter-shell.tsx": {
+    "sha256": "8d56a212c691872ec5c6fb5d712961677e6b53e41f8af64ac21b35f8f154d4dd",
+    "size": 2241
+  },
+  "components\\patrol\\matrix-legend.tsx": {
+    "sha256": "0e166972fa2606a71bb0045e544374abaf00ca9e0d7e5f4ce7f63787e7237e06",
+    "size": 5777
+  },
+  "components\\patrol\\matrix-load-action.ts": {
+    "sha256": "3eec4f7d2e6460f4160af415c4988c975084a943d6c607cf474e05d4b428e069",
+    "size": 14681
+  },
+  "components\\patrol\\program-matrix-expand.tsx": {
+    "sha256": "04327f1283106eb936464732713ddc246ac4f3d597d33fcaca5cee4c5500e8ec",
+    "size": 5536
+  },
+  "components\\patrol\\program-matrix.tsx": {
+    "sha256": "ab3b464420f189568e0fd28e77af6723cab245004c202576e7e004ada81ef170",
+    "size": 20773
+  },
+  "components\\patrol\\progression-flag-card.tsx": {
+    "sha256": "e1e32d533fd267fe4166037561c85db12dddcdeb8e0981908b0b4314f8d0d6b5",
+    "size": 2668
+  },
+  "components\\patrol\\race-countdown.tsx": {
+    "sha256": "01e249dbb868addedbc402434867e8d594b1a39dc61f95962dcca30fe00a97cb",
+    "size": 3440
+  },
+  "components\\patrol\\ramp-card.tsx": {
+    "sha256": "f6fe0a257217783e3686aed6e78b3c9479d8d8dc28982053e76aca9f408024c3",
+    "size": 5886
+  },
+  "components\\patrol\\streak-counter.tsx": {
+    "sha256": "ac39f64bc657111ab332d2bda3482efeb1698333a1e354ceb3d80846cc33dff0",
+    "size": 5105
+  },
+  "components\\patrol\\sync-button.tsx": {
+    "sha256": "d2dbdebfe3ae8623f2809b71713baca159b05f227980a0201e686ffe8be45456",
+    "size": 3394
+  },
+  "components\\patrol\\week-compliance-chip.tsx": {
+    "sha256": "0340689aacedd1840343292d7bb51a09feb2163f6c6ff30200d82970bcccec5c",
+    "size": 3857
+  },
+  "components\\settings\\coach-mode-toggle.tsx": {
+    "sha256": "363f83f4b1e55d6de9c828eec7abf8ea5946e5c1726e7f549fe156b1c3e1c9ff",
+    "size": 2185
+  },
+  "components\\settings\\destructive-forms.tsx": {
+    "sha256": "0c9a4b2bc3c84e17ec0f46de0ccdbf996df6d315b4e26dbe72656f44aebc1213",
+    "size": 3775
+  },
+  "components\\settings\\export-data-button.tsx": {
+    "sha256": "7e45f57e1c76fa4292eb73ac577d1087c28a602afd3df27e9dc84e6845289c71",
+    "size": 3432
+  },
+  "components\\settings\\first-day-of-week-toggle.tsx": {
+    "sha256": "6bf58d802d57251905e021f5c2f7ad7908039083c97161a8cc57284fabbb329f",
+    "size": 2176
+  },
+  "components\\settings\\gear-backfill-button.tsx": {
+    "sha256": "9fb867cb81e4bfcc773f8203f9fbb20086140597bf1d8113bd56a9ecfa891310",
+    "size": 2535
+  },
+  "components\\settings\\streak-mode-toggle.tsx": {
+    "sha256": "e62984464073a79afa6b843131621a73f03e9655e11d50ae197fe4dd0608103d",
+    "size": 1960
+  },
+  "components\\settings\\sync-jobs-table.tsx": {
+    "sha256": "fdc29af0b029c16e2c3e627f46a14783f6749fa5ba167b35034b8c149a980cae",
+    "size": 4277
+  },
+  "components\\shoes\\add-manual-shoe-form.tsx": {
+    "sha256": "8bd695b8ceb0569fc5e8e86186fe925dcc905040a8d3c78a18d25fe89feec6b6",
+    "size": 2772
+  },
+  "components\\shoes\\shoe-card-forms.tsx": {
+    "sha256": "aea09061039e73acddc191d133c943b450b8a1ac6ff270c8b208253a485998b6",
+    "size": 5847
+  },
+  "components\\shoes\\shoe-card.tsx": {
+    "sha256": "7a5f92b6094d2eac8050de8308098aea04b236234c602ae14b7dc7695c59658c",
+    "size": 11121
+  },
+  "components\\shoes\\shoe-nudge-banner.tsx": {
+    "sha256": "ee553c976b0163c97a9498e507dc32abe6500bcd36b9a31c21a4ad12fa4263ec",
+    "size": 2925
+  },
+  "components\\shoes\\shoe-nudge.tsx": {
+    "sha256": "3aa519ce6a98abce2855c379871e7dd3b34334a5b73bffe20c27a1a95d9b287a",
+    "size": 3545
+  },
+  "components\\shoes\\shoe-quick-add.tsx": {
+    "sha256": "ce747a7897639fe6fa6a53ce0ef44eb3a36f67741ce4602d775ea66b2eda4e28",
+    "size": 4652
+  },
+  "components\\shoes\\shoe-row.tsx": {
+    "sha256": "35266c50188845c7f3e95488a87a0c88a8b1378f97bff8cf9e68c23ee2c867e8",
+    "size": 14045
+  },
+  "components\\shoes\\shoe-table.tsx": {
+    "sha256": "27749360b1105d4a7b8e5c17987a8b07271e73bf29f59380aa0de5486411026f",
+    "size": 1204
+  },
+  "components\\strike\\athlete-state-card.tsx": {
+    "sha256": "19c85de7e6dcc7abfa7adbc022533d78b2da787568c46597230d6e7c421c1b65",
+    "size": 3571
+  },
+  "components\\strike\\intensity-history-card.tsx": {
+    "sha256": "4332076d5f69f10c81ae847fa7d2e02bb79ad6d1433a082eac2e08051d72b378",
+    "size": 3134
+  },
+  "components\\strike\\mileage-trajectory-card.tsx": {
+    "sha256": "32612281e2a544bae00ca2ebcf169a8220907acf69d706a9c4d0860ae5dfce70",
+    "size": 2506
+  },
+  "components\\sync\\sync-progress.tsx": {
+    "sha256": "df311f65dca0bf885bf410b9a6b3daa79be3a5a01dd83d24d2154d2c867b6c2b",
+    "size": 5164
+  },
+  "components\\sync\\sync-status-banner.tsx": {
+    "sha256": "4cd7d3dee1e57cafe81565a5b21ff3eddb81a57cddc44668808371c75b708c90",
+    "size": 4270
+  },
+  "components\\theme\\theme-provider.tsx": {
+    "sha256": "9323e579b6e56abcdf1b64aa1e2b2467c339f10117dc5265731bbaba70342d35",
+    "size": 3726
+  },
+  "components\\theme\\theme-toggle.tsx": {
+    "sha256": "cf255e53ee3abf23974f542cf10467cfbe4353a1409ecaf25e812bb9e3bb2a18",
+    "size": 1997
+  },
+  "components\\ui\\button.tsx": {
+    "sha256": "6097bac6554c9bc94a4e50f2b89272422d022ef37c824df60b42e82695e06f9c",
+    "size": 1986
+  },
+  "components\\ui\\card.tsx": {
+    "sha256": "7b139ee1cdaacd58a7ba1b5facf761725ae111c98abb4a43e36d2243deff4f71",
+    "size": 1688
+  },
+  "components\\ui\\empty-state.tsx": {
+    "sha256": "330f741ae97143df6ee1106b3645505efa6438ea6c171b03961818555fee8b4d",
+    "size": 1361
+  },
+  "components\\ui\\field-help.tsx": {
+    "sha256": "0b15f24016481c9f285cef795434b2be251fda32961b31c0dd020c22352f43d2",
+    "size": 409
+  },
+  "components\\ui\\hover-card.tsx": {
+    "sha256": "2f5e1401540294d52f52b0ce91e3522baf35f016f432cdb23994d91659867534",
+    "size": 2014
+  },
+  "components\\ui\\input.tsx": {
+    "sha256": "3e2f5a08ff2dd50f941e5d2a51f0c14ee79edcd92eda0c8490a5ea4180760a38",
+    "size": 937
+  },
+  "components\\ui\\page-stub.tsx": {
+    "sha256": "342a311a813564e1c921bcb0afecefd9c08ae555b799e3dfbb245e10f1110c19",
+    "size": 1835
+  },
+  "components\\ui\\stat.tsx": {
+    "sha256": "bc708220a8b3339b037bfa5ce5da3c815db895c85f8b85c1dd427fa2b2ac5107",
+    "size": 1288
+  },
+  "components\\ui\\stepper.tsx": {
+    "sha256": "80e4d1e4e84f1f4073451a6bb95a2a2765ae10d342ffae361126050488d03340",
+    "size": 1409
+  },
+  "data\\shoe-retailers.csv": {
+    "sha256": "8353cfd40953b5ac88f51f22bfdcd503dcb693292bf0b621732b0b842ae1b319",
+    "size": 772
+  },
+  "data\\shoes-database.csv": {
+    "sha256": "316660656d8e01bde08e9fce4486c9cb9208f0fb64f2d292323d5d6093f8502e",
+    "size": 7473
+  },
+  "drizzle.config.ts": {
+    "sha256": "8b6f68e47c5df1688a1f4adeffc0ccacc9eb67fd661b0d218335d1b8aee63689",
+    "size": 362
+  },
+  "extract-bundle.ps1": {
+    "sha256": "54668b2f638b3675e22c7ee79f7b287b66de92e502300c3fe47829ad871bfeb4",
+    "size": 6652
+  },
+  "fix-test-script.ps1": {
+    "sha256": "196d47c14c02ee797d99dc9a9748a801271b4c1efb0568630abbd30eee3fc1dc",
+    "size": 2012
+  },
+  "github-setup.ps1": {
+    "sha256": "2f9259fb6a26246a12e5cbce5918718234eba86dafead7d90f14421b832f259c",
+    "size": 20039
+  },
+  "kill-port.ps1": {
+    "sha256": "9b3683dcd122b3a9821e7adcf984bd8545f00b6071a7dd03531957e26c1ba5f9",
+    "size": 4590
+  },
+  "lib\\actions\\backfill-plan-period.ts": {
+    "sha256": "c8e785a578997b1b5ce5ae732c89651e1e136c31af7ac1d92908282cb379245e",
+    "size": 1718
+  },
+  "lib\\actions\\calendar-events.ts": {
+    "sha256": "f8132c8eec1f06f905e783fd437d64bb99c2faa8890ed127d53bd2019002de74",
+    "size": 2893
+  },
+  "lib\\actions\\capacity.ts": {
+    "sha256": "faf96aea19c3f9c681ec33ee9b752c02d896451a224d3c844ab6ef3791a2cda3",
+    "size": 1362
+  },
+  "lib\\actions\\coach-mode.ts": {
+    "sha256": "72404bee0247ffc699d6647320e421f92c5e74327e733774c1cf33ea3b66ab70",
+    "size": 408
+  },
+  "lib\\actions\\dojo.ts": {
+    "sha256": "24a4458c95b0b1abc5036a6539938c23d17a59a21549051cb5c9fea7f04d838b",
+    "size": 1049
+  },
+  "lib\\actions\\first-day-of-week.ts": {
+    "sha256": "518131e1220cdff5e7ed7eb5af1eeeb6278c17581481f453543c6d2c80fbaafb",
+    "size": 714
+  },
+  "lib\\actions\\garmin.ts": {
+    "sha256": "aa67a22a4612caed1373add762089e8579fefc8f49f4ab57d8b5101dbb32d57e",
+    "size": 1998
+  },
+  "lib\\actions\\generate-club-share.ts": {
+    "sha256": "1d6139d0b0b48f0b4a0597ae01da9403c7e683178ca171424c5b45fff6fdfaa1",
+    "size": 11525
+  },
+  "lib\\actions\\plan-adjustments.ts": {
+    "sha256": "73224296e9ba62f361f51b15d4604e4cb75ef6168a1e7bd01317c3194333dcda",
+    "size": 1386
+  },
+  "lib\\actions\\races.ts": {
+    "sha256": "018aea6f68c9f32695ddee970614e2c47d6a8885380c27c591e2b549a4579dba",
+    "size": 4945
+  },
+  "lib\\actions\\recurring-sessions.ts": {
+    "sha256": "66a04c5fabe4da4d0c54afc7e063d9054770c9ba760aebc2d44c5e44b2676940",
+    "size": 1895
+  },
+  "lib\\actions\\refresh-holidays.ts": {
+    "sha256": "a15a993a5511a7b80f3bf530bf002f1622acb9e3d9a5bedb1a28c79d60b7e274",
+    "size": 5791
+  },
+  "lib\\actions\\settings-admin.ts": {
+    "sha256": "d2b351d99f3b4e8402f094cf28e03e045c2861bf3c83d249df71eb9b3756157a",
+    "size": 6394
+  },
+  "lib\\actions\\shoes.ts": {
+    "sha256": "32533a7e1c73f6c19f36f3a5d66acd4287ccc036b8ec5efd2b6cdf16a916d756",
+    "size": 11194
+  },
+  "lib\\actions\\streak-settings.ts": {
+    "sha256": "41be3ce71f694fa359e3795b16bb9c444554959cc2c74684f5ea72e39b095ed3",
+    "size": 567
+  },
+  "lib\\actions\\switch-dojo.ts": {
+    "sha256": "d4c346ab12693f83c9114396fe0865444968e3170be4a895e7cec2e2825c1cb7",
+    "size": 2201
+  },
+  "lib\\actions\\sync.ts": {
+    "sha256": "83855ff8ca342ca7cdae76ab9886fc5d16d0af475c5037b6a45f428fbdaea504",
+    "size": 3118
+  },
+  "lib\\analysis\\athlete-state-pure.ts": {
+    "sha256": "c6ed3b79408bb77c0b5f619ad7fe51bd2db8a0b9309306dd651358731906ade2",
+    "size": 2860
+  },
+  "lib\\analysis\\athlete-state.test.ts": {
+    "sha256": "66123f805529561d2aeca9a5403a8e95bf866be3eaeba9af7762ff123b2f1bd7",
+    "size": 4383
+  },
+  "lib\\analysis\\athlete-state.ts": {
+    "sha256": "ac2321eda6a5946625303b4b61df7dd219bfe7b39e5448f6fde6b4d10e38a4e6",
+    "size": 3371
+  },
+  "lib\\analysis\\best-week.ts": {
+    "sha256": "3e317e58a0e9f7d2c346ba72b4f6d1c850a04e003030b1c0fe8e87446691269b",
+    "size": 1760
+  },
+  "lib\\analysis\\compliance.ts": {
+    "sha256": "a372e31c46a3b00121dca2633d8e0c36c2bcf7e66473c97451699cddcbf36281",
+    "size": 4696
+  },
+  "lib\\analysis\\intensity-distribution.ts": {
+    "sha256": "5dc41a99e4e21a66ca197a285d722d167d6558817be3b84abe2e943a78db97bf",
+    "size": 3523
+  },
+  "lib\\analysis\\load.test.ts": {
+    "sha256": "b746cbe2c36dc8d49a8ef6b99d9334ec7eabac5d244a129b66ea49d3e4cc9bed",
+    "size": 8959
+  },
+  "lib\\analysis\\load.ts": {
+    "sha256": "197eaead36e39317fdfabda4e90c9f5452feff7e8f8dbb89ecc0b95429c14ed4",
+    "size": 10450
+  },
+  "lib\\analysis\\observations.ts": {
+    "sha256": "4d93776611e305a071e8d80e011693204bb171be82010e6cb769843c71aea597",
+    "size": 10399
+  },
+  "lib\\analysis\\progression.ts": {
+    "sha256": "afbdb9327d7f890d0728b9a0eaa6b6b24e2c7a376dd7389ac7108c70033bafa4",
+    "size": 8948
+  },
+  "lib\\analysis\\recent-weeks.ts": {
+    "sha256": "9066f9c21419ae11a2f03590c7318418c7261edfcd1da3ab1ea7b4f990f24c3a",
+    "size": 8917
+  },
+  "lib\\analysis\\sport-classifier.ts": {
+    "sha256": "62983c70d16de5d1944da9122f730e1020530fdaa381dd9daddebb314a488871",
+    "size": 4433
+  },
+  "lib\\analysis\\streak.ts": {
+    "sha256": "c9eb1ea7955c21bbdea9a0b703915bd060142ea09debc39a739c4d6a4118730e",
+    "size": 3792
+  },
+  "lib\\analysis\\week-queries.ts": {
+    "sha256": "40e5b193e64dce58968dfec66be42824a55545881dab34baa8577e3f0fc733fd",
+    "size": 3212
+  },
+  "lib\\analysis\\weekly-history.ts": {
+    "sha256": "35d67276dcccfa8cdeb36539b97b17d174b87418e433dbe492b86144e7990694",
+    "size": 2585
+  },
+  "lib\\bundle-version.ts": {
+    "sha256": "a08124cdfbfad26489d50cf8bdcfd7b3781b0826e179ed437047792a33a81f50",
+    "size": 2610
+  },
+  "lib\\club-share\\generator.test.ts": {
+    "sha256": "4ff66aac0f97ca6c583fc1903d928076cddddac2918d1bab8e123160d3301afb",
+    "size": 8995
+  },
+  "lib\\club-share\\generator.ts": {
+    "sha256": "605b2669bc7b06a6484045af1b9104568da57abe22255deb20f02dfcf94ab06d",
+    "size": 7894
+  },
+  "lib\\club-share\\types.ts": {
+    "sha256": "69248ecc90148a218cec768ed81d6ac0c3e89ccbdb6a7bfd21e88e58456821c2",
+    "size": 3254
+  },
+  "lib\\constants\\settings-keys.ts": {
+    "sha256": "052964d235ff407dfea5fb32e8c4b4d3baa103e90b719a1dd24874d3a37592a9",
+    "size": 593
+  },
+  "lib\\data\\nz-holidays.ts": {
+    "sha256": "948bf901152cf49f56084b16f81974ba2f269b226a69538fc3382f9c9719a22a",
+    "size": 1952
+  },
+  "lib\\db\\data-dir.ts": {
+    "sha256": "397f84585d8512c1c97e299514a2b88ef4a2d55aa627b0390698c0e078606ae5",
+    "size": 1332
+  },
+  "lib\\db\\index.ts": {
+    "sha256": "c3b5a9983cf9ee0993bc6760f27602a1bca8df223f37a6d1f032a70704497f4c",
+    "size": 795
+  },
+  "lib\\db\\migrations\\0001_calendar.sql": {
+    "sha256": "fb230beaaf99d5cfe16db0df9f410e9aed5d809e46ec9d69d95353715eebe8ca",
+    "size": 1873
+  },
+  "lib\\db\\migrations\\0002_nz_holidays.sql": {
+    "sha256": "2af36dc5bd76660a1cc7b7457a404ae0732484ccfa3409e541ab181eed8db149",
+    "size": 700
+  },
+  "lib\\db\\migrations\\0003_sync_jobs.sql": {
+    "sha256": "f949ae590e56443faad368b0d7a525e77b30a99095a7663386b45f16042dd882",
+    "size": 1074
+  },
+  "lib\\db\\migrations\\0004_shoes.sql": {
+    "sha256": "6c18b6f2e24d76b386015705a58989d88add118db593e5ddeff556f139673f45",
+    "size": 2100
+  },
+  "lib\\db\\migrations\\0005_plan_periods.sql": {
+    "sha256": "2e23429a6f5a7bf60c623529d669e89a676c4c3c4b8844d53c5c4fbac9e52622",
+    "size": 789
+  },
+  "lib\\db\\migrations\\0006_plan_adjustments.sql": {
+    "sha256": "ce2606ec084704a890d3854d34e6890f1ab17bec3cc9eb6ca04ded7dc5f96713",
+    "size": 741
+  },
+  "lib\\db\\migrations\\0007_daily_health_metrics.sql": {
+    "sha256": "9de6706d281eb586a035a86256c8a0e866ddbc8dcbc8289ecf100a3ff7775c97",
+    "size": 848
+  },
+  "lib\\db\\schema.ts": {
+    "sha256": "1d9663cdffc6c9937eb8a1ba01d209135029cdccaefeaa45971228062ae7e33d",
+    "size": 26956
+  },
+  "lib\\garmin\\client.ts": {
+    "sha256": "f8e10aa6da697a96ff52391d82f50a57d24657e793dce9619c424c484c31e5ab",
+    "size": 7056
+  },
+  "lib\\garmin\\mapper.test.ts": {
+    "sha256": "53b0efaf9190a25c1e57b05f592ff40db3b81304d093e27be459dc7083c4c88d",
+    "size": 3817
+  },
+  "lib\\garmin\\mapper.ts": {
+    "sha256": "cc82f1fb21cb118ab34c3cef6c8c15209fb7302ede1883fe24d8282c6dad2402",
+    "size": 4372
+  },
+  "lib\\garmin\\mfa-auth.ts": {
+    "sha256": "94c8e1ff9645fa473de4e1ac3a5b21e67746103a7998609510894ee0bf80ac13",
+    "size": 5642
+  },
+  "lib\\garmin\\sync.ts": {
+    "sha256": "eee88440ae583486e61ff7831b1894ec5c7a8fbc1b5b73683503539cfcf42152",
+    "size": 2514
+  },
+  "lib\\garmin\\types.ts": {
+    "sha256": "9e3f8bd2b2d6ca119f747cd465cb219abf5d86c763f1a52d9ca521ff9f100a90",
+    "size": 1363
+  },
+  "lib\\plans\\__snapshots__\\engine-snapshot.test.ts.snap": {
+    "sha256": "601e73d3d0eddafafc9e951dbf902c498a899ad5678d14d59ee6a7caf2e37609",
+    "size": 70287
+  },
+  "lib\\plans\\active-plan.ts": {
+    "sha256": "ac5d2c20abf91a9b6f4e9e856e83e80075bd4fb47884e0cd0146a6185c766d13",
+    "size": 4856
+  },
+  "lib\\plans\\base-maintenance.ts": {
+    "sha256": "08dce9937d1cbdfa00434274e0e0e824bbc41277e6cf639f3e8b2944c83615b0",
+    "size": 9490
+  },
+  "lib\\plans\\calendar-blocks.ts": {
+    "sha256": "e4d887a8ed6c4993cfcc2b35546b89c59dde2e0412a7edb195cee04a484f5dd8",
+    "size": 15204
+  },
+  "lib\\plans\\custom.ts": {
+    "sha256": "41453a95d90fbf2b6618db417c1cf9219adeb4d5d497d7c7ed0553a95a0b3bb8",
+    "size": 4305
+  },
+  "lib\\plans\\daniels.ts": {
+    "sha256": "93db2a9a285b4b3aff0e147eb2b03dd14db562d0f0356a012adb592a9eaab995",
+    "size": 5237
+  },
+  "lib\\plans\\derive.ts": {
+    "sha256": "d6ff717be9b52150280b746718c44473db86b01de54996e08911b4825d9e9b28",
+    "size": 2867
+  },
+  "lib\\plans\\distribute-events.ts": {
+    "sha256": "e2ba9bea3be4daf7cdfd040a1d4bbf7572b614ac5ab69e0a57bf004b4851a77a",
+    "size": 2422
+  },
+  "lib\\plans\\dojo-card-meta.ts": {
+    "sha256": "4a0eb19498fb637a5c5e8d033febad9b8eb8c32b37ea9947bd2cb26435530948",
+    "size": 5099
+  },
+  "lib\\plans\\dow-display.ts": {
+    "sha256": "50b2e493f0b07efb29fe5711e670fbff80454624bebe89a7673cd866e5cf2022",
+    "size": 1387
+  },
+  "lib\\plans\\engine-snapshot.test.ts": {
+    "sha256": "63182d505eede1636758e9357a410f7d9f062da3e46a2f1331bcb6660dace6c7",
+    "size": 4101
+  },
+  "lib\\plans\\hansons.ts": {
+    "sha256": "673183e30d4679a602b61b850d5a5af094afc4297038026619fc394cc17c1c56",
+    "size": 8268
+  },
+  "lib\\plans\\higdon.ts": {
+    "sha256": "7651e039836d29b4562060be93513367ae13686a66a424078bfc4e7dba4d66b2",
+    "size": 6528
+  },
+  "lib\\plans\\index.ts": {
+    "sha256": "e4223ae1e510f0a44ca7bd98124be60b3733ba8552f1de35edcb141eb5f74acb",
+    "size": 1156
+  },
+  "lib\\plans\\lydiard.ts": {
+    "sha256": "1a2127ac9341762e7c95e9bbc0ac9fe5dddf239afa29424c6ccc9c2be9a804e2",
+    "size": 7321
+  },
+  "lib\\plans\\norwegian-singles.ts": {
+    "sha256": "f180d8c4245369eb3b225a5acd1f2dbc8f7947214f1897d67a7791f9544fab94",
+    "size": 9098
+  },
+  "lib\\plans\\pfitzinger.ts": {
+    "sha256": "ba8d41cd9c672949ef26308e40dacd3e83ce46e21584644ab4608de15bf48030",
+    "size": 5506
+  },
+  "lib\\plans\\plan-periods.ts": {
+    "sha256": "7d7708dfacd5946bd2a0da22dda239eca5c427180582a6d8cf033fe82e0f6baf",
+    "size": 8317
+  },
+  "lib\\plans\\polarised.ts": {
+    "sha256": "943a402be8e5ed8bc16c718d78c2110024a51b64fa697644a8763a0ba62b3953",
+    "size": 5273
+  },
+  "lib\\plans\\program-phase.ts": {
+    "sha256": "5305a7af9612c42d12b21a57be18346edef96fa933527eb306e858ea11a2ccb9",
+    "size": 8008
+  },
+  "lib\\plans\\ramp-loader.ts": {
+    "sha256": "e6b890f3f77bb9b42a175f7eb8cc657593f45a8e07a87e519d2c8167e0a12b7f",
+    "size": 2730
+  },
+  "lib\\plans\\ramp.ts": {
+    "sha256": "36a008bc707c7c6ad551fc68584082e58c1886b1f06465f3b96b2e7a98c88c7a",
+    "size": 8213
+  },
+  "lib\\plans\\state-aware-week.ts": {
+    "sha256": "6c215a809550d7c6d800feff3e022c626cc143449c55250fb1b4a85b9d77f5a8",
+    "size": 7472
+  },
+  "lib\\plans\\state-awareness.test.ts": {
+    "sha256": "853348df3cbf3371853cdb6ba9f459887bf5f83fbf59fb9bd193d85959e2ff21",
+    "size": 7653
+  },
+  "lib\\plans\\state-awareness.ts": {
+    "sha256": "c2c8300fc8f0ab03f49ddc5f2bf107ab7da48fa05f1b6b9609ac57dd7c003d8e",
+    "size": 10766
+  },
+  "lib\\plans\\types.ts": {
+    "sha256": "32de483498a29a5965e450d6ac037e2ea05c995004948f89ffd114743c116688",
+    "size": 12782
+  },
+  "lib\\plans\\ultra.ts": {
+    "sha256": "2e876103ec671daa8e825d0b3c30f3d274e5a3d4f6335b7b440a56e79aa47c22",
+    "size": 4688
+  },
+  "lib\\plans\\week-context.ts": {
+    "sha256": "6f8b1d28c5490a5a9a035d1da2af83db30c8a62a6b86adc473fdfd7df7bf3aec",
+    "size": 4753
+  },
+  "lib\\shoes\\backfill.ts": {
+    "sha256": "a0e0dcd6faecf3a798f281e9178ced36823f4af44593bed5fe38c10ce3fabfd9",
+    "size": 5840
+  },
+  "lib\\shoes\\database.ts": {
+    "sha256": "c3622838377f240bacae31176c33fdc2026625961121c56bf827280d140b7660",
+    "size": 4561
+  },
+  "lib\\shoes\\ingest.ts": {
+    "sha256": "1b4901375f5fdaa40c4570918e46cf7a4de6db5a97d13e38435f5f3ea71534a6",
+    "size": 3646
+  },
+  "lib\\shoes\\queries.ts": {
+    "sha256": "9dd47eef6dc0b01ababb40c93c1d08602828f9f9acfc6bc365dc30454ef58817",
+    "size": 10470
+  },
+  "lib\\shoes\\retailer-types.ts": {
+    "sha256": "4de54a17bc6377deb2813eb6ab9ff150ce41a8f6cd950c65410c3f453a42ee82",
+    "size": 1130
+  },
+  "lib\\shoes\\retailers.ts": {
+    "sha256": "c0dcc1367514f72095adc7758d3b235d9d7b2528e24d1a127300330c37223957",
+    "size": 1720
+  },
+  "lib\\sources\\nz-holidays.ts": {
+    "sha256": "c51bd0737fbaaa8e085c03fcd84ecbe41b65088fc715796f7e82ba074fc9e3e1",
+    "size": 4056
+  },
+  "lib\\sources\\strava-api.ts": {
+    "sha256": "fbcf95774b4d1528f92ef6c19a0998864a2da72175aa794ad10c2d32fab4a6a3",
+    "size": 7247
+  },
+  "lib\\sources\\strava-mapper.ts": {
+    "sha256": "71e939c460cc1d790a691098b06b142472b1697c7c1201b1fad53b0de4e792da",
+    "size": 1481
+  },
+  "lib\\sources\\strava.ts": {
+    "sha256": "9d016dc4d6d19746a0f087773d2c653f51b404fe6ad40b902616451cbed7c5ac",
+    "size": 4402
+  },
+  "lib\\sources\\sync-runner.ts": {
+    "sha256": "3c61fc96101d7ef8b47586d2499d9f4cabbad4c1fcd4ea34524060fe07229e99",
+    "size": 12525
+  },
+  "lib\\store\\instrument.ts": {
+    "sha256": "af0ec2a93c23c2fae7dfc710fb1127bd956791da6f931b9a9a6796d8e8e0c2f7",
+    "size": 2025
+  },
+  "lib\\store\\secrets.ts": {
+    "sha256": "633f7e697d13f122036571923da8b145b8de4cc4f6fe4f0c2a09dede32140fe5",
+    "size": 4599
+  },
+  "lib\\store\\settings.ts": {
+    "sha256": "4c74871a089767bbc98c800fb84e08ea6daa0f6b969811e1819d644e8bf3d9b9",
+    "size": 8530
+  },
+  "lib\\store\\usage-log.ts": {
+    "sha256": "bb6b4004b4240fa25435d90ff9a2657932aaa967506bda8eddf57e0876a0d312",
+    "size": 4612
+  },
+  "lib\\utils.ts": {
+    "sha256": "cd305ff87877701df72c4ce8426b56632d4bc00263e1c63417e853f2cb11d1ae",
+    "size": 305
+  },
+  "next.config.mjs": {
+    "sha256": "506747b60cd0e4acffb67e1c9d44a83512ab8781c5df79be9c35e959d20114dd",
+    "size": 519
+  },
+  "package.json": {
+    "sha256": "7ef3d8950ea8007a1f6a1a9fb7131a9a73ec5672ebfe47f46d71f1c2014e67e1",
+    "size": 1400
+  },
+  "postcss.config.mjs": {
+    "sha256": "e32657baf631d7c5f4dc67b4b2ee0ec8e7d5b3c41860e09cddce7c0377cd80bc",
+    "size": 81
+  },
+  "public\\README.md": {
+    "sha256": "5c6d8044299091f3e0047c70925fe70c3b13af240b23d3e17b038b573c26371a",
+    "size": 622
+  },
+  "recover-node-modules.ps1": {
+    "sha256": "19a0af86cb37fb629512c3de6098a1055c87ccb8853f2d93b778cd8f4824666f",
+    "size": 7956
+  },
+  "repair-db.ps1": {
+    "sha256": "ba4a8949457b03fb904161b000463e8191cc839cee628eee5b6cc0bd3a9e151b",
+    "size": 2043
+  },
+  "scripts\\list-tables.js": {
+    "sha256": "34fcb82bedaac1211874370af78174dac5186d470fa1880a6575d595c44fc4a3",
+    "size": 1227
+  },
+  "scripts\\run-migrations.js": {
+    "sha256": "4af4075c6fe985f27f7ec662cb6ddd471228f5e0f65c95f213a0a24b0ce29490",
+    "size": 4505
+  },
+  "tailwind.config.ts": {
+    "sha256": "156f6da819d3c7f8bb01bee065245ee84c227677cfa4d2b2ddcbaeb6eb2dccc0",
+    "size": 3813
+  },
+  "tsconfig.json": {
+    "sha256": "9effb181e7fa4768405944a925f8e62ac7090fe94a104363f7842ba8e2e7fca7",
+    "size": 612
+  },
+  "verify-bundle-sync.ps1": {
+    "sha256": "7a2df4d5fbee12184cd35b3ec5d8ebea4b56bc29bbe70b24dbba6a9e7dc05c63",
+    "size": 9787
+  },
+  "vitest.config.ts": {
+    "sha256": "cf4af6dcc0da3752215cd3e306eb40d8e984d2e75613c17d695f6be4fd84764a",
+    "size": 1013
+  }
+}

@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * Stepper — wizard progress indicator. Horizontal row of small numbered
- * cells, the active one accented with ninja-red. Brutalist not friendly.
+ * cells, the active one accented with accent. Brutalist not friendly.
  */
 export function Stepper({
   steps,
@@ -25,7 +25,7 @@ export function Stepper({
               className={cn(
                 'flex items-center gap-2 px-3 h-8 border',
                 state === 'active' &&
-                  'border-ninja-red bg-ninja-red text-bone',
+                  'border-accent bg-accent text-bone',
                 state === 'done' &&
                   'border-bone-dim text-bone-dim',
                 state === 'pending' &&

@@ -3,15 +3,16 @@ import { Card, CardLabel } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { getDb, schema } from '@/lib/db';
-import { saveCapacity, KEY_WEEKLY, KEY_LONG } from '@/lib/actions/capacity';
+import { saveCapacity } from '@/lib/actions/capacity';
+import { SETTINGS_KEYS } from '@/lib/constants/settings-keys';
 
 async function readCapacity(): Promise<{ weeklyKm: string; longKm: string }> {
   const db = getDb();
   const rows = await db.select().from(schema.settings).all();
   const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
   return {
-    weeklyKm: map[KEY_WEEKLY] ?? '',
-    longKm: map[KEY_LONG] ?? '',
+    weeklyKm: map[SETTINGS_KEYS.CAPACITY_WEEKLY] ?? '',
+    longKm: map[SETTINGS_KEYS.CAPACITY_LONG] ?? '',
   };
 }
 

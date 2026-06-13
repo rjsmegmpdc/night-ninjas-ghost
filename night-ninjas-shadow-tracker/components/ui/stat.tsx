@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
  * mono-spaced value. Used everywhere in the dashboard to show paces,
  * distances, times, counts.
  *
- * Optional `accent` prop tints the value ninja-red — used for current
+ * Optional `accent` prop tints the value accent — used for current
  * state (this week's volume, latest PB) and missed compliance.
  */
 export function Stat({
@@ -38,7 +38,7 @@ export function Stat({
           className={cn(
             'nn-stat font-mono tabular-nums leading-none',
             valueSize,
-            accent ? 'text-ninja-red' : 'text-bone'
+            accent ? 'text-accent' : 'text-bone'
           )}
         >
           {value}
