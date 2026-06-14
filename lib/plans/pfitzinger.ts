@@ -149,6 +149,12 @@ function entryWeeklyLoadKm(level: 'beginner' | 'intermediate' | 'advanced'): num
 
 export const pfitzinger: PlanEngine = {
   dojo: 'pfitzinger',
+  stateProfile: {
+    // High-mileage but threshold-led; slightly tighter than Hansons.
+    tsbFloor: { base: -18, build: -25, peak: -25, taper: -8 },
+    protectedTypes: ['tempo', 'long'],
+    preferIntensityCut: false,
+  },
   displayName: 'Pfitzinger Advanced Marathoning',
   philosophy: PHILOSOPHY,
   defaultProgramWeeks: 18,

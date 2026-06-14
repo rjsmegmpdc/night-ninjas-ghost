@@ -18,7 +18,7 @@ import {
  */
 export default function HelpPage() {
   return (
-    <div className="px-4 sm:px-8 lg:px-12 py-10 max-w-4xl mx-auto space-y-8">
+    <div className="px-12 py-10 max-w-4xl mx-auto space-y-8">
       <header className="border-b border-ink-line pb-6 space-y-1">
         <span className="nn-caps">profile - reference</span>
         <h1 className="font-display tracking-wide-display text-5xl uppercase">
@@ -31,7 +31,7 @@ export default function HelpPage() {
       </header>
 
       {/* ----- Quick start ----- */}
-      <section id="quick-start" className="space-y-4 scroll-mt-20">
+      <section id="quick-start" className="space-y-4">
         <SectionHeading icon={Compass} label="quick start">
           What this app actually does
         </SectionHeading>
@@ -66,7 +66,7 @@ export default function HelpPage() {
       </section>
 
       {/* ----- Glossary ----- */}
-      <section id="glossary" className="space-y-4 scroll-mt-20">
+      <section id="glossary" className="space-y-4">
         <SectionHeading icon={BookOpen} label="glossary">
           What the words mean
         </SectionHeading>
@@ -92,7 +92,7 @@ export default function HelpPage() {
       </section>
 
       {/* ----- Screens ----- */}
-      <section id="screens" className="space-y-4 scroll-mt-20">
+      <section id="screens" className="space-y-4">
         <SectionHeading icon={Layout} label="the screens">
           What each screen is for
         </SectionHeading>
@@ -145,7 +145,7 @@ export default function HelpPage() {
       </section>
 
       {/* ----- Common tasks ----- */}
-      <section id="tasks" className="space-y-4 scroll-mt-20">
+      <section id="tasks" className="space-y-4">
         <SectionHeading icon={Wrench} label="common tasks">
           When life happens
         </SectionHeading>
@@ -265,7 +265,7 @@ export default function HelpPage() {
       </section>
 
       {/* ----- Compliance flags ----- */}
-      <section id="flags" className="space-y-4 scroll-mt-20">
+      <section id="flags" className="space-y-4">
         <SectionHeading icon={Flag} label="compliance flags">
           What the flags mean
         </SectionHeading>
@@ -285,7 +285,7 @@ export default function HelpPage() {
       </section>
 
       {/* ----- Privacy ----- */}
-      <section id="privacy" className="space-y-4 scroll-mt-20">
+      <section id="privacy" className="space-y-4">
         <SectionHeading icon={Shield} label="privacy & data">
           Where your data lives
         </SectionHeading>
@@ -342,7 +342,7 @@ export default function HelpPage() {
       </section>
 
       {/* ----- Troubleshooting ----- */}
-      <section id="troubleshooting" className="space-y-4 scroll-mt-20">
+      <section id="troubleshooting" className="space-y-4">
         <SectionHeading icon={LifeBuoy} label="troubleshooting">
           When things go wrong
         </SectionHeading>

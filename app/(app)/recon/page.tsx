@@ -5,6 +5,8 @@ import { ScanEye, TrendingUp, TrendingDown, Minus, AlertTriangle, Info } from 'l
 import { logPageView } from '@/lib/store/instrument';
 import { evaluateRecentWeeks, buildReconAggregate, type WeekEvaluation } from '@/lib/analysis/recent-weeks';
 import { deriveObservations, type Observation } from '@/lib/analysis/observations';
+import { getTrendsBundle } from '@/lib/analysis/trends';
+import { MonthlyVolumeCard, ZoneDistributionCard, LoadRecoveryCard } from '@/components/recon/trends-cards';
 import { getDb, schema } from '@/lib/db';
 import { getActivePlan } from '@/lib/plans/active-plan';
 
@@ -31,7 +33,7 @@ export default async function ReconPage() {
 
   if (activityCount === 0) {
     return (
-      <div className="px-4 sm:px-8 lg:px-12 py-10 max-w-7xl mx-auto space-y-8">
+      <div className="px-12 py-10 max-w-7xl mx-auto space-y-8">
         <Header />
         <EmptyState
           label="recon · no data yet"
@@ -45,7 +47,7 @@ export default async function ReconPage() {
 
   if (!activePlan) {
     return (
-      <div className="px-4 sm:px-8 lg:px-12 py-10 max-w-7xl mx-auto space-y-8">
+      <div className="px-12 py-10 max-w-7xl mx-auto space-y-8">
         <Header />
         <EmptyState
           label="recon · plan not configured"
@@ -59,18 +61,19 @@ export default async function ReconPage() {
 
   const result = await evaluateRecentWeeks(12);
   const aggregate = await buildReconAggregate();
+  const trends = await getTrendsBundle();
 
   // Need at least 4 weeks of evaluable data for trends to be meaningful
   const evaluableCount = result.weeks.filter((w) => w.compliance).length;
   if (evaluableCount < 4) {
     return (
-      <div className="px-4 sm:px-8 lg:px-12 py-10 max-w-7xl mx-auto space-y-8">
+      <div className="px-12 py-10 max-w-7xl mx-auto space-y-8">
         <Header />
         <Card className="space-y-4 max-w-2xl border-bone-mute/30">
           <CardLabel>not enough data yet</CardLabel>
           <p className="text-bone-dim text-sm leading-relaxed">
             Recon needs at least 4 weeks of training history with an active
-            plan to show meaningful trends. You currently have {evaluableCount}{' '}
+            plan to show meaningful compliance trends. You currently have {evaluableCount}{' '}
             week{evaluableCount === 1 ? '' : 's'} of evaluable data.
           </p>
           <p className="text-bone-dim text-sm leading-relaxed">
@@ -79,6 +82,18 @@ export default async function ReconPage() {
             shows compliance for the current week.
           </p>
         </Card>
+
+        {/* Volume / intensity / load trends work from raw activity data, so
+            they're shown even before compliance trends are meaningful. */}
+        {trends.hasData && (
+          <div className="space-y-6">
+            <MonthlyVolumeCard monthly={trends.monthly} />
+            <div className="grid lg:grid-cols-2 gap-6">
+              <ZoneDistributionCard zones={trends.zones} />
+              <LoadRecoveryCard load={trends.load} />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -91,6 +106,17 @@ export default async function ReconPage() {
 
       {/* Three big numbers */}
       {aggregate && <AggregateRow aggregate={aggregate} />}
+
+      {/* R2 - volume / intensity / load-recovery trends from activity data */}
+      {trends.hasData && (
+        <div className="space-y-6">
+          <MonthlyVolumeCard monthly={trends.monthly} />
+          <div className="grid lg:grid-cols-2 gap-6">
+            <ZoneDistributionCard zones={trends.zones} />
+            <LoadRecoveryCard load={trends.load} />
+          </div>
+        </div>
+      )}
 
       {/* Compliance heatmap */}
       <ComplianceHeatmap weeks={result.weeks} />
@@ -181,7 +207,7 @@ function BigStat({
 
   return (
     <div className="bg-ink p-6 space-y-3">
-      <div className="nn-caps">{label}</div>
+      <div className="nn-caps text-[10px]">{label}</div>
       <div className="flex items-baseline gap-2">
         <span className="font-mono text-4xl text-bone tabular-nums">{value}</span>
         <span className="font-mono text-sm text-bone-mute">{unit}</span>
@@ -205,20 +231,19 @@ function BigStat({
           <span className="text-bone-mute">{deltaUnit}</span>
         </div>
       )}
-      {sparkline && sparkline.length > 0 && <Sparkline values={sparkline} label={`${label} trend over 12 weeks`} />}
+      {sparkline && sparkline.length > 0 && <Sparkline values={sparkline} />}
     </div>
   );
 }
 
 /** Tiny inline sparkline rendered as SVG. */
-function Sparkline({ values, label = 'Trend sparkline' }: { values: number[]; label?: string }) {
+function Sparkline({ values }: { values: number[] }) {
   if (values.length < 2) return null;
   const max = Math.max(...values);
   const min = Math.min(...values);
   const range = max - min || 1;
   const width = 120;
   const height = 24;
-  const titleId = `sparkline-${label.toLowerCase().replace(/\s+/g, '-')}`;
 
   const points = values.map((v, i) => {
     const x = (i / (values.length - 1)) * width;
@@ -227,8 +252,7 @@ function Sparkline({ values, label = 'Trend sparkline' }: { values: number[]; la
   });
 
   return (
-    <svg width={width} height={height} className="text-accent" role="img" aria-labelledby={titleId}>
-      <title id={titleId}>{label}</title>
+    <svg width={width} height={height} className="text-accent">
       <polyline
         points={points.join(' ')}
         fill="none"
@@ -260,7 +284,7 @@ function ComplianceHeatmap({ weeks }: { weeks: WeekEvaluation[] }) {
           {/* Header row */}
           <div></div>
           {DOW_LABELS.map((d) => (
-            <div key={d} className="text-center font-mono text-xs text-bone-mute uppercase">
+            <div key={d} className="text-center font-mono text-[10px] text-bone-mute uppercase">
               {d}
             </div>
           ))}
@@ -271,7 +295,7 @@ function ComplianceHeatmap({ weeks }: { weeks: WeekEvaluation[] }) {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-3 pt-3 border-t border-ink-line font-mono text-xs text-bone-dim">
+        <div className="flex items-center gap-3 pt-3 border-t border-ink-line font-mono text-[10px] text-bone-dim">
           <span>legend:</span>
           <Swatch className="bg-signal-ok" label="hit" />
           <Swatch className="bg-signal-warn" label="off-pace" />
@@ -319,7 +343,7 @@ function HeatmapRow({ week }: { week: WeekEvaluation }) {
 
   return (
     <>
-      <div className="font-mono text-xs text-bone-dim leading-tight">
+      <div className="font-mono text-[10px] text-bone-dim leading-tight">
         {weekLabel}
         {adapted && <span className="text-signal-warn"> ◆</span>}
       </div>
@@ -329,7 +353,6 @@ function HeatmapRow({ week }: { week: WeekEvaluation }) {
           <div
             key={dow}
             className={'h-6 ' + heatmapCellClass(flag)}
-            aria-label={`${DOW_LABELS[dow]}: ${flag}`}
             title={`${DOW_LABELS[dow]} ${week.weekStartIso}: ${flag}`}
           />
         );
@@ -367,7 +390,7 @@ function Swatch({ className, label }: { className: string; label: string }) {
 
 function formatWeekLabel(weekStartIso: string): string {
   const d = new Date(weekStartIso);
-  return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short' });
+  return d.toLocaleDateString('en-NZ', { day: '2-digit', month: 'short' });
 }
 
 /* ============================================================================
@@ -380,14 +403,14 @@ function WeekBreakdown({ weeks }: { weeks: WeekEvaluation[] }) {
     <section className="space-y-4">
       <span className="nn-caps text-accent">week-by-week</span>
       <Card>
-        <div className="grid grid-cols-[60px_1fr_60px_60px] md:grid-cols-[60px_80px_1fr_80px_60px_80px_1fr] gap-3 pb-2 border-b border-ink-line font-mono text-xs uppercase tracking-widest text-bone-mute">
+        <div className="grid grid-cols-[60px_80px_1fr_80px_60px_80px_1fr] gap-3 pb-2 border-b border-ink-line font-mono text-[10px] uppercase tracking-widest text-bone-mute">
           <div>week</div>
-          <div className="hidden md:block">phase</div>
+          <div>phase</div>
           <div>volume</div>
-          <div className="hidden md:block text-right">long</div>
+          <div className="text-right">long</div>
           <div className="text-right">ok %</div>
           <div className="text-right">missed</div>
-          <div className="hidden md:block">notes</div>
+          <div>notes</div>
         </div>
         <div className="divide-y divide-ink-line">
           {weeks.map((week) => (
@@ -418,12 +441,12 @@ function WeekRow({ week }: { week: WeekEvaluation }) {
   const adaptationLabels = adaptations.map((a) => a.label).join(' · ');
 
   return (
-    <div className="py-3 grid grid-cols-[60px_1fr_60px_60px] md:grid-cols-[60px_80px_1fr_80px_60px_80px_1fr] gap-3 items-center text-sm">
+    <div className="py-3 grid grid-cols-[60px_80px_1fr_80px_60px_80px_1fr] gap-3 items-center text-sm">
       <div>
         <div className="font-display tracking-wide-display uppercase text-bone">{wkLabel}</div>
-        <div className="font-mono text-xs text-bone-mute">{formatWeekLabel(week.weekStartIso)}</div>
+        <div className="font-mono text-[10px] text-bone-mute">{formatWeekLabel(week.weekStartIso)}</div>
       </div>
-      <div className="hidden md:block font-mono text-xs text-bone-dim">{phase}</div>
+      <div className="font-mono text-xs text-bone-dim">{phase}</div>
       <div className="font-mono text-xs">
         <span className="text-bone tabular-nums">
           {week.stats.totalKm.toFixed(0)}
@@ -432,7 +455,7 @@ function WeekRow({ week }: { week: WeekEvaluation }) {
           <span className="text-bone-mute"> / {target} km{volPct !== null && ` (${volPct}%)`}</span>
         )}
       </div>
-      <div className="hidden md:block text-right font-mono text-xs">
+      <div className="text-right font-mono text-xs">
         <span className="text-bone tabular-nums">
           {week.stats.longRunKm.toFixed(1)}
         </span>
@@ -466,7 +489,7 @@ function WeekRow({ week }: { week: WeekEvaluation }) {
           <span className="text-bone-mute">—</span>
         )}
       </div>
-      <div className="hidden md:block font-mono text-xs text-bone-mute leading-tight">
+      <div className="font-mono text-[10px] text-bone-mute leading-tight">
         {adaptationLabels || '—'}
       </div>
     </div>
@@ -540,14 +563,7 @@ function ObservationCard({ observation }: { observation: Observation }) {
     <Card className={'space-y-1 ' + borderClass}>
       <div className="flex items-start gap-3">
         <Icon size={16} strokeWidth={1.5} className={iconColor + ' flex-shrink-0 mt-0.5'} />
-        <div className="space-y-1">
-          {observation.severity !== 'info' && (
-            <div className={`font-mono text-xs uppercase tracking-widest ${iconColor}`}>
-              {observation.severity}
-            </div>
-          )}
-          <div className="text-bone-dim text-sm leading-relaxed">{observation.text}</div>
-        </div>
+        <div className="text-bone-dim text-sm leading-relaxed">{observation.text}</div>
       </div>
     </Card>
   );

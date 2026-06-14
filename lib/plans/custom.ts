@@ -107,6 +107,12 @@ function entryWeeklyLoadKm(_level: 'beginner' | 'intermediate' | 'advanced'): nu
 
 export const custom: PlanEngine = {
   dojo: 'custom',
+  stateProfile: {
+    // No philosophy to honour - conservative defaults.
+    tsbFloor: { base: -15, build: -20, peak: -20, taper: -5 },
+    protectedTypes: ['long'],
+    preferIntensityCut: false,
+  },
   displayName: 'Custom',
   philosophy: PHILOSOPHY,
   defaultProgramWeeks: 16,

@@ -28,6 +28,20 @@ const KEY = {
   CLUB_TERMS_ACCEPTED_AT: 'club.terms_accepted_at',
   CLUB_WINDOW_DEFAULT: 'club.window_default',
   CLUB_LAST_SHARE_GENERATED_AT: 'club.last_share_generated_at',
+  // Phase 12 plumbing - Garmin biometric sync
+  GARMIN_SYNC_ENABLED: 'garmin.sync_enabled',
+  GARMIN_LAST_SYNC_AT: 'garmin.last_sync_at',
+  // R2.5 - athlete profile (for VO2 estimates + HR calibration)
+  PROFILE_AGE: 'profile.age',
+  PROFILE_WEIGHT_KG: 'profile.weight_kg',
+  PROFILE_SEX: 'profile.sex',
+  PROFILE_MAX_HR: 'profile.max_hr',
+  PROFILE_RESTING_HR: 'profile.resting_hr',
+  // NS personal HR calibration (seeded from Matt's NS analysis as editable defaults)
+  NS_EASY_HR_CAP: 'ns.easy_hr_cap',
+  NS_SUBT_HR_CAP: 'ns.subt_hr_cap',
+  NS_HR_CONFIDENCE: 'ns.hr_confidence',
+  NS_DEFAULTS_SEEDED: 'ns.defaults_seeded',
 } as const;
 
 async function get(key: string): Promise<string | null> {
@@ -211,4 +225,157 @@ export async function getClubLastShareGeneratedAt(): Promise<string | null> {
 
 export async function setClubLastShareGeneratedAt(iso: string): Promise<void> {
   await set(KEY.CLUB_LAST_SHARE_GENERATED_AT, iso);
+}
+
+
+/* ============================================================================
+ * Garmin biometric sync (Phase 12 plumbing - data only)
+ *
+ * Credentials are NOT stored in the settings table - they go in the OS
+ * keystore via keytar, same pattern as Strava tokens. These settings
+ * track enablement and sync watermark only.
+ * ========================================================================== */
+
+export async function getGarminSyncEnabled(): Promise<boolean> {
+  const v = await get(KEY.GARMIN_SYNC_ENABLED);
+  return v === 'true';
+}
+
+export async function setGarminSyncEnabled(value: boolean): Promise<void> {
+  await set(KEY.GARMIN_SYNC_ENABLED, value ? 'true' : 'false');
+}
+
+export async function getGarminLastSyncAt(): Promise<string | null> {
+  const v = await get(KEY.GARMIN_LAST_SYNC_AT);
+  return v === '' ? null : v;
+}
+
+export async function setGarminLastSyncAt(iso: string): Promise<void> {
+  await set(KEY.GARMIN_LAST_SYNC_AT, iso);
+}
+
+
+/* ============================================================================
+ * Athlete profile (R2.5) - physical attributes for VO2 estimation and HR
+ * calibration. All optional; consumers degrade when absent.
+ * ========================================================================== */
+
+export interface AthleteProfile {
+  age: number | null;
+  weightKg: number | null;
+  sex: 'male' | 'female' | null;
+  maxHr: number | null;
+  restingHr: number | null;
+}
+
+async function getNum(key: string): Promise<number | null> {
+  const v = await get(key);
+  if (v === null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+export async function getAthleteProfile(): Promise<AthleteProfile> {
+  const [age, weightKg, sexRaw, maxHr, restingHr] = await Promise.all([
+    getNum(KEY.PROFILE_AGE),
+    getNum(KEY.PROFILE_WEIGHT_KG),
+    get(KEY.PROFILE_SEX),
+    getNum(KEY.PROFILE_MAX_HR),
+    getNum(KEY.PROFILE_RESTING_HR),
+  ]);
+  const sex = sexRaw === 'male' || sexRaw === 'female' ? sexRaw : null;
+  return { age, weightKg, sex, maxHr, restingHr };
+}
+
+export async function setAthleteProfile(p: Partial<AthleteProfile>): Promise<void> {
+  const writes: Promise<void>[] = [];
+  if (p.age !== undefined) writes.push(set(KEY.PROFILE_AGE, p.age === null ? '' : String(p.age)));
+  if (p.weightKg !== undefined) writes.push(set(KEY.PROFILE_WEIGHT_KG, p.weightKg === null ? '' : String(p.weightKg)));
+  if (p.sex !== undefined) writes.push(set(KEY.PROFILE_SEX, p.sex ?? ''));
+  if (p.maxHr !== undefined) writes.push(set(KEY.PROFILE_MAX_HR, p.maxHr === null ? '' : String(p.maxHr)));
+  if (p.restingHr !== undefined) writes.push(set(KEY.PROFILE_RESTING_HR, p.restingHr === null ? '' : String(p.restingHr)));
+  await Promise.all(writes);
+}
+
+
+/* ============================================================================
+ * Norwegian Singles HR calibration.
+ *
+ * NS lives on absolute HR caps, not generic zone fractions. These seed from
+ * the athlete's own worked-out values (max HR 166, easy <= 128, sub-T <= 141)
+ * as EDITABLE defaults the first time NS becomes active. Confidence starts
+ * 'estimated' so the UI keeps prompting for a hill-sprint max test; once the
+ * athlete sets a measured max it flips to 'measured'.
+ *
+ * Defaults are seeded once (guarded by NS_DEFAULTS_SEEDED) so they never
+ * clobber later edits. Absolute caps, when present, override the reserve-based
+ * guardrail math in ns-guardrails.
+ * ========================================================================== */
+
+export type HrConfidence = 'estimated' | 'measured';
+
+export interface NsHrCalibration {
+  easyHrCap: number | null;
+  subThresholdHrCap: number | null;
+  confidence: HrConfidence;
+}
+
+// Matt's personal NS calibration (from the Norwegian Singles analysis).
+// Max HR 166 (medium confidence, re-test via hill sprints), easy ceiling 128,
+// sub-threshold cap 141 (~0.85 x 166).
+const NS_DEFAULT_MAX_HR = 166;
+const NS_DEFAULT_EASY_CAP = 128;
+const NS_DEFAULT_SUBT_CAP = 141;
+
+export async function getNsHrCalibration(): Promise<NsHrCalibration> {
+  const [easy, subt, conf] = await Promise.all([
+    getNum(KEY.NS_EASY_HR_CAP),
+    getNum(KEY.NS_SUBT_HR_CAP),
+    get(KEY.NS_HR_CONFIDENCE),
+  ]);
+  return {
+    easyHrCap: easy,
+    subThresholdHrCap: subt,
+    confidence: conf === 'measured' ? 'measured' : 'estimated',
+  };
+}
+
+export async function setNsHrCalibration(c: Partial<NsHrCalibration>): Promise<void> {
+  const writes: Promise<void>[] = [];
+  if (c.easyHrCap !== undefined) writes.push(set(KEY.NS_EASY_HR_CAP, c.easyHrCap === null ? '' : String(c.easyHrCap)));
+  if (c.subThresholdHrCap !== undefined) writes.push(set(KEY.NS_SUBT_HR_CAP, c.subThresholdHrCap === null ? '' : String(c.subThresholdHrCap)));
+  if (c.confidence !== undefined) writes.push(set(KEY.NS_HR_CONFIDENCE, c.confidence));
+  await Promise.all(writes);
+}
+
+/**
+ * Seed NS defaults the first time NS is active, without clobbering any value
+ * the athlete already set. Idempotent: a NS_DEFAULTS_SEEDED flag means this
+ * is a no-op on subsequent calls. Only fills fields that are currently empty,
+ * so a user who set their own max HR keeps it.
+ */
+export async function seedNsDefaultsOnce(): Promise<void> {
+  const seeded = await get(KEY.NS_DEFAULTS_SEEDED);
+  if (seeded === 'true') return;
+
+  const profile = await getAthleteProfile();
+  const cal = await getNsHrCalibration();
+
+  const writes: Promise<void>[] = [];
+  // Max HR: only seed if the athlete hasn't set one.
+  if (profile.maxHr === null) {
+    writes.push(set(KEY.PROFILE_MAX_HR, String(NS_DEFAULT_MAX_HR)));
+  }
+  if (cal.easyHrCap === null) {
+    writes.push(set(KEY.NS_EASY_HR_CAP, String(NS_DEFAULT_EASY_CAP)));
+  }
+  if (cal.subThresholdHrCap === null) {
+    writes.push(set(KEY.NS_SUBT_HR_CAP, String(NS_DEFAULT_SUBT_CAP)));
+  }
+  // Confidence stays 'estimated' until a measured max is recorded.
+  const confNow = await get(KEY.NS_HR_CONFIDENCE);
+  if (!confNow) writes.push(set(KEY.NS_HR_CONFIDENCE, 'estimated'));
+
+  writes.push(set(KEY.NS_DEFAULTS_SEEDED, 'true'));
+  await Promise.all(writes);
 }

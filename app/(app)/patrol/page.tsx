@@ -35,6 +35,10 @@ import {
 import { getProgramPhase } from '@/lib/plans/program-phase';
 import { getRampPlanForActivePeriod } from '@/lib/plans/ramp-loader';
 import { RampCard } from '@/components/patrol/ramp-card';
+import { CoachAdjustmentCard } from '@/components/patrol/coach-adjustment-card';
+import { resolveCoachAdjustment } from '@/lib/plans/state-aware-week';
+import { NsGuardrailsCard } from '@/components/patrol/ns-guardrails-card';
+import { getNsGuardReport } from '@/lib/analysis/ns-guardrails-read';
 
 /**
  * Patrol — this week's training loop.
@@ -54,7 +58,7 @@ export default async function PatrolPage() {
   const hasData = activityCount > 0;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-12 py-10 max-w-7xl mx-auto space-y-10">
+    <div className="px-12 py-10 max-w-7xl mx-auto space-y-10">
       <SyncStatusBanner />
 
       {!hasData && (
@@ -128,7 +132,23 @@ async function PatrolDashboard() {
   const weekNumber = currentWeekNumber(params) ?? 1;
   const { startIso, endIso } = currentWeekRange();
   const context = await resolveWeekContext({ weekStartIso: startIso, weekEndIso: endIso });
-  const template = engine.renderWeek(params, weekNumber, context);
+  const rawTemplate = engine.renderWeek(params, weekNumber, context);
+
+  // Phase 3b - state-aware pipeline. In automatic mode (or once a proposal
+  // is applied) the adjusted template becomes the week's prescription;
+  // compliance and volume targets follow it.
+  const coach = await resolveCoachAdjustment({
+    dojo: engine.dojo,
+    weekStartIso: startIso,
+    weekNumber,
+    programWeeks: params.programWeeks ?? engine.defaultProgramWeeks,
+    rawTemplate,
+  });
+  const template = coach.template;
+
+  // NS-2/NS-3 - discipline guardrails, only when Norwegian Singles is active.
+  const nsReport = engine.dojo === 'norwegian-singles' ? await getNsGuardReport(3) : null;
+
   const activities = await getActivitiesInRange(startIso, endIso);
   const stats = aggregateWeekStats(activities);
   const compliance = evaluateWeek(template, activities);
@@ -226,7 +246,7 @@ async function PatrolDashboard() {
               <span
                 key={i}
                 className={
-                  'inline-flex items-center gap-1.5 px-2 py-1 border text-xs font-mono uppercase tracking-widest ' +
+                  'inline-flex items-center gap-1.5 px-2 py-1 border text-[10px] font-mono uppercase tracking-widest ' +
                   adaptationStyle(a.kind)
                 }
                 title={a.detail}
@@ -237,6 +257,21 @@ async function PatrolDashboard() {
           </div>
         )}
       </header>
+
+      {/* Phase 3b - coach proposal / auto-adjustment notice */}
+      <CoachAdjustmentCard
+        adjustmentId={coach.adjustmentId}
+        status={coach.status}
+        rail={coach.rail}
+        trigger={coach.trigger}
+        rationale={coach.rationale}
+        changes={coach.changes}
+        rawTotalKm={coach.rawTotalKm}
+        adjustedTotalKm={coach.adjustedTotalKm}
+      />
+
+      {/* NS-2/NS-3 - Norwegian Singles discipline guardrails */}
+      {nsReport && <NsGuardrailsCard report={nsReport} />}
 
       {/* Top stats row — live. Above matrix so the eye lands on
           this-week numbers first. Width matches the matrix below. */}
@@ -457,7 +492,7 @@ function ComplianceRow({ dow, sess }: { dow: number; sess: SessionCompliance }) 
   }[sess.flag];
 
   return (
-    <div className="py-3 grid grid-cols-[48px_1fr_24px] sm:grid-cols-[60px_1fr_120px_80px_28px] gap-4 items-center">
+    <div className="py-3 grid grid-cols-[60px_1fr_120px_80px_28px] gap-4 items-center">
       <span className="font-display tracking-wide-display uppercase text-bone-dim text-sm">
         {DOW_LABELS[dow]}
       </span>
@@ -467,10 +502,10 @@ function ComplianceRow({ dow, sess }: { dow: number; sess: SessionCompliance }) 
           {sess.message}
         </div>
       </div>
-      <span className="hidden sm:block font-mono tabular-nums text-bone">
+      <span className="font-mono tabular-nums text-bone">
         {sess.actualKm != null ? `${sess.actualKm.toFixed(1)} km` : '—'}
       </span>
-      <span className="hidden sm:block font-mono tabular-nums text-bone-dim text-sm">
+      <span className="font-mono tabular-nums text-bone-dim text-sm">
         {sess.actualPaceSpk ? `${formatSpk(sess.actualPaceSpk)}/km` : '—'}
       </span>
       <FlagIcon size={18} strokeWidth={1.5} className={flagColor} />

@@ -1,4 +1,4 @@
-import { sqliteTable, integer, text, real, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, integer, text, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 /* ----------------------------------------------------------------------------
@@ -549,3 +549,92 @@ export const planAdjustments = sqliteTable(
 
 export type PlanAdjustment = typeof planAdjustments.$inferSelect;
 export type NewPlanAdjustment = typeof planAdjustments.$inferInsert;
+
+/* ============================================================================
+ * Daily health metrics (Phase 12 - external biometric data sources)
+ *
+ * One row per (date, source). Source-agnostic: Garmin, Apple Health,
+ * Whoop, Coros, manual entry all write the same shape. Columns are
+ * nullable because no source provides everything.
+ *
+ * Source priority for downstream consumers (highest trust first):
+ *   manual-lab > garmin > whoop > apple-health > coros > manual
+ *
+ * Units:
+ *   rhr_bpm           - resting heart rate, beats/min
+ *   hrv_ms            - overnight HRV (rMSSD), milliseconds
+ *   sleep_duration_s  - total sleep, seconds
+ *   sleep_score       - vendor 0-100 score (vendor-specific semantics)
+ *   stress_score      - vendor 0-100 (Garmin: avg daily stress)
+ *   body_battery      - Garmin 0-100 (null for other sources)
+ *   vo2max_device     - device-estimated VO2 max, ml/kg/min
+ *   weight_kg         - body mass
+ * ========================================================================== */
+
+export const dailyHealthMetrics = sqliteTable(
+  'daily_health_metrics',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    /** ISO date 'YYYY-MM-DD' the metrics describe (local) */
+    date: text('date').notNull(),
+    /** garmin | apple-health | whoop | coros | manual | manual-lab */
+    source: text('source').notNull(),
+
+    rhrBpm: integer('rhr_bpm'),
+    hrvMs: real('hrv_ms'),
+    sleepDurationS: integer('sleep_duration_s'),
+    sleepScore: integer('sleep_score'),
+    stressScore: integer('stress_score'),
+    bodyBattery: integer('body_battery'),
+    vo2maxDevice: real('vo2max_device'),
+    weightKg: real('weight_kg'),
+
+    /** Raw vendor payload (JSON) for fields we don't model yet */
+    raw: text('raw'),
+
+    syncedAt: text('synced_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    dateSourceIdx: uniqueIndex('idx_health_date_source').on(t.date, t.source),
+    dateIdx: index('idx_health_date').on(t.date),
+  })
+);
+
+export type DailyHealthMetric = typeof dailyHealthMetrics.$inferSelect;
+export type NewDailyHealthMetric = typeof dailyHealthMetrics.$inferInsert;
+
+/* ============================================================================
+ * VO2 max observations (R2.5)
+ *
+ * User-entered or test-derived VO2 max readings. Device estimates live in
+ * daily_health_metrics (vo2max_device); this table holds the other three
+ * sources: manual-lab, cooper, rockport. One row per observation - a full
+ * history is kept so the trend chart can show progression.
+ *
+ * `inputs` stores the raw test inputs as JSON (e.g. Cooper distance, or
+ * Rockport weight/age/time/HR) for transparency and recomputation.
+ * ========================================================================== */
+
+export const vo2maxObservations = sqliteTable(
+  'vo2max_observations',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    /** ISO date 'YYYY-MM-DD' the test was taken */
+    date: text('date').notNull(),
+    /** manual-lab | cooper | rockport (device is in daily_health_metrics) */
+    source: text('source').notNull(),
+    /** ml/kg/min */
+    value: real('value').notNull(),
+    /** Raw test inputs as JSON, for transparency / recompute */
+    inputs: text('inputs'),
+    note: text('note'),
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    dateIdx: index('idx_vo2max_date').on(t.date),
+    sourceIdx: index('idx_vo2max_source').on(t.source),
+  })
+);
+
+export type Vo2maxObservation = typeof vo2maxObservations.$inferSelect;
+export type NewVo2maxObservation = typeof vo2maxObservations.$inferInsert;

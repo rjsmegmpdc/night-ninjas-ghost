@@ -127,6 +127,12 @@ function entryWeeklyLoadKm(level: 'beginner' | 'intermediate' | 'advanced'): num
 
 export const ultra: PlanEngine = {
   dojo: 'ultra',
+  stateProfile: {
+    // Time-on-feet first; intensity is expendable, long runs are not.
+    tsbFloor: { base: -22, build: -28, peak: -28, taper: -10 },
+    protectedTypes: ['long'],
+    preferIntensityCut: true,
+  },
   displayName: 'Ultra (stub)',
   philosophy: PHILOSOPHY,
   defaultProgramWeeks: 24,

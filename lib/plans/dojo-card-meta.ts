@@ -31,6 +31,18 @@ export interface DojoCardMeta {
 }
 
 const META: Record<Dojo, DojoCardMeta> = {
+  'norwegian-singles': {
+    tagline: 'Sub-threshold frequency, ruthless easy-day discipline',
+    ribbon: 'Consistency-led',
+    features: [
+      'Three controlled sub-threshold sessions weekly',
+      'Quality capped at ~22% of volume',
+      'Reps at LT1 effort - never hammering',
+      'Easy days strictly conversational (Z1)',
+      'Long run is just a longer easy run',
+      'Non-periodised rhythm; race touches late',
+    ],
+  },
   hansons: {
     tagline: 'Cumulative fatigue marathon programme',
     ribbon: 'Marathon-focused',
@@ -140,5 +152,5 @@ export function getDojoCardMeta(dojo: Dojo): DojoCardMeta {
  * Primary group: most marathon-relevant, by usage frequency expectation.
  * Secondary: niche or build-your-own.
  */
-export const PRIMARY_DOJOS: readonly Dojo[] = ['hansons', 'pfitzinger', 'daniels', 'lydiard'];
+export const PRIMARY_DOJOS: readonly Dojo[] = ['hansons', 'norwegian-singles', 'pfitzinger', 'daniels', 'lydiard'];
 export const SECONDARY_DOJOS: readonly Dojo[] = ['higdon', 'polarised', 'ultra', 'custom'];

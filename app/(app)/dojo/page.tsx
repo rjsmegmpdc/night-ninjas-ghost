@@ -5,6 +5,7 @@ import { getProgramPhase } from '@/lib/plans/program-phase';
 import { getRampPlanForActivePeriod } from '@/lib/plans/ramp-loader';
 import { RampCard } from '@/components/patrol/ramp-card';
 import { DojoPicker } from '@/components/dojo/dojo-picker';
+import { getHrAvailability } from '@/lib/analysis/hr-availability';
 import { switchDojo } from '@/lib/actions/switch-dojo';
 import { getDb, schema } from '@/lib/db';
 import { eq } from 'drizzle-orm';
@@ -27,10 +28,11 @@ export default async function DojoPage() {
     .where(eq(schema.settings.key, 'plan.dojo'))
     .get();
   const selectedDojo = (dojoRow?.value ?? null) as Dojo | null;
+  const hrAvailability = selectedDojo === 'norwegian-singles' ? await getHrAvailability(42) : null;
   const level = (goalRace?.level as 'beginner' | 'intermediate' | 'advanced') ?? 'intermediate';
 
   return (
-    <div className="px-4 sm:px-8 lg:px-12 py-10 max-w-7xl mx-auto space-y-8">
+    <div className="px-12 py-10 max-w-7xl mx-auto space-y-8">
       <header className="border-b border-ink-line pb-6 space-y-1">
         <span className="nn-caps">training - methodology</span>
         <h1 className="font-display tracking-wide-display text-5xl uppercase">
@@ -48,6 +50,7 @@ export default async function DojoPage() {
         selectedDojo={selectedDojo}
         defaultLevel={level}
         onSelectFormAction={switchDojo}
+        hrAvailability={hrAvailability}
       />
 
       {/* Ramp analysis - visible only during pre-program base. */}

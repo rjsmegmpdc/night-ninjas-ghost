@@ -245,6 +245,12 @@ function entryWeeklyLoadKm(level: 'beginner' | 'intermediate' | 'advanced'): num
 
 export const hansons: PlanEngine = {
   dojo: 'hansons',
+  stateProfile: {
+    // Cumulative fatigue IS the method - deep TSB mid-block is intended.
+    tsbFloor: { base: -20, build: -30, peak: -30, taper: -10 },
+    protectedTypes: ['tempo', 'long'],
+    preferIntensityCut: false,
+  },
   displayName: 'Hansons Marathon Method',
   philosophy: PHILOSOPHY,
   defaultProgramWeeks: 18,

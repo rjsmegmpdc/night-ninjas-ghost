@@ -12,6 +12,7 @@
 export type Dojo =
   | 'lydiard'
   | 'hansons'
+  | 'norwegian-singles'
   | 'daniels'
   | 'pfitzinger'
   | 'higdon'
@@ -253,6 +254,21 @@ export interface CalendarConfig {
 /* ----------------------------------------------------------------------------
  * PlanEngine — the contract every dojo implements.
  * -------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------
+ * Phase 3b - dojo state profile. The training philosophy expressed as data:
+ * how much fatigue this method tolerates per phase, which sessions are its
+ * signature (never cut by soft adjustments), and whether it prefers to ease
+ * intensity or volume when the athlete is over-fatigued.
+ * -------------------------------------------------------------------------- */
+
+export type PhaseBand = 'base' | 'build' | 'peak' | 'taper' | 'off-program';
+
+export interface DojoStateProfile {
+  tsbFloor: Record<Exclude<PhaseBand, 'off-program'>, number>;
+  protectedTypes: SessionType[];
+  preferIntensityCut: boolean;
+}
+
 export interface PlanEngine {
   /** Identifier — must match the Dojo union. */
   dojo: Dojo;
@@ -312,4 +328,9 @@ export interface PlanEngine {
    * weekNumber is 1-indexed and capped at programWeeks.
    */
   renderWeek(params: PlanParams, weekNumber: number, context?: WeekContext): WeekTemplate;
+  /**
+   * Phase 3b - fatigue tolerance profile. Optional; engines without one
+   * are interpreted with DEFAULT_PROFILE (conservative).
+   */
+  stateProfile?: DojoStateProfile;
 }

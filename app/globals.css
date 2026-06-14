@@ -19,7 +19,7 @@
     /* Bone - text */
     --nn-bone: #F5F5F0;
     --nn-bone-dim: #A5A5A0;
-    --nn-bone-mute: #7A7A76;
+    --nn-bone-mute: #6E6E6A;
 
     /* Accent - VELOCITY orange. Active state, primary CTA, current focus. */
     --nn-accent: #FF5F00;
@@ -196,19 +196,6 @@
  * Strategy: when a filter is active, dim all cells, then unfilter
  * cells matching any active type. Two-step rule, both pure CSS.
  * ========================================================================== */
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    transition: none;
-  }
-  body[data-loading='true']::before {
-    animation: none;
-    opacity: 0.8;
-  }
-  [data-matrix-filter-active] .matrix-cell {
-    transition: none;
-  }
-}
 
 [data-matrix-filter-active] .matrix-cell {
   opacity: 0.18;

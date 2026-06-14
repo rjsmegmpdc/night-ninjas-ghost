@@ -49,7 +49,7 @@ export default async function ShoesPage() {
   const hasNoShoes = allShoes.length === 0;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-12 py-10 max-w-7xl mx-auto space-y-8">
+    <div className="px-12 py-10 max-w-7xl mx-auto space-y-8">
       <header className="border-b border-ink-line pb-6 space-y-1">
         <span className="nn-caps">profile - equipment</span>
         <h1 className="font-display tracking-wide-display text-5xl uppercase">
@@ -102,7 +102,7 @@ export default async function ShoesPage() {
                 <section className="space-y-3">
                   <div className="flex items-baseline justify-between border-b border-ink-line pb-2">
                     <span className="nn-caps">active rotation</span>
-                    <span className="font-mono text-xs text-bone-mute uppercase tracking-widest tabular-nums">
+                    <span className="font-mono text-[10px] text-bone-mute uppercase tracking-widest tabular-nums">
                       {active.length} shoe{active.length === 1 ? '' : 's'}
                     </span>
                   </div>
@@ -118,7 +118,7 @@ export default async function ShoesPage() {
                       <span className="nn-caps text-bone-mute group-hover:text-bone transition-colors">
                         ▸ retired
                       </span>
-                      <span className="font-mono text-xs text-bone-mute uppercase tracking-widest tabular-nums">
+                      <span className="font-mono text-[10px] text-bone-mute uppercase tracking-widest tabular-nums">
                         {retired.length} shoe{retired.length === 1 ? '' : 's'} · click to expand
                       </span>
                     </summary>

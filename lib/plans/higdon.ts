@@ -203,6 +203,12 @@ function entryWeeklyLoadKm(level: 'beginner' | 'intermediate' | 'advanced'): num
 
 export const higdon: PlanEngine = {
   dojo: 'higdon',
+  stateProfile: {
+    // Beginner-safe: tight floors, intervene early.
+    tsbFloor: { base: -12, build: -15, peak: -15, taper: -5 },
+    protectedTypes: ['long'],
+    preferIntensityCut: false,
+  },
   displayName: 'Hal Higdon (Novice/Intermediate/Advanced)',
   philosophy: PHILOSOPHY,
   defaultProgramWeeks: 18,

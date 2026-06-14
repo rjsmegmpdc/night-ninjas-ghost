@@ -1,3 +1,82 @@
+## NS personal HR calibration ✅ SHIPPED
+
+Matt's worked-out NS calibration is now seeded as EDITABLE defaults the
+first time Norwegian Singles is active (idempotent, never clobbers edits):
+max HR 166 (was defaulting to 220-age = 175, which the NS analysis showed
+put ~47% of an easy run in Z3), easy HR cap 128, sub-threshold HR cap 141
+(~0.85 x 166). Confidence starts 'estimated' so the UI keeps prompting for
+a hill-sprint max re-test; flips to 'measured' when the athlete confirms.
+
+The guardrails now honour ABSOLUTE HR caps when set (avgHr vs the 128/141
+cap) in preference to the generic reserve fractions - a hand-calibrated
+cap is more faithful than back-computing from a max-HR percentage; they
+fall back to reserve math when a run lacks avg HR. New editable NS HR-caps
+card on the VO2 Max page (alongside the athlete profile). 6 new tests for
+the absolute-cap path (22 in the NS guard suite).
+
+## NS HR-readiness callout ✅ SHIPPED
+
+Surfaced at dojo-selection time (both the setup wizard and the Methodology
+page), shown only when Norwegian Singles is chosen. Because NS depends on
+accurate HR zoning more than any other method, the callout:
+- states the dependency up front (measured max HR, not 220-age);
+- shows the athlete's LIVE HR-data status from Strava - coverage across
+  recent runs + whether a measured max is set + their highest observed
+  HR as a starting figure - via a new hr-availability reader;
+- calls out missing HR data (no monitor) or a missing measured max,
+  with severity tone;
+- describes the two known max-HR test protocols (hill reps; flat
+  max-effort) as athlete-driven steps, pointing to the VO2 Max profile to
+  record the result.
+All user-driven - the app highlights what to do and why; the athlete does
+the testing. Reinforces the runtime NS-2/NS-3 guardrails with up-front
+guidance.
+
+## NS-2 / NS-3 - Norwegian Singles guardrails ✅ SHIPPED
+
+Four discipline guards on the dashboard (shown only when NS is the active
+method), pure engine with 16 tests:
+- EASY-DAY DISCIPLINE: flags easy/long/recovery runs above the easy HR
+  ceiling (Karvonen reserve >= 0.70) - the slow leak that erodes NS.
+- REP-TOO-HOT: flags sub-threshold sessions reaching threshold/VO2 effort
+  (reserve >= 0.88) - the defining NS mistake.
+- QUALITY-CAP METER: accumulated quality time vs the 20-25% band (engine
+  pins 22%), drawn as a meter with the target zone marked.
+- MAX-HR VALIDITY GUARD: flags zones built on the 220-age estimate rather
+  than a measured max (the unreliable-220-age issue), AND flags when an
+  observed activity max HR exceeds the configured max (proving config too
+  low). Unblocked by the R2.5 athlete-profile work.
+Intent is inferred by matching each run to its plan-template day; HR
+reserve reuses the load engine's Karvonen basis. Server read layer
+assembles samples; analysis stays pure.
+
+## Phase R2.6 - VO2 max insights ✅ SHIPPED
+
+Three-tier insights engine on the /vo2max page (pure, 11 tests):
+Tier 1 TREND (factual direction + recent micro-trend), Tier 2 CONTEXT
+(hedged "possible factor" heuristics correlating VO2 movement with
+training volume, sleep, and resting HR - never causal language; the
+sleep/HRV correlation is unblocked by Phase 12 biometrics), Tier 3
+OUTLIER (flags readings >2.5 robust-sigma from the median - uses
+median+MAD not mean+stdev to avoid the masking problem where a lone wild
+reading inflates the stdev and hides itself). Insights card groups by
+tier with tone-coded styling. Context assembled server-side from monthly
+volume + biometric summary; analysis stays pure.
+
+## Phase R2.5 - VO2 max page ✅ SHIPPED
+
+Dedicated /vo2max page (Analytics nav bucket; linked from Athlete State).
+Four observation sources resolved by priority lab > Cooper > Rockport >
+device: Cooper 12-min ((d-504.9)/44.73), Rockport 1-mile walk regression,
+manual lab entry, and Garmin device estimates (read from
+daily_health_metrics). Stored in new vo2max_observations table
+(migration 0008), full history kept. Capture UI (tabbed Cooper / Rockport
+/ lab forms, profile prefill), cross-source trend chart, fitness band
+label. New athlete profile in settings (age/weight/sex/maxHr/restingHr) -
+also the calibration source that turns estimated HR zones into calibrated
+ones. OBSERVED-ONLY: VO2 does not change paces in v1. 11 pure formula
+tests. Source priority verified (lab outranks a newer Cooper).
+
 # Roadmap
 
 > Persistent record of what this product becomes at maturity, and the order
@@ -138,7 +217,7 @@ Equipment / Wellness / Settings / Reference).
 
 ---
 
-## Phase R1.5 - Club schedule export
+## Phase R1.5 - Club schedule export ✅ DONE (VELOCITY side)
 
 Athlete-mediated, manual-step export of upcoming training schedule for
 club app consumption. Per athlete's choice (parkrun ID + terms acceptance
@@ -161,7 +240,23 @@ OR substantive schedule change since last publish.
 
 ---
 
-## Phase R2 - Surface existing data visually
+## Phase R2 - Surface existing data 🟡 PART 1 SHIPPED
+
+**Shipped (Trends page):** monthly volume bars with month-over-month delta
+(6 months); 5-zone HR intensity distribution over 28 days (E/M/T/I/R
+stacked bar + legend, reusing computeActivityLoad so zone logic is
+single-sourced, with honest confidence labelling when max HR isn't
+calibrated); load-vs-recovery chart (CTL/ATL/TSB over 8 weeks via the
+same EWMA the athlete-state card uses). Pure aggregation in trends-pure
+(9 tests). Cards render from raw activity data, so they appear even
+before the 4-week compliance-trend gate.
+
+**R2 part 2 (deferred):** macrocycle phase bar + microcycle (next-7-days)
+preview on the Methodology/dojo cards; 7-bar weekly adherence chip on
+Patrol. Tightly coupled to those surfaces; lower marginal value than the
+data views just shipped.
+
+## Phase R2 (original scope) - Surface existing data visually
 
 Build the "Category B" features the designer's redesign showed us could
 exist on top of data we already collect. None of these need new external
@@ -247,7 +342,42 @@ mileage progression (#2), long-run proportion (#11)
 
 ---
 
-## Phase 3b - Engine state-awareness (with three-mode coach setting)
+## Norwegian Singles dojo ✅ SHIPPED (NS-1 engine; NS-3 guardrails pending)
+
+Ninth engine, per the locked spec: three sub-threshold (LT1) sessions
+weekly mapped to the tempo slot, quality pinned at 22% of volume,
+strict-easy remainder, modest easy long run, 3-week session rotation
+(10x3min / 6x5min / 3x10min), race-specific touches in the final three
+weeks, taper via calendar layer. Sub-T pace bands derived off MP
+(short reps ~MP-14s, long reps ~MP-8s/km - lands 4:02-4:08/km for a
+sub-3:00 marathoner, matching the spec's worked example). State profile:
+fatigue-averse floors, sub-T sessions protected, easy volume is the
+buffer. Listed as a PRIMARY dojo in the picker. Status: scaffold until
+dogfooded.
+
+**NS-2/NS-3 still pending (needs HR-stream analysis):** easy-day HR flag,
+rep-too-hot flag, quality-cap meter, max-HR validity guard (the 220-age
+detection), field-test module (Cooper/Rockport/VDOT-from-race resolver).
+Note: rename the existing "Rockford" test to Rockport and confirm the
+formula when that module commences.
+
+## Phase 3b - Engine state-awareness ✅ CORE SHIPPED (part 2 pending)
+
+**Shipped:** philosophy-as-data profiles on all 8 engines (tsbFloor per
+phase band, protected session types, intensity-vs-volume preference);
+pure interpretState/applyAdjustment with ACWR hard rail (>= 1.5, cuts
+protected sessions too, re-raises after dismissal until ratio drops) and
+caution band (>= 1.3); distance-based ACWR loader; mode-aware pipeline
+writing every proposal to plan_adjustments; Patrol coach card with
+Apply/Dismiss (rail dismissal needs explicit confirmation); Coach Mode
+section in Settings; adjusted template feeds Patrol compliance + volume
+cells when applied/automatic.
+
+**Part 2 (next 3b session):** matrix multi-week integration (future-week
+rows through the pipeline), proposal history view, monotony trigger,
+sickness/travel-window triggers (needs Phase 4 interruption data).
+
+## Phase 3b (original scope) - Engine state-awareness (with three-mode coach setting)
 
 **Why this matters:** state is useless if the prescription doesn't respect
 it. Phase 2 reports state; phase 3b makes it actionable. AND it does so
@@ -282,13 +412,11 @@ in a way that respects the athlete's preferred level of automation.
 - New section in Settings → "Coach Mode" with the three radio options
 - Hard ACWR cap implemented as a non-overridable safety floor
 
-**Pre-work recommendation:**
-
-Before commencing 3b's clamp logic, ship engine snapshot tests (one half
-session). Each of 8 dojo engines gets a `*.snapshot.test.ts` that runs
-`renderWeek` across program weeks 1-18 with various inputs and snapshots
-the output. When clamps are added, snapshot diffs catch any regression
-in dojos we're not currently dogfooding.
+**Pre-work: ✅ DONE.** `lib/plans/engine-snapshot.test.ts` pins all 8
+engines across their full program span for 3 levels (24 snapshots),
+plus determinism and volume-cap invariant checks (40 tests total).
+Any 3b clamp that leaks into the raw-template path fails with a
+readable per-week digest diff.
 
 **Override-frequency analysis (deferred to v2):**
 
@@ -603,7 +731,51 @@ original brief; #15 here mostly), with AI escalation in phase 10
 
 ---
 
-## Phase 12 — External data sources (cloud OAuth)
+## Phase 12 — External data sources 🟡 SURFACED (sync still needs live test)
+
+**Surfacing landed:** biometric read layer (`biometrics.ts` + pure
+`biometrics-pure.ts`) resolves daily_health_metrics per-field by source
+priority (manual-lab > garmin > whoop > apple-health > coros > manual);
+`BiometricsCard` on Athlete State shows RHR / HRV / sleep / body battery /
+stress / weight as stat tiles with 14-day sparklines and metric-specific
+direction tone (lower-better RHR/stress, higher-better HRV/sleep/battery).
+Pre-sync empty state guides the user to connect Garmin. 10 pure tests.
+
+**Still pending:** Matt's first live Garmin connect+sync (cards render
+empty until then); RHR/HRV correlation insights (R2.6 tier).
+
+## Phase 12 — External data sources (earlier note)
+
+**Resequenced:** pulled forward from v2 at Matt's request (2026-06-12).
+Garmin first (Matt's device), Strava activity data already integrated.
+Apple Health / Whoop / Coros follow the same daily_health_metrics shape
+but are untestable until a user with those devices exists - build them
+last, mark as experimental.
+
+**Landed (foundations):**
+- `daily_health_metrics` table: one row per (date, source); rhr_bpm,
+  hrv_ms, sleep_duration_s, sleep_score, stress_score, body_battery,
+  vo2max_device, weight_kg, raw JSON passthrough
+- Migration 0007
+- Settings keys: garmin.sync_enabled, garmin.last_sync_at
+- Source priority for consumers: manual-lab > garmin > whoop >
+  apple-health > coros > manual
+
+**Next (blocked on route decision - see open question):**
+- Garmin sync client (official Health API vs unofficial library)
+- Credentials in OS keystore via keytar (same pattern as Strava)
+- Daily sync job + backfill
+- Surfacing: RHR/HRV/sleep cards on Athlete State; insights engine
+  correlation (unblocks the deferred R2.6 sleep/HRV tiers)
+
+**Open question (Matt to decide):** official Garmin Health API requires
+a developer-program application reviewed by Garmin (typically approved
+for businesses, weeks of lead time, personal projects often declined).
+The unofficial route (e.g. garth / garmin-connect libraries) signs in
+with the athlete's own credentials, works immediately, is local-first
+aligned, but is ToS-grey and can break when Garmin changes endpoints.
+
+## Phase 12 (original entry) — External data sources (cloud OAuth)
 
 **Why this matters:** sleep and HRV are the highest-leverage signals
 we don't currently capture. They genuinely require cloud OAuth — there's

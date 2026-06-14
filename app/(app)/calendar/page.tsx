@@ -21,7 +21,7 @@ export default async function CalendarPage() {
   await autoRefreshIfDue();
 
   return (
-    <div className="px-4 sm:px-8 lg:px-12 py-10 max-w-7xl mx-auto space-y-8">
+    <div className="px-12 py-10 max-w-7xl mx-auto space-y-8">
       <SyncStatusBanner />
       <header className="border-b border-ink-line pb-6 space-y-1">
         <span className="nn-caps">training - schedule</span>

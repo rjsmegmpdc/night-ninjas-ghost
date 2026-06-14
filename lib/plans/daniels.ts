@@ -154,6 +154,12 @@ function entryWeeklyLoadKm(level: 'beginner' | 'intermediate' | 'advanced'): num
 
 export const daniels: PlanEngine = {
   dojo: 'daniels',
+  stateProfile: {
+    // VDOT dosing assumes recovery between quality - moderate floors.
+    tsbFloor: { base: -15, build: -22, peak: -22, taper: -8 },
+    protectedTypes: ['tempo'],
+    preferIntensityCut: false,
+  },
   displayName: 'Daniels Running Formula',
   philosophy: PHILOSOPHY,
   defaultProgramWeeks: 18,

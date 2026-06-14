@@ -1,18 +1,18 @@
 import { TopNav } from '@/components/nav/topnav';
-import { RouteFocus } from '@/components/nav/route-focus';
 
+/**
+ * VELOCITY app layout - top horizontal nav over the page content.
+ *
+ * Replaces the previous Sidebar + main-flex layout. The TopNav is
+ * sticky to the viewport top with a backdrop blur. Page content
+ * flows underneath in a single full-width column constrained by
+ * each page's own max-width container.
+ */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh bg-ink">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-ink-panel focus:text-bone focus:border focus:border-accent focus:rounded-lg focus:text-sm"
-      >
-        Skip to content
-      </a>
-      <RouteFocus />
+    <div className="min-h-screen bg-ink">
       <TopNav />
-      <main id="main-content" className="min-w-0">{children}</main>
+      <main className="min-w-0">{children}</main>
     </div>
   );
 }

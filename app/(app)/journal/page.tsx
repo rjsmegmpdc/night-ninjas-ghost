@@ -3,7 +3,7 @@ import { ClipboardList } from 'lucide-react';
 
 export default function JournalPage() {
   return (
-    <div className="px-4 sm:px-8 lg:px-12 py-10 max-w-7xl mx-auto space-y-8">
+    <div className="px-12 py-10 max-w-7xl mx-auto space-y-8">
       <header className="border-b border-ink-line pb-6 space-y-1">
         <span className="nn-caps">profile - wellness</span>
         <h1 className="font-display tracking-wide-display text-5xl uppercase">

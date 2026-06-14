@@ -6,6 +6,7 @@ import { higdon } from './higdon';
 import { polarised } from './polarised';
 import { ultra } from './ultra';
 import { custom } from './custom';
+import { norwegianSingles } from './norwegian-singles';
 import type { Dojo, PlanEngine } from './types';
 
 /**
@@ -18,6 +19,7 @@ import type { Dojo, PlanEngine } from './types';
  */
 export const ENGINES: Record<Dojo, PlanEngine> = {
   hansons,
+  'norwegian-singles': norwegianSingles,
   lydiard,
   daniels,
   pfitzinger,
@@ -33,6 +35,7 @@ export function getEngine(dojo: Dojo): PlanEngine {
 
 export const ALL_ENGINES: PlanEngine[] = [
   hansons,
+  norwegianSingles,
   daniels,
   pfitzinger,
   higdon,

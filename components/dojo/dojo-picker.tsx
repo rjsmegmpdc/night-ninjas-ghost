@@ -6,6 +6,8 @@ import type { Dojo, Level } from '@/lib/plans/types';
 import { LevelToggle } from './level-toggle';
 import { DojoCard } from './dojo-card';
 import { PRIMARY_DOJOS, SECONDARY_DOJOS } from '@/lib/plans/dojo-card-meta';
+import { NsHrReadiness } from './ns-hr-readiness';
+import type { HrAvailability } from '@/lib/analysis/hr-availability';
 
 /**
  * DojoPicker - the full dojo-selection surface.
@@ -29,11 +31,14 @@ export function DojoPicker({
   selectedDojo,
   defaultLevel = 'intermediate',
   onSelectFormAction,
+  hrAvailability = null,
 }: {
   selectedDojo: Dojo | null;
   defaultLevel?: Level;
   /** Server action that processes the dojo selection form. */
   onSelectFormAction: (formData: FormData) => void | Promise<void>;
+  /** HR-data status, for the NS readiness callout. */
+  hrAvailability?: HrAvailability | null;
 }) {
   const [level, setLevel] = useState<Level>(defaultLevel);
   // If selectedDojo is in the secondary group, default the expand to open
@@ -55,6 +60,11 @@ export function DojoPicker({
         </div>
         <LevelToggle value={level} onChange={setLevel} />
       </div>
+
+      {/* NS HR-readiness callout - only when Norwegian Singles is selected */}
+      {selectedDojo === 'norwegian-singles' && (
+        <NsHrReadiness availability={hrAvailability} />
+      )}
 
       {/* Primary cards - 4 across on lg, 2 across on md, stacked on small */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-ink-line">

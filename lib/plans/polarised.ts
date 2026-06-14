@@ -149,6 +149,12 @@ function entryWeeklyLoadKm(level: 'beginner' | 'intermediate' | 'advanced'): num
 
 export const polarised: PlanEngine = {
   dojo: 'polarised',
+  stateProfile: {
+    // 80/20: protect the easy aerobic base, ease the 20% hard first.
+    tsbFloor: { base: -15, build: -20, peak: -20, taper: -5 },
+    protectedTypes: ['long'],
+    preferIntensityCut: true,
+  },
   displayName: 'Polarised (80/20)',
   philosophy: PHILOSOPHY,
   defaultProgramWeeks: 18,

@@ -210,6 +210,12 @@ function entryWeeklyLoadKm(level: 'beginner' | 'intermediate' | 'advanced'): num
 
 export const lydiard: PlanEngine = {
   dojo: 'lydiard',
+  stateProfile: {
+    // Aerobic volume is sacred; anaerobic work is the first thing eased.
+    tsbFloor: { base: -25, build: -20, peak: -18, taper: -8 },
+    protectedTypes: ['long'],
+    preferIntensityCut: true,
+  },
   displayName: 'Arthur Lydiard Method',
   philosophy: PHILOSOPHY,
   defaultProgramWeeks: 24,

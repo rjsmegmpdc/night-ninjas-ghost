@@ -223,15 +223,3 @@ these automatically on next run.
 Personal use. Built for and used by the Night Ninjas community
 (`nightninjas.run`, est. 2016). The Night Ninjas brand and "est. 2016" mark
 are not licensed for redistribution outside the community.
-
-## Current Position
-
-Snapshot: 2026-05-21
-
-- Branch: `main`, **27 dirty files**
-- Last commit: 2026-05-05 — *Initial commit - Update to bundle de512de*
-- Modified docs: `DESIGN.md`, `README.md`, `ROADMAP.md`
-- Modified pages: `patrol`, `recon`, `dojo`, `calendar`, `journal`, `settings`, `shoes`, `help`, `(app)/layout.tsx`
-- Recent work: `lib/analysis/recent-weeks.ts`, `observations.ts`, `weekly-history.ts` (2026-05-11)
-- State: VELOCITY rebrand + heavy rework since baseline; baseline no longer representative
-- Next: checkpoint commit; the May 5 "initial commit" is now stale against two weeks of work

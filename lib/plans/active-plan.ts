@@ -53,6 +53,7 @@ export async function getActivePlan(): Promise<ActivePlan | null> {
 
   const dojo = (settingsMap[KEY_DOJO] as
     | 'hansons'
+    | 'norwegian-singles'
     | 'lydiard'
     | 'daniels'
     | 'pfitzinger'
