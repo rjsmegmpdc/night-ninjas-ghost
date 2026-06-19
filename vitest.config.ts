@@ -28,5 +28,8 @@ export default defineConfig({
   test: {
     include: ['lib/**/*.test.ts'],
     environment: 'node',
+    // Pin to NZ so date-handling tests run as the dev box does and the TZ
+    // regressions have teeth on any machine / CI (UTC+12 surfaces the bug).
+    env: { TZ: 'Pacific/Auckland' },
   },
 });

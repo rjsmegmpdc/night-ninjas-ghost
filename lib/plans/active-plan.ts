@@ -1,5 +1,5 @@
 import 'server-only';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, isNull } from 'drizzle-orm';
 import { getDb, schema } from '@/lib/db';
 import { getEngine, type PlanEngine, type PlanParams } from '@/lib/plans';
 import { SETTINGS_KEYS } from '@/lib/constants/settings-keys';
@@ -67,13 +67,26 @@ export async function getActivePlan(): Promise<ActivePlan | null> {
 
   const engine = getEngine(dojo);
 
-  // 3. Determine program start date — earliest of the program's natural
-  //    start (programWeeks before the goal race) and today
+  // 3. Determine program start date. The canonical, athlete-editable start is
+  //    plan_periods.startDate (Phase 5); fall back to the derived start
+  //    (program-weeks before the goal race, or today) when no period exists.
   const goalDate = new Date(goalRace.raceDate);
   const programWeeks = engine.defaultProgramWeeks;
   const naturalStart = new Date(goalDate.getTime() - programWeeks * 7 * 86400 * 1000);
   const today = new Date();
-  const startDate = naturalStart < today ? naturalStart : today;
+  const derivedStart = (naturalStart < today ? naturalStart : today).toISOString().slice(0, 10);
+
+  let startDate = derivedStart;
+  try {
+    const activePeriod = await db
+      .select({ startDate: schema.planPeriods.startDate })
+      .from(schema.planPeriods)
+      .where(isNull(schema.planPeriods.endDate))
+      .get();
+    if (activePeriod?.startDate) startDate = activePeriod.startDate;
+  } catch {
+    // plan_periods table missing pre-migration; keep the derived start.
+  }
 
   const params: PlanParams = {
     goalDistanceKm: goalRace.distanceKm,
@@ -82,7 +95,7 @@ export async function getActivePlan(): Promise<ActivePlan | null> {
     weeklyVolumeCapKm: weeklyCapStr ? parseFloat(weeklyCapStr) : undefined,
     longRunCapKm: longCapStr ? parseFloat(longCapStr) : undefined,
     programWeeks,
-    startDate: startDate.toISOString().slice(0, 10),
+    startDate,
   };
 
   return { engine, params };

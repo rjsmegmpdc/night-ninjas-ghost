@@ -69,12 +69,12 @@ export async function getLoadSeries(weeks = 8, calibration: AthleteCalibration =
   fetchStart.setDate(fetchStart.getDate() - (windowDays + 42));
   const acts = await getActivitiesInRange(isoDay(fetchStart), isoDay(end));
 
-  const dailyLoad: Record<string, number> = {};
+  const dailyLoad = new Map<string, number>();
   for (const a of acts) {
     const load = computeActivityLoad(a, calibration);
     if (!load) continue;
     const day = a.startDateLocal.slice(0, 10);
-    dailyLoad[day] = (dailyLoad[day] ?? 0) + load.points;
+    dailyLoad.set(day, (dailyLoad.get(day) ?? 0) + load.points);
   }
 
   const out: LoadPoint[] = [];

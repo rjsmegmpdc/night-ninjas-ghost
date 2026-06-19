@@ -204,6 +204,7 @@ $requiredFiles = @(
     'app\(app)\help\page.tsx',
     'app\(app)\journal\page.tsx',
     'app\(app)\patrol\page.tsx',
+    'app\(app)\race\page.tsx',
     'app\(app)\recon\page.tsx',
     'app\(app)\settings\page.tsx',
     'app\(app)\shoes\page.tsx',
@@ -241,6 +242,8 @@ $requiredFiles = @(
     'lib\actions\plan-adjustments.ts',
     'lib\actions\coach-mode.ts',
     'lib\actions\vo2max.ts',
+    'lib\actions\interruptions.ts',
+    'lib\actions\plan-start-date.ts',
     'lib\actions\garmin.ts',
     'lib\actions\switch-dojo.ts',
     'lib\actions\races.ts',
@@ -270,6 +273,9 @@ $requiredFiles = @(
     'lib\analysis\ns-guardrails.test.ts',
     'lib\analysis\ns-guardrails-read.ts',
     'lib\analysis\hr-availability.ts',
+    'lib\analysis\interruptions-pure.ts',
+    'lib\analysis\interruptions-pure.test.ts',
+    'lib\analysis\interruptions.ts',
     'lib\analysis\athlete-state.test.ts',
     'lib\analysis\best-week.ts',
     'lib\analysis\compliance.ts',
@@ -287,6 +293,12 @@ $requiredFiles = @(
     # Library - constants & data
     'lib\constants\settings-keys.ts',
     'lib\data\nz-holidays.ts',
+    'lib\dates\iso.ts',
+
+    # Library - race (Phase 6)
+    'lib\race\execution-pure.ts',
+    'lib\race\execution-pure.test.ts',
+    'lib\race\execution.ts',
 
     # Library - DB
     'lib\db\data-dir.ts',
@@ -300,6 +312,7 @@ $requiredFiles = @(
     'lib\db\migrations\0006_plan_adjustments.sql',
     'lib\db\migrations\0007_daily_health_metrics.sql',
     'lib\db\migrations\0008_vo2max_observations.sql',
+    'lib\db\migrations\0009_interruptions.sql',
 
     # Library - plans (8 dojos + framework)
     'lib\plans\active-plan.ts',
@@ -394,6 +407,7 @@ $requiredFiles = @(
     'components\patrol\intensity-chip.tsx',
     'components\patrol\progression-flag-card.tsx',
     'components\patrol\ramp-card.tsx',
+    'components\patrol\week-adherence-chip.tsx',
     'components\strike\athlete-state-card.tsx',
     'components\strike\intensity-history-card.tsx',
     'components\strike\mileage-trajectory-card.tsx',
@@ -409,6 +423,8 @@ $requiredFiles = @(
     'components\dojo\ns-hr-readiness.tsx',
     'components\dojo\dojo-picker.tsx',
     'components\dojo\level-toggle.tsx',
+    'components\dojo\program-shape-card.tsx',
+    'components\dojo\start-date-editor.tsx',
     'components\settings\destructive-forms.tsx',
     'components\settings\export-data-button.tsx',
     'components\settings\gear-backfill-button.tsx',
@@ -420,7 +436,19 @@ $requiredFiles = @(
     'components\settings\coach-mode-toggle.tsx',
     'components\patrol\coach-adjustment-card.tsx',
     'components\patrol\ns-guardrails-card.tsx',
+    'components\patrol\interruption-indicator.tsx',
     'components\garmin\garmin-section.tsx',
+
+    # Components - journal (Phase 4)
+    'components\journal\interruption-log-form.tsx',
+    'components\journal\active-interruption-banner.tsx',
+    'components\journal\return-to-training-card.tsx',
+    'components\journal\injury-risk-card.tsx',
+
+    # Components - race (Phase 6)
+    'components\race\pace-plan-card.tsx',
+    'components\race\fueling-card.tsx',
+    'components\race\carb-load-card.tsx',
 
     # Components - shoes
     'components\shoes\add-manual-shoe-form.tsx',

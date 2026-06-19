@@ -369,7 +369,7 @@ function reduceDayFlag(day: DayCompliance): DayComplianceFlag | null {
       worst = 'miss';
       break;
     }
-    if (f === 'soft' && worst !== 'miss') worst = 'soft';
+    if (f === 'soft') worst = 'soft';
   }
   return worst;
 }

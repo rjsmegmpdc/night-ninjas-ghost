@@ -25,6 +25,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { getDb, schema } from '@/lib/db';
 import { getAthleteState } from '@/lib/analysis/athlete-state';
 import { getActivitiesInRange } from '@/lib/analysis/week-queries';
+import { hasActiveInjuryOrIllnessNow } from '@/lib/analysis/interruptions';
 import { getCoachMode, type CoachMode } from '@/lib/store/settings';
 import { getEngine } from './index';
 import type { Dojo, WeekTemplate } from './types';
@@ -41,6 +42,8 @@ export interface CoachAdjustmentView {
   /** plan_adjustments row id, when one exists */
   adjustmentId: number | null;
   mode: CoachMode;
+  /** True when an active injury/illness downgraded automatic to assisted. */
+  injuryPaused: boolean;
   status: 'none' | 'pending' | 'applied' | 'auto-applied' | 'dismissed';
   rail: boolean;
   trigger: string | null;
@@ -86,10 +89,32 @@ export async function resolveCoachAdjustment(opts: {
   const { dojo, weekStartIso, weekNumber, programWeeks, rawTemplate } = opts;
   const db = getDb();
   const mode = await getCoachMode();
+  // Phase 4: an active injury/illness pauses AUTOMATIC mode - it is downgraded
+  // to assisted so the proposal is still surfaced but never auto-applied
+  // (locked rule: athlete-logged injuries never auto-adjust; the athlete drives
+  // recovery). Other modes are unaffected. Degrades to false pre-migration.
+  const injuryPaused = await hasActiveInjuryOrIllnessNow();
+  const effectiveMode: CoachMode =
+    injuryPaused && mode === 'automatic' ? 'assisted' : mode;
   const engine = getEngine(dojo);
   const profile = engine.stateProfile ?? DEFAULT_PROFILE;
 
   const state = await getAthleteState();
+  if (!state) {
+    return {
+      adjustmentId: null,
+      mode,
+      injuryPaused,
+      status: 'none',
+      rail: false,
+      trigger: null,
+      rationale: 'Not enough recent activity to assess training state.',
+      changes: [],
+      template: rawTemplate,
+      rawTotalKm: rawTemplate.totalKmTarget,
+      adjustedTotalKm: rawTemplate.totalKmTarget,
+    };
+  }
   const acwr = await getAcwrNow();
   const band = phaseBandFor(weekNumber, programWeeks);
   const interp: StateInterpretation = interpretState(
@@ -99,6 +124,7 @@ export async function resolveCoachAdjustment(opts: {
 
   const base = {
     mode,
+    injuryPaused,
     rail: interp.rail,
     trigger: interp.trigger,
     rationale: interp.rationale,
@@ -156,7 +182,7 @@ export async function resolveCoachAdjustment(opts: {
 
   const open = rows.find((r) => r.appliedAt === null && r.dismissedAt === null);
 
-  if (mode === 'automatic') {
+  if (effectiveMode === 'automatic') {
     const now = new Date().toISOString();
     let id: number;
     if (open) {
@@ -196,7 +222,7 @@ export async function resolveCoachAdjustment(opts: {
       rationale: interp.rationale,
       beforeState: JSON.stringify(rawTemplate),
       afterState: JSON.stringify(adjusted.template),
-      mode,
+      mode: effectiveMode,
       weekStartIso,
     }).returning({ id: schema.planAdjustments.id }).get();
     id = inserted.id;

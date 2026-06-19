@@ -23,6 +23,7 @@ import 'server-only';
 import { gte, lte, and } from 'drizzle-orm';
 import { getDb, schema } from '@/lib/db';
 import { classifySport, isRunning } from './sport-classifier';
+import { addDaysIso } from '@/lib/dates/iso';
 
 /* ----------------------------------------------------------------------------
  * Mileage progression
@@ -273,10 +274,9 @@ async function sumRunningKm(fromIso: string, toIso: string): Promise<number> {
   return stats.totalKm;
 }
 
+// Thin wrapper over the shared UTC-anchored helper (kept for call-site brevity).
 function isoOffset(iso: string, days: number): string {
-  const d = new Date(iso + 'T00:00:00');
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return addDaysIso(iso, days);
 }
 
 function round1(n: number): number {

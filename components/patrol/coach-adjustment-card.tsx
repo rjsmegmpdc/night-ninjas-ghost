@@ -24,10 +24,12 @@ export interface CoachCardProps {
   changes: string[];
   rawTotalKm: number;
   adjustedTotalKm: number;
+  /** Phase 4: automatic mode paused by an active injury/illness. */
+  injuryPaused?: boolean;
 }
 
 export function CoachAdjustmentCard(props: CoachCardProps) {
-  const { adjustmentId, status, rail, rationale, changes, rawTotalKm, adjustedTotalKm } = props;
+  const { adjustmentId, status, rail, rationale, changes, rawTotalKm, adjustedTotalKm, injuryPaused } = props;
   const [confirmingDismiss, setConfirmingDismiss] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -71,6 +73,13 @@ export function CoachAdjustmentCard(props: CoachCardProps) {
           </div>
         )}
       </div>
+
+      {injuryPaused && (
+        <div className="flex items-start gap-2 rounded-lg border border-signal-warn/40 bg-signal-warn/5 px-3 py-2 text-xs text-signal-warn">
+          <AlertTriangle size={14} strokeWidth={1.5} className="shrink-0 mt-0.5" />
+          <span>Managing an injury - automatic adjustments are paused. This is shown for you to apply, not applied for you.</span>
+        </div>
+      )}
 
       <p className="text-sm text-bone-dim leading-relaxed">{rationale}</p>
 

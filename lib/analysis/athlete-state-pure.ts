@@ -30,12 +30,16 @@ export function computeEwma(
   const gain = 1 / tau;
 
   let value = 0;
-  const start = new Date(asOfIso + 'T00:00:00');
-  start.setDate(start.getDate() - windowDays);
+  // UTC-anchored day walk: dailyLoad is keyed by plain 'YYYY-MM-DD' strings
+  // (sliced from startDateLocal), so a local-construct + toISOString() readback
+  // would shift the day keys back one in NZ (UTC+12) — mis-attributing load and
+  // dropping the window-edge day, skewing CTL/ATL/TSB and the form badge.
+  const start = new Date(asOfIso + 'T00:00:00Z');
+  start.setUTCDate(start.getUTCDate() - windowDays);
 
   for (let d = 0; d <= windowDays; d++) {
     const dayDate = new Date(start);
-    dayDate.setDate(dayDate.getDate() + d);
+    dayDate.setUTCDate(dayDate.getUTCDate() + d);
     const dayIso = dayDate.toISOString().slice(0, 10);
     const load = dailyLoad.get(dayIso) ?? 0;
     value = value * decay + load * gain;

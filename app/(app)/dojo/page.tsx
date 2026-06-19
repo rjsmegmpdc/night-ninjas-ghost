@@ -3,17 +3,51 @@ import { Wrench } from 'lucide-react';
 import { BackfillPlanPeriodButton } from '@/components/dojo/backfill-plan-period-button';
 import { getProgramPhase } from '@/lib/plans/program-phase';
 import { getRampPlanForActivePeriod } from '@/lib/plans/ramp-loader';
+import { getActivePlan, currentWeekNumber } from '@/lib/plans/active-plan';
+import { phaseBandFor } from '@/lib/plans/state-awareness';
+import { ProgramShapeCard } from '@/components/dojo/program-shape-card';
+import { StartDateEditor } from '@/components/dojo/start-date-editor';
 import { RampCard } from '@/components/patrol/ramp-card';
 import { DojoPicker } from '@/components/dojo/dojo-picker';
 import { getHrAvailability } from '@/lib/analysis/hr-availability';
 import { switchDojo } from '@/lib/actions/switch-dojo';
 import { getDb, schema } from '@/lib/db';
 import { eq } from 'drizzle-orm';
-import type { Dojo } from '@/lib/plans/types';
+import type { Dojo, PhaseBand } from '@/lib/plans/types';
 
 export default async function DojoPage() {
   const programPhase = await getProgramPhase();
   const rampPlan = await getRampPlanForActivePeriod(programPhase);
+
+  // R2 part 2 - program-shape view (macrocycle phase bar + microcycle week)
+  // for the active plan. Only when a plan can be synthesised (goal race set).
+  const activePlan = await getActivePlan();
+  let programShape: {
+    dojoName: string;
+    programWeeks: number;
+    currentWeek: number | null;
+    bands: PhaseBand[];
+    micro: { dow: number; type: string; label: string }[];
+  } | null = null;
+  if (activePlan) {
+    const { engine, params } = activePlan;
+    const programWeeks = params.programWeeks ?? engine.defaultProgramWeeks;
+    const weekNum = currentWeekNumber(params) ?? 1;
+    const microTemplate = engine.renderWeek(params, weekNum);
+    const bands = Array.from({ length: programWeeks }, (_, i) => phaseBandFor(i + 1, programWeeks));
+    const micro = Array.from({ length: 7 }, (_, dow) => {
+      const day = microTemplate.days.find((d) => d.dow === dow);
+      const sess = day?.sessions.find((s) => s.type !== 'rest') ?? day?.sessions[0];
+      return { dow, type: sess?.type ?? 'rest', label: sess?.label ?? 'Rest' };
+    });
+    programShape = {
+      dojoName: engine.displayName,
+      programWeeks,
+      currentWeek: programPhase.programWeekNumber,
+      bands,
+      micro,
+    };
+  }
 
   // Read currently-selected dojo
   const db = getDb();
@@ -52,6 +86,18 @@ export default async function DojoPage() {
         onSelectFormAction={switchDojo}
         hrAvailability={hrAvailability}
       />
+
+      {/* R2 part 2 - macrocycle phase bar + microcycle preview for the active plan. */}
+      {programShape && <ProgramShapeCard {...programShape} />}
+
+      {/* Phase 5 - editable program start date (canonical plan_periods.startDate). */}
+      {activePlan && (
+        <StartDateEditor
+          startDate={activePlan.params.startDate}
+          dojoName={activePlan.engine.displayName}
+          programWeeks={activePlan.params.programWeeks ?? activePlan.engine.defaultProgramWeeks}
+        />
+      )}
 
       {/* Ramp analysis - visible only during pre-program base. */}
       {rampPlan && <RampCard ramp={rampPlan} />}

@@ -1,0 +1,11 @@
+name,url_template,region
+Saucony NZ,https://www.saucony.co.nz/search?q={query},NZ
+Hoka NZ,https://www.hoka.com/en/nz/search?q={query},NZ
+Running Warehouse NZ,https://www.runningwarehouse.co.nz/search?keywords={query},NZ
+The Athlete's Foot,https://www.athletesfoot.co.nz/search?q={query},NZ
+Sportsmans Warehouse,https://www.sportsmanswarehouse.co.nz/search?q={query},NZ
+Trade Me,https://www.trademe.co.nz/a/marketplace/search?search_string={query},NZ
+TheMarket NZ,https://www.themarket.com/nz/search?q={query},NZ
+Wiggle,https://www.wiggle.co.nz/sw/run/run-shoes/?dwvar_searchTerm={query},International
+Running Warehouse Australia,https://www.runningwarehouse.com.au/search?keywords={query},AU
+SportsShoes UK,https://www.sportsshoes.com/search?keyword={query},International

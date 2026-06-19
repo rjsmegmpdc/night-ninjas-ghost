@@ -32,7 +32,7 @@ interface NavBucket {
 
 const NAV: NavBucket[] = [
   { label: 'Dashboard', href: '/patrol',   match: ['/patrol'] },
-  { label: 'Training',  href: '/dojo',     match: ['/dojo', '/calendar'] },
+  { label: 'Training',  href: '/dojo',     match: ['/dojo', '/calendar', '/race'] },
   { label: 'Analytics', href: '/strike',   match: ['/strike', '/recon', '/vo2max'] },
   { label: 'Profile',   href: '/settings', match: ['/settings', '/help', '/shoes', '/journal'] },
 ];

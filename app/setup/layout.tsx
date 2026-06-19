@@ -12,7 +12,7 @@ export default function SetupLayout({
       <header className="border-b border-ink-line">
         <div className="max-w-5xl mx-auto px-8 py-6 flex items-center gap-4">
           <Logo size={36} className="text-bone" />
-          <Wordmark variant="default" />
+          <Wordmark />
         </div>
       </header>
 

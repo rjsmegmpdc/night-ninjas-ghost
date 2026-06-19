@@ -22,6 +22,7 @@ import { RaceCountdown } from '@/components/patrol/race-countdown';
 import { StreakCounter } from '@/components/patrol/streak-counter';
 import { SyncButton } from '@/components/patrol/sync-button';
 import { WeekComplianceChip } from '@/components/patrol/week-compliance-chip';
+import { WeekAdherenceChip } from '@/components/patrol/week-adherence-chip';
 import { ProgramMatrix } from '@/components/patrol/program-matrix';
 import { FreshnessChip } from '@/components/patrol/freshness-chip';
 import { IntensityChip } from '@/components/patrol/intensity-chip';
@@ -39,6 +40,8 @@ import { CoachAdjustmentCard } from '@/components/patrol/coach-adjustment-card';
 import { resolveCoachAdjustment } from '@/lib/plans/state-aware-week';
 import { NsGuardrailsCard } from '@/components/patrol/ns-guardrails-card';
 import { getNsGuardReport } from '@/lib/analysis/ns-guardrails-read';
+import { getInterruptionsView } from '@/lib/analysis/interruptions';
+import { InterruptionIndicator } from '@/components/patrol/interruption-indicator';
 
 /**
  * Patrol — this week's training loop.
@@ -155,12 +158,13 @@ async function PatrolDashboard() {
 
   // Phase 2 athlete state surfaces + Phase 3a phase + ramp.
   // All run in parallel.
-  const [athleteState, intensityDist, mileageProg, longRunCheck, programPhase] = await Promise.all([
+  const [athleteState, intensityDist, mileageProg, longRunCheck, programPhase, interruptions] = await Promise.all([
     getAthleteState({}),
     getIntensityDistribution(startIso, endIso, {}),
     checkMileageProgression(startIso),
     checkLongRunProportion(startIso),
     getProgramPhase(),
+    getInterruptionsView(),
   ]);
   // Ramp depends on programPhase, so it sequences after - but only triggers
   // a real fetch when phase is pre-program.
@@ -223,6 +227,7 @@ async function PatrolDashboard() {
             <FreshnessChip state={athleteState} />
             <IntensityChip distribution={intensityDist} />
             <WeekComplianceChip compliance={compliance} />
+            <WeekAdherenceChip days={compliance.days} todayDow={todayDow} />
             <StreakCounter />
             <SyncButton />
           </div>
@@ -231,13 +236,22 @@ async function PatrolDashboard() {
         {/* Compact race row + book-a-race CTA */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <RaceCountdown />
-          <Link
-            href="/calendar#tune-ups"
-            className="inline-flex items-center gap-1.5 font-display tracking-wide-display uppercase text-xs text-bone-mute hover:text-accent transition-colors border border-ink-line hover:border-accent px-2.5 py-1"
-            title="Book a race on Calendar"
-          >
-            + Book a race
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/race"
+              className="inline-flex items-center gap-1.5 font-display tracking-wide-display uppercase text-xs text-bone-mute hover:text-accent transition-colors border border-ink-line hover:border-accent px-2.5 py-1"
+              title="Race execution plan - pacing, fuelling, carb-load"
+            >
+              Race plan →
+            </Link>
+            <Link
+              href="/calendar#tune-ups"
+              className="inline-flex items-center gap-1.5 font-display tracking-wide-display uppercase text-xs text-bone-mute hover:text-accent transition-colors border border-ink-line hover:border-accent px-2.5 py-1"
+              title="Book a race on Calendar"
+            >
+              + Book a race
+            </Link>
+          </div>
         </div>
 
         {template.adaptations && template.adaptations.length > 0 && (
@@ -258,6 +272,9 @@ async function PatrolDashboard() {
         )}
       </header>
 
+      {/* Phase 4 - active injury / illness / travel indicator */}
+      <InterruptionIndicator active={interruptions.active} />
+
       {/* Phase 3b - coach proposal / auto-adjustment notice */}
       <CoachAdjustmentCard
         adjustmentId={coach.adjustmentId}
@@ -268,6 +285,7 @@ async function PatrolDashboard() {
         changes={coach.changes}
         rawTotalKm={coach.rawTotalKm}
         adjustedTotalKm={coach.adjustedTotalKm}
+        injuryPaused={coach.injuryPaused}
       />
 
       {/* NS-2/NS-3 - Norwegian Singles discipline guardrails */}
@@ -358,16 +376,17 @@ async function PatrolDashboard() {
 
         {/* Side column — wellness + next mission */}
         <div className="space-y-5">
-          {/* Wellness card — currently still mocked, journal UI not built yet */}
+          {/* Wellness card — log injuries / illness / travel on the Journal page */}
           <Card className="space-y-4">
-            <CardLabel>wellness · last 7 days</CardLabel>
+            <CardLabel>wellness · interruptions</CardLabel>
             <div className="font-mono text-xs text-bone-mute leading-relaxed">
-              ↳ daily wellness logging not yet available. Until the Journal screen
-              lands, the heart rate and pace trends above are your best signal.
+              {interruptions.active.length > 0
+                ? `↳ ${interruptions.active.length} active interruption${interruptions.active.length === 1 ? '' : 's'} logged. Manage them on the Journal page.`
+                : '↳ no active interruptions. Log an injury, illness, or travel break on the Journal page so the plan and risk read stay honest.'}
             </div>
-            <Link href="/help#tasks">
+            <Link href="/journal">
               <span className="font-mono text-xs text-bone-dim hover:text-accent transition-colors">
-                Why this matters →
+                Open Journal →
               </span>
             </Link>
           </Card>

@@ -3,7 +3,7 @@ import { Card, CardLabel } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Settings as SettingsIcon, Activity, Database, Trash2, Download, RotateCcw, Footprints, Flame, Calendar } from 'lucide-react';
 import { logPageView } from '@/lib/store/instrument';
-import { getStravaClientId, getLastSyncAt, getUserTimezone, getStreakRunEverydayMode, getFirstDayOfWeek, getClubParkrunId, getClubWindowDefault, getClubTermsAcceptedAt, getClubLastShareGeneratedAt, getGarminSyncEnabled, getGarminLastSyncAt } from '@/lib/store/settings';
+import { getStravaClientId, getLastSyncAt, getUserTimezone, getStreakRunEverydayMode, getFirstDayOfWeek, getClubParkrunId, getClubWindowDefault, getClubTermsAcceptedAt, getClubLastShareGeneratedAt, getGarminSyncEnabled, getGarminLastSyncAt, getCoachMode } from '@/lib/store/settings';
 import { getStravaTokens } from '@/lib/store/secrets';
 import { listRecentJobs } from '@/lib/sources/sync-runner';
 import { getDataStats } from '@/lib/actions/settings-admin';
@@ -37,6 +37,8 @@ import { SyncJobsTable } from '@/components/settings/sync-jobs-table';
  */
 export default async function SettingsPage() {
   logPageView('/settings');
+
+  const coachMode = await getCoachMode();
 
   // Read all the things we need to render
   const [
@@ -160,7 +162,7 @@ export default async function SettingsPage() {
             <Card className="space-y-4">
               <CardLabel>trigger sync</CardLabel>
               <div className="flex flex-col sm:flex-row gap-3">
-                <form action={startIncrementalSync} className="flex-1">
+                <form action={async () => { 'use server'; await startIncrementalSync(); }} className="flex-1">
                   <Button variant="outline" size="md" type="submit" className="w-full">
                     Sync now
                   </Button>
@@ -168,7 +170,7 @@ export default async function SettingsPage() {
                     ↳ pulls activities since last sync. fast, no rate limit risk.
                   </div>
                 </form>
-                <form action={startExtendedHistorySync} className="flex-1">
+                <form action={async () => { 'use server'; await startExtendedHistorySync(); }} className="flex-1">
                   <Button variant="primary" size="md" type="submit" className="w-full">
                     Pull full history
                   </Button>

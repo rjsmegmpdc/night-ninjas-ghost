@@ -638,3 +638,36 @@ export const vo2maxObservations = sqliteTable(
 
 export type Vo2maxObservation = typeof vo2maxObservations.$inferSelect;
 export type NewVo2maxObservation = typeof vo2maxObservations.$inferInsert;
+
+/* ============================================================================
+ * Interruptions (Phase 4)
+ *
+ * Athlete-logged breaks in training: injury, illness, travel, other. The pure
+ * logic lives in lib/analysis/interruptions-pure.ts; this is just storage.
+ * Locked decision: logged injuries NEVER auto-adjust the plan - Phase 4
+ * informs, the athlete drives recovery. end_date NULL = still active.
+ * ========================================================================== */
+
+export const interruptions = sqliteTable(
+  'interruptions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    type: text('type', { enum: ['injury', 'illness', 'travel', 'other'] }).notNull(),
+    /** Body region for injuries (e.g. 'calf', 'knee'); null otherwise */
+    bodyRegion: text('body_region'),
+    severity: text('severity', { enum: ['niggle', 'moderate', 'severe'] }).notNull(),
+    /** ISO date 'YYYY-MM-DD' the interruption started */
+    startDate: text('start_date').notNull(),
+    /** ISO date it resolved, or null if ongoing */
+    endDate: text('end_date'),
+    note: text('note'),
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    startIdx: index('idx_interruptions_start').on(t.startDate),
+    endIdx: index('idx_interruptions_end').on(t.endDate),
+  })
+);
+
+export type InterruptionRow = typeof interruptions.$inferSelect;
+export type NewInterruptionRow = typeof interruptions.$inferInsert;

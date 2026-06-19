@@ -477,7 +477,7 @@ export function applyStructuredCalendar(
   zones: PaceZones,
   config: import('./types').CalendarConfig
 ): WeekTemplate {
-  let t = { ...template, adaptations: template.adaptations ?? [] };
+  let t: WeekTemplate = { ...template, adaptations: template.adaptations ?? [] };
 
   // Order matters: taper before scaling so race week is locked in,
   // then scaling so commitments override taper if user is sick during taper.

@@ -7,20 +7,34 @@ import {
   ATL_TIME_CONSTANT,
 } from './athlete-state-pure';
 
+// UTC-anchored day key, matching computeEwma's internal walk. Building keys
+// with local midnight + toISOString() would shift them a day in NZ (UTC+12).
+function dayKey(startIso: string, offset: number): string {
+  const d = new Date(startIso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+
 describe('computeEwma', () => {
   it('returns 0 when no load anywhere in the window', () => {
     const empty = new Map<string, number>();
     expect(computeEwma(empty, '2026-05-02', 56, CTL_TIME_CONSTANT)).toBe(0);
   });
 
+  it('counts the asOf day and is timezone-independent (regression)', () => {
+    // A local-built key + UTC readback shifts the key back a day in NZ
+    // (UTC+12), which dropped the asOf day's load entirely. With a literal
+    // key the UTC-anchored walk must still attribute it.
+    const dailyLoad = new Map<string, number>([['2026-06-15', 100]]);
+    const result = computeEwma(dailyLoad, '2026-06-15', 1, ATL_TIME_CONSTANT);
+    expect(result).toBeCloseTo(100 / ATL_TIME_CONSTANT, 5);
+  });
+
   it('settles to a steady-state value after enough days of constant load', () => {
     // After ~5 time constants, EWMA approaches the input value
     const dailyLoad = new Map<string, number>();
-    const start = new Date('2026-01-01T00:00:00');
     for (let d = 0; d < 365; d++) {
-      const day = new Date(start);
-      day.setDate(day.getDate() + d);
-      dailyLoad.set(day.toISOString().slice(0, 10), 10);
+      dailyLoad.set(dayKey('2026-01-01', d), 10);
     }
     // Compute EWMA at end of year — should be very close to 10 (the input)
     const result = computeEwma(dailyLoad, '2026-12-31', 365, CTL_TIME_CONSTANT);
@@ -32,11 +46,8 @@ describe('computeEwma', () => {
     // Sudden load arriving on day 50 of a 56-day window — ATL (τ=7) should
     // be much higher than CTL (τ=42) at the end
     const dailyLoad = new Map<string, number>();
-    const start = new Date('2026-03-08T00:00:00'); // 56 days before May 2
     for (let d = 50; d <= 56; d++) {
-      const day = new Date(start);
-      day.setDate(day.getDate() + d);
-      dailyLoad.set(day.toISOString().slice(0, 10), 50);
+      dailyLoad.set(dayKey('2026-03-08', d), 50); // 56 days before May 2
     }
     const atl = computeEwma(dailyLoad, '2026-05-02', 56, ATL_TIME_CONSTANT);
     const ctl = computeEwma(dailyLoad, '2026-05-02', 56, CTL_TIME_CONSTANT);
@@ -49,13 +60,10 @@ describe('computeEwma', () => {
     //   B) every other day = 40 load (same weekly total)
     // Both should converge to the same long-term average. Verifying basic
     // EWMA sanity — averaging accumulates correctly across patterns.
-    const start = new Date('2026-01-01T00:00:00');
     const daily = new Map<string, number>();
     const everyOther = new Map<string, number>();
     for (let d = 0; d < 200; d++) {
-      const day = new Date(start);
-      day.setDate(day.getDate() + d);
-      const iso = day.toISOString().slice(0, 10);
+      const iso = dayKey('2026-01-01', d);
       daily.set(iso, 20);
       if (d % 2 === 0) everyOther.set(iso, 40);
     }

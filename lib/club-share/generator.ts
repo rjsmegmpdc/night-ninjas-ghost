@@ -20,6 +20,7 @@ import type {
 } from './types';
 import { SCHEDULE_SCHEMA_VERSION } from './types';
 import type { WeekTemplate, SessionType, Dow } from '@/lib/plans/types';
+import { addDaysIso } from '@/lib/dates/iso';
 
 const DAY_LABELS: SharedSession['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -77,9 +78,7 @@ function sanitiseNote(note: string | undefined): string | undefined {
  * dow is 0..6 (Mon..Sun in the internal model).
  */
 function dateForDow(weekStartIso: string, dow: number): string {
-  const d = new Date(weekStartIso + 'T00:00:00');
-  d.setDate(d.getDate() + dow);
-  return d.toISOString().slice(0, 10);
+  return addDaysIso(weekStartIso, dow);
 }
 
 /**
@@ -158,7 +157,7 @@ export interface GenerateInput {
  */
 function staleAfterIso(generatedAt: Date): string {
   const d = new Date(generatedAt);
-  d.setDate(d.getDate() + 5);
+  d.setUTCDate(d.getUTCDate() + 5);
   return d.toISOString().slice(0, 10);
 }
 
@@ -175,9 +174,7 @@ export function generateSchedulePayload(input: GenerateInput): ClubSchedulePaylo
   const startIso = weeks[0].weekStartIso;
   const lastWeek = weeks[weeks.length - 1];
   // weekStart is Monday; end is Sunday = +6 days
-  const endDate = new Date(lastWeek.weekStartIso + 'T00:00:00');
-  endDate.setDate(endDate.getDate() + 6);
-  const endIso = endDate.toISOString().slice(0, 10);
+  const endIso = addDaysIso(lastWeek.weekStartIso, 6);
 
   const window: SharedWindow = {
     start_iso: startIso,

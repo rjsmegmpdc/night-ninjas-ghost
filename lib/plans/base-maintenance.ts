@@ -8,6 +8,7 @@ import type {
   PlanParams,
 } from '@/lib/plans/types';
 import { marathonPaceSpk, band } from '@/lib/plans/derive';
+import { addDaysIso } from '@/lib/dates/iso';
 
 /**
  * Base maintenance week generator.
@@ -119,15 +120,11 @@ async function computeBaseVolumeKm({
  * scale a maintenance week.
  */
 async function computeRecentChronicKm(beforeIso: string): Promise<number | null> {
-  const before = new Date(beforeIso + 'T00:00:00');
-  // Look back N weeks
-  const lookback = new Date(before);
-  lookback.setDate(lookback.getDate() - 7 * RECENT_WEEKS_FOR_CHRONIC);
-  const lookbackIso = lookback.toISOString().slice(0, 10);
-  // weekStart is the earliest day to include; weekEnd = day before `before`
-  const cutoffEnd = new Date(before);
-  cutoffEnd.setDate(cutoffEnd.getDate() - 1);
-  const cutoffEndIso = cutoffEnd.toISOString().slice(0, 10);
+  // UTC-anchored date math (see lib/dates/iso): a local-construct + UTC-read
+  // would shift the chronic-load window a day in NZ (UTC+12).
+  const lookbackIso = addDaysIso(beforeIso, -7 * RECENT_WEEKS_FOR_CHRONIC);
+  // weekStart is the earliest day to include; weekEnd = day before `before`.
+  const cutoffEndIso = addDaysIso(beforeIso, -1);
 
   const activities = await getActivitiesInRange(lookbackIso, cutoffEndIso);
   if (activities.length === 0) return null;

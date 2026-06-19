@@ -122,7 +122,7 @@ export async function NinjaLoopSection() {
           </span>
         </div>
         <div className="flex-1" />
-        <form action={refreshNzHolidays}>
+        <form action={async () => { 'use server'; await refreshNzHolidays(); }}>
           <Button variant="outline" size="sm" type="submit">
             <RefreshCw size={14} strokeWidth={1.5} className="mr-2" />
             Refresh from GitHub iCal

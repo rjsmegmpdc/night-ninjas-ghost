@@ -194,7 +194,7 @@ async function getBestRacesForShoe(shoe: Shoe): Promise<ShoeWithStats['bestRaces
   const db = getDb();
 
   let activities: {
-    name: string;
+    name: string | null;
     distanceM: number | null;
     movingTimeS: number | null;
     startDateLocal: string;
@@ -249,7 +249,7 @@ async function getBestRacesForShoe(shoe: Shoe): Promise<ShoeWithStats['bestRaces
 
     out.push({
       distanceKm,
-      activityName: best.name,
+      activityName: best.name ?? '',
       date: best.startDateLocal.slice(0, 10),
       timeS: best.movingTimeS!,
     });

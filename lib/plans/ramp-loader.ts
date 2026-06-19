@@ -43,7 +43,7 @@ export async function getRampPlanForActivePeriod(
   }
   if (!period) return null;
 
-  const engine = getEngine(period.dojo);
+  const engine = getEngine(period.dojo as import('./types').Dojo);
   const goalRace = await db
     .select()
     .from(schema.races)

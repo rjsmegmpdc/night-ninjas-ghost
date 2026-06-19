@@ -113,25 +113,31 @@ doesn't, it doesn't ship.
 
 ## Current focus
 
-**Phase R1 - VELOCITY visual rebrand.** The product moved from the
-Night Ninjas brutalist aesthetic to the VELOCITY cockpit aesthetic
-(rounded-12 cards, 4-item top nav, layered surfaces, semantic teal
-alongside accent orange). Documentation foundations landed: DESIGN.md,
-BRAND.md, ROADMAP.md updated, README.md updated, Tailwind tokens
-extended. Page-by-page restyle is the next session's work.
+**Phase 4 - Interruption tracking + injury risk.** Block-critical: the
+Hansons 18-week block starts ~28/06/2026 (sub-3:00 Auckland Marathon
+01/11/2026). The pure engine - `lib/analysis/interruptions-pure.ts`
+(status/duration, graded 3-phase return-to-training, ACWR + history
+injury-risk read) and its 17 tests - is in place. Remaining to ship:
+migration 0009 + `interruptions` table; server read layer + log/resolve/
+delete actions; the 3b automatic-mode suppression wire
+(`hasActiveInjuryOrIllness` gate in `state-aware-week.ts` - currently
+design intent only, not enforced); the Wellness/journal page UI (still a
+placeholder); and a Patrol active-interruption indicator.
 
-After R1 (visual rebrand), the planned sequence is:
+**Recently shipped** (see the SHIPPED blocks at the top of this file): R1
+visual rebrand, R1.5 club export (VELOCITY side), R2 part 1 (Trends),
+R2.5 VO2 max page, R2.6 VO2 insights, Phase 12 biometric surfacing, the
+Norwegian Singles dojo (NS-1) + NS-2/NS-3 guardrails + HR-readiness
+callout + personal HR calibration, and Phase 3b core (state-aware engine).
 
-- **R2** - Surface existing data more visually (Category B from the
-  redesign brief): heart-rate zone distribution per session, macrocycle
-  phase bar on dojo cards, microcycle preview pane, training load vs
-  recovery line chart, monthly volume + delta, last-week adherence chip.
-- **R3+** - Original Phase 3b onwards (engine state-awareness, then
-  Phase 4-9 per the original plan).
+**Queued after Phase 4:** R2 part 2 (macrocycle bar / microcycle preview /
+7-bar adherence chip); Phase 5 (calibration / editable start date); Phase
+6 (race execution); Phase 7 (weather); 3b part 2. Polish (streak->flame,
+avatar dropdown, mobile pass) and post-race items (Phases 8-10/13/14,
+Apple Health/Whoop/Coros adapters, club PR consumer) follow.
 
-The deferred Category C work (HRV / sleep / RHR / stress / AI Coach /
-Garmin-Coros-Apple Health integration) remains on the v2 horizon. Not
-in scope for the marathon build.
+The deferred Category C work (AI Coach, etc.) remains on the v2 horizon,
+not in scope for the marathon build.
 
 ---
 
@@ -140,8 +146,9 @@ in scope for the marathon build.
 These are landed. Listed here as ground-truth for what the product
 already does, not as celebration.
 
-- 8-dojo plan engine (Hansons, Pfitzinger, Daniels, Higdon, Lydiard, Coogan,
-  Furman, Custom) with calendar-aware week rendering
+- 9-dojo plan engine (Lydiard, Hansons, Norwegian Singles, Daniels,
+  Pfitzinger, Higdon, Polarised, Ultra, Custom) with calendar-aware week
+  rendering
 - Goal race + tune-ups, on-demand editable, with target time validation
 - Plan-period history (`plan_periods`): each row in the matrix uses the
   dojo and goal that were active at that time, not the currently selected one
@@ -256,22 +263,12 @@ preview on the Methodology/dojo cards; 7-bar weekly adherence chip on
 Patrol. Tightly coupled to those surfaces; lower marginal value than the
 data views just shipped.
 
-## Phase R2 (original scope) - Surface existing data visually
+## Phase R2 (original scope) — superseded
 
-Build the "Category B" features the designer's redesign showed us could
-exist on top of data we already collect. None of these need new external
-integrations.
-
-- Heart-rate zone distribution chart per session (we have HR streams)
-- Macrocycle phase bar on dojo cards (BASE/STRENGTH/SPECIFIC) - dojo
-  engines compute phase weighting today
-- Typical microcycle preview pane on dojo cards (engines compute weekly
-  templates)
-- Training load vs recovery line chart - we have CTL/ATL/TSB
-- Monthly volume stat with month-over-month delta
-- Last-week adherence chip with 7-bar visual on Dashboard header
-
-Estimated: 1 session.
+> Superseded by **Phase R2 — Surface existing data** above. Shipped in part
+> 1: HR-zone distribution, load-vs-recovery, monthly volume + delta. Tracked
+> as deferred part 2: macrocycle phase bar, microcycle preview, 7-bar
+> adherence chip. Original Category-B brief in git history.
 
 ---
 
@@ -377,75 +374,30 @@ cells when applied/automatic.
 rows through the pipeline), proposal history view, monotony trigger,
 sickness/travel-window triggers (needs Phase 4 interruption data).
 
-## Phase 3b (original scope) - Engine state-awareness (with three-mode coach setting)
+## Phase 3b (original scope) — superseded
 
-**Why this matters:** state is useless if the prescription doesn't respect
-it. Phase 2 reports state; phase 3b makes it actionable. AND it does so
-in a way that respects the athlete's preferred level of automation.
-
-**Three coach modes (`prefs.coachMode` setting):**
-
-1. **manual** - engine surfaces insights only. User manually edits plan if
-   they want. Insights logged to `plan_adjustments` with applied_at = NULL.
-2. **assisted** (default) - engine proposes adjustments. UI surfaces
-   "engine recommends: cut Tuesday tempo by 2km. [Apply] [Dismiss]".
-   `plan_adjustments` row written on propose; `applied_at` set on accept,
-   `dismissed_at` set on dismiss.
-3. **automatic** - engine applies adjustments and notifies. Plan changes
-   immediately. `plan_adjustments` row written with `applied_at` set.
-
-**Two safety rails (regardless of mode):**
-
-- ACWR breach >1.5 forces a volume cut even in manual mode (it cannot be
-  silently dismissed; requires explicit acknowledgement)
-- Athlete-logged injuries never trigger any auto-adjust; only the athlete
-  updates prescriptions during recovery
-
-**Build:**
-
-- `interpretState(state, phase) -> StateInterpretation` per dojo (8 files)
-- `applyAdjustment(template, interpretation) -> WeekTemplate` per dojo
-- `prefs.coachMode` setting (already plumbed) wired into engine flow
-- `plan_adjustments` table (already migrated) written by every proposal
-- Visible "engine adjusted" indicator on Patrol matrix when prescriptions
-  differ from the dojo's raw template
-- New section in Settings → "Coach Mode" with the three radio options
-- Hard ACWR cap implemented as a non-overridable safety floor
-
-**Pre-work: ✅ DONE.** `lib/plans/engine-snapshot.test.ts` pins all 8
-engines across their full program span for 3 levels (24 snapshots),
-plus determinism and volume-cap invariant checks (40 tests total).
-Any 3b clamp that leaks into the raw-template path fails with a
-readable per-week digest diff.
-
-**Override-frequency analysis (deferred to v2):**
-
-The `plan_adjustments` audit table accumulates data starting in 3b. A
-v2 feature reads this to personalise thresholds: if an athlete dismisses
-volume-cut suggestions 5 times without injury, the threshold loosens for
-that athlete.
+> Superseded by **Phase 3b — Engine state-awareness** above (core shipped;
+> part 2 pending). The full original spec — three coach modes, the two
+> safety rails (ACWR >1.5 hard cut; athlete-logged injuries never
+> auto-adjust), and per-dojo interpretState/applyAdjustment — is
+> implemented; original brief in git history.
+> **Still v2:** override-frequency personalisation (read `plan_adjustments`
+> to loosen thresholds for an athlete who repeatedly dismisses cuts without
+> injury).
+> **Caveat:** the "injuries never auto-adjust" rail is design intent but is
+> NOT yet enforced — the `hasActiveInjuryOrIllness` gate is Phase 4
+> remaining work (see Current focus).
+> **Pre-work note:** the engine-snapshot net actually pins all 9 engines
+> (incl. custom) × 3 levels = 45 tests, not the 8×3=24/40 the original entry
+> stated.
 
 ---
 
-## Phase 3 — Engine consumes athlete state (LEGACY ENTRY)
+## Phase 3 — Engine consumes athlete state (LEGACY ENTRY) — superseded
 
-> Original Phase 3 entry; superseded by Phase 3b above which adds the
-> three-mode coach architecture. Kept here for traceability.
-
-**Why this matters:** state is useless if the prescription doesn't
-respect it. Phase 2 reports state; phase 3 makes it actionable.
-
-**Build:**
-
-- `renderWeek` signature extended to accept `athleteState`
-- `clampForState(prescribedKm, athleteState)` helper per dojo (8 files,
-  small change each)
-- New plan's first week respects current chronic load (no >10% bump from
-  the existing 7-day acute load)
-- Mid-block adjustment: when ACWR > 1.3 going into next week, the engine
-  recommends a cutback (-15% volume) instead of standard progression
-- Patrol shows when the engine has *modified* a prescription, with a
-  small "adjusted: high recent load" tag on affected days
+> Original pre-3b entry, fully superseded by **Phase 3b** above (which added
+> the three-mode coach architecture). Pointer only; original bullets in git
+> history.
 
 ---
 
@@ -744,57 +696,18 @@ Pre-sync empty state guides the user to connect Garmin. 10 pure tests.
 **Still pending:** Matt's first live Garmin connect+sync (cards render
 empty until then); RHR/HRV correlation insights (R2.6 tier).
 
-## Phase 12 — External data sources (earlier note)
+## Phase 12 (earlier notes) — superseded
 
-**Resequenced:** pulled forward from v2 at Matt's request (2026-06-12).
-Garmin first (Matt's device), Strava activity data already integrated.
-Apple Health / Whoop / Coros follow the same daily_health_metrics shape
-but are untestable until a user with those devices exists - build them
-last, mark as experimental.
-
-**Landed (foundations):**
-- `daily_health_metrics` table: one row per (date, source); rhr_bpm,
-  hrv_ms, sleep_duration_s, sleep_score, stress_score, body_battery,
-  vo2max_device, weight_kg, raw JSON passthrough
-- Migration 0007
-- Settings keys: garmin.sync_enabled, garmin.last_sync_at
-- Source priority for consumers: manual-lab > garmin > whoop >
-  apple-health > coros > manual
-
-**Next (blocked on route decision - see open question):**
-- Garmin sync client (official Health API vs unofficial library)
-- Credentials in OS keystore via keytar (same pattern as Strava)
-- Daily sync job + backfill
-- Surfacing: RHR/HRV/sleep cards on Athlete State; insights engine
-  correlation (unblocks the deferred R2.6 sleep/HRV tiers)
-
-**Open question (Matt to decide):** official Garmin Health API requires
-a developer-program application reviewed by Garmin (typically approved
-for businesses, weeks of lead time, personal projects often declined).
-The unofficial route (e.g. garth / garmin-connect libraries) signs in
-with the athlete's own credentials, works immediately, is local-first
-aligned, but is ToS-grey and can break when Garmin changes endpoints.
-
-## Phase 12 (original entry) — External data sources (cloud OAuth)
-
-**Why this matters:** sleep and HRV are the highest-leverage signals
-we don't currently capture. They genuinely require cloud OAuth — there's
-no local-first version.
-
-**Build (sequenced by integration cost):**
-
-- **Apple Health** (HealthKit via shortcuts export, user-controlled)
-- **Garmin Connect** (OAuth)
-- **Whoop** (OAuth)
-- Pull: HRV, RHR, sleep duration, sleep quality
-- Surface in Strike as recovery state inputs to freshness model
-- Surface on Patrol as small chip when concerning trends emerge
-- AI integration (depends on phase 10) draws on these signals for
-  daily briefings and plan adjustments
-
-**Local-first compromise:** these are explicitly cloud-dependent. The
-posture is "local-first by default, cloud capabilities only when the
-user opts in per-source, with clear data-flow disclosure."
+> Superseded by **Phase 12 — External data sources** above (surfacing
+> shipped; first live Garmin sync still pending).
+> **Route decision resolved:** the unofficial `garmin-connect` library was
+> chosen over the official Garmin Health API — works immediately, local-first
+> aligned, supports plain + MFA login. Foundations landed: `daily_health_metrics`
+> table, migration 0007, source priority manual-lab > garmin > whoop >
+> apple-health > coros > manual.
+> **Deferred:** Apple Health / Whoop / Coros adapters follow the same shape,
+> untestable until a user with those devices exists. Original cloud-OAuth
+> brief in git history.
 
 ---
 

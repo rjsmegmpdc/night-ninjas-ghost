@@ -58,8 +58,11 @@ export async function getAthleteState(
   asOfIso?: string
 ): Promise<AthleteState | null> {
   const today = asOfIso ?? new Date().toISOString().slice(0, 10);
-  const windowStart = new Date(today + 'T00:00:00');
-  windowStart.setDate(windowStart.getDate() - WINDOW_DAYS);
+  // UTC-anchored: windowStartIso is compared against startDateLocal (a plain
+  // 'YYYY-MM-DD...' string) in SQL, so a local-construct + UTC-read would start
+  // the window a day early in NZ (UTC+12).
+  const windowStart = new Date(today + 'T00:00:00Z');
+  windowStart.setUTCDate(windowStart.getUTCDate() - WINDOW_DAYS);
   const windowStartIso = windowStart.toISOString().slice(0, 10);
 
   const db = getDb();

@@ -10,6 +10,7 @@ import type { DayEvent } from '@/lib/plans/distribute-events';
 import type { FirstDayOfWeek } from '@/lib/store/settings';
 import { dowDisplayOrder, dowDisplayLabels } from '@/lib/plans/dow-display';
 import { formatSpk } from '@/lib/plans/derive';
+import { addDaysIso } from '@/lib/dates/iso';
 
 /* ============================================================================
  * MatrixRowData — the serialisable row record. Rendered the same way
@@ -752,12 +753,6 @@ function complianceColour(actual: number, target: number): string {
   if (pct >= 95 && pct <= 110) return 'text-signal-ok';
   if (pct >= 85 && pct < 95) return 'text-signal-warn';
   return 'text-signal-miss';
-}
-
-export function addDaysIso(iso: string, days: number): string {
-  const d = new Date(iso + 'T00:00:00');
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
 }
 
 function formatShortDate(iso: string): string {

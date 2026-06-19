@@ -1,0 +1,200 @@
+brand,model,recommended_km,category,carbon_plate,notes
+Saucony,Endorphin Pro 3,450,race-day,1,
+Saucony,Endorphin Pro 4,450,race-day,1,
+Saucony,Endorphin Pro Elite,400,race-day,1,top-tier race
+Saucony,Endorphin Elite,400,race-day,1,
+Saucony,Endorphin Elite 2,400,race-day,1,
+Saucony,Endorphin Speed 3,650,super-trainer,0,nylon plate
+Saucony,Endorphin Speed 4,650,super-trainer,0,nylon plate
+Saucony,Endorphin Shift 3,800,daily,0,
+Saucony,Endorphin Shift 4,800,daily,0,
+Saucony,Kinvara 14,500,daily,0,minimal
+Saucony,Kinvara 15,500,daily,0,
+Saucony,Ride 16,800,daily,0,
+Saucony,Ride 17,800,daily,0,
+Saucony,Ride 18,800,daily,0,
+Saucony,Triumph 21,800,daily,0,max cushion
+Saucony,Triumph 22,800,daily,0,
+Saucony,Guide 17,800,daily,0,stability
+Saucony,Hurricane 24,800,daily,0,stability max cushion
+Saucony,Peregrine 14,700,trail,0,
+Saucony,Xodus Ultra 3,800,trail,0,ultra
+Saucony,Type A9,300,race-day,0,track flat
+Hoka,Cielo X1,400,race-day,1,
+Hoka,Rocket X 2,450,race-day,1,
+Hoka,Mach 6,650,uptempo,0,
+Hoka,Mach X,650,super-trainer,0,plated
+Hoka,Mach X 2,650,super-trainer,0,
+Hoka,Clifton 9,800,daily,0,
+Hoka,Clifton 10,800,daily,0,
+Hoka,Bondi 8,800,daily,0,max cushion
+Hoka,Bondi 9,800,daily,0,
+Hoka,Arahi 7,800,daily,0,stability
+Hoka,Arahi 8,800,daily,0,
+Hoka,Skyward X,650,super-trainer,1,
+Hoka,Rincon 4,650,uptempo,0,minimal cushion
+Hoka,Speedgoat 5,700,trail,0,
+Hoka,Speedgoat 6,700,trail,0,
+Hoka,Stinson 7,800,trail,0,max cushion trail
+Hoka,Tecton X 2,500,trail,1,carbon trail
+Hoka,Challenger 7,750,trail,0,
+Hoka,Torrent 3,650,trail,0,
+Nike,Vaporfly 3,400,race-day,1,
+Nike,Vaporfly 4,400,race-day,1,
+Nike,Alphafly 3,450,race-day,1,
+Nike,Streakfly,350,race-day,0,short race flat
+Nike,Pegasus 41,800,daily,0,
+Nike,Pegasus 42,800,daily,0,
+Nike,Pegasus Plus,650,uptempo,0,
+Nike,Pegasus Premium,650,super-trainer,1,
+Nike,Pegasus Trail 5,750,trail,0,
+Nike,Vomero 17,800,daily,0,
+Nike,Vomero 18,800,daily,0,
+Nike,Structure 25,800,daily,0,stability
+Nike,Invincible 3,800,daily,0,max cushion
+Nike,Zoom Fly 5,650,super-trainer,1,
+Nike,Zoom Fly 6,650,super-trainer,1,
+Nike,Ultrafly,500,trail,1,
+Nike,Wildhorse 8,750,trail,0,
+ASICS,Metaspeed Sky+,500,race-day,1,
+ASICS,Metaspeed Sky Paris,400,race-day,1,
+ASICS,Metaspeed Sky Tokyo,400,race-day,1,
+ASICS,Metaspeed Edge+,500,race-day,1,
+ASICS,Metaspeed Edge Paris,400,race-day,1,
+ASICS,Metaspeed Edge Tokyo,400,race-day,1,
+ASICS,Magic Speed 4,500,super-trainer,1,
+ASICS,Magic Speed 3,500,super-trainer,1,
+ASICS,Superblast 2,650,super-trainer,0,
+ASICS,Superblast,650,super-trainer,0,
+ASICS,Novablast 4,800,daily,0,
+ASICS,Novablast 5,800,daily,0,
+ASICS,Gel-Cumulus 26,800,daily,0,
+ASICS,Gel-Cumulus 27,800,daily,0,
+ASICS,Gel-Nimbus 26,800,daily,0,max cushion
+ASICS,Gel-Nimbus 27,800,daily,0,
+ASICS,Gel-Kayano 31,800,daily,0,stability
+ASICS,Gel-Kayano 32,800,daily,0,
+ASICS,GT-2000 13,800,daily,0,stability
+ASICS,Gel-Trabuco 12,750,trail,0,
+ASICS,Fujispeed 3,500,trail,1,
+ASICS,Fujitrabuco 3,750,trail,0,
+ASICS,Hyper Speed 3,400,race-day,0,track flat
+Brooks,Hyperion Elite 4,400,race-day,1,
+Brooks,Hyperion Max 2,650,super-trainer,1,
+Brooks,Hyperion 2,650,uptempo,0,
+Brooks,Ghost 16,800,daily,0,
+Brooks,Ghost 17,800,daily,0,
+Brooks,Glycerin 21,800,daily,0,max cushion
+Brooks,Glycerin 22,800,daily,0,
+Brooks,Glycerin GTS 21,800,daily,0,stability
+Brooks,Adrenaline GTS 24,800,daily,0,stability
+Brooks,Launch 10,650,daily,0,
+Brooks,Caldera 7,750,trail,0,
+Brooks,Cascadia 18,750,trail,0,
+Brooks,Catamount 4,650,trail,0,
+On,Cloudboom Echo 3,400,race-day,1,
+On,Cloudboom Strike,450,race-day,1,
+On,Cloudmonster Hyper,650,super-trainer,1,
+On,Cloudmonster 2,800,daily,0,
+On,Cloudsurfer,650,daily,0,
+On,Cloudsurfer 7,650,daily,0,
+On,Cloudflow,650,daily,0,
+On,Cloud 5,650,daily,0,casual
+On,Cloudultra 2,750,trail,0,ultra
+On,Cloudvista,750,trail,0,
+On,Cloudventure,750,trail,0,
+New Balance,FuelCell SuperComp Elite v4,400,race-day,1,
+New Balance,FuelCell SuperComp Trainer v3,650,super-trainer,1,
+New Balance,FuelCell Rebel v4,650,uptempo,0,
+New Balance,FuelCell Rebel v5,650,uptempo,0,
+New Balance,1080 v13,800,daily,0,
+New Balance,1080 v14,800,daily,0,
+New Balance,860 v14,800,daily,0,stability
+New Balance,Vongo v6,800,daily,0,stability
+New Balance,More v5,800,daily,0,max cushion
+New Balance,Hierro v8,750,trail,0,
+New Balance,Summit Unknown v5,750,trail,0,
+Adidas,Adios Pro 3,450,race-day,1,
+Adidas,Adios Pro 4,450,race-day,1,
+Adidas,Adios Pro Evo 1,200,race-day,1,one-race shoe
+Adidas,Adizero Boston 12,650,super-trainer,1,
+Adidas,Adizero Boston 13,650,super-trainer,1,
+Adidas,Adizero SL 2,650,uptempo,0,
+Adidas,Adizero Adios 8,500,race-day,0,
+Adidas,Supernova Rise,800,daily,0,
+Adidas,Supernova Solution,800,daily,0,stability
+Adidas,Ultraboost Light,800,daily,0,max cushion
+Adidas,Terrex Agravic Speed,500,trail,0,
+Adidas,Terrex Agravic Pro,500,trail,1,carbon trail
+Altra,Vanish Tempo,500,uptempo,0,zero-drop
+Altra,Mont Blanc BOA,750,trail,0,zero-drop
+Altra,Lone Peak 8,800,trail,0,zero-drop
+Altra,Lone Peak 9,800,trail,0,zero-drop
+Altra,Olympus 6,750,trail,0,zero-drop max cushion
+Altra,Outroad 2,750,trail,0,
+Altra,Escalante 4,650,daily,0,zero-drop
+Altra,Torin 7,800,daily,0,zero-drop
+Altra,Provision 8,800,daily,0,stability
+Mizuno,Wave Rebellion Pro 3,450,race-day,1,
+Mizuno,Wave Rebellion Flash 2,650,super-trainer,1,
+Mizuno,Wave Sky 7,800,daily,0,max cushion
+Mizuno,Wave Rider 28,800,daily,0,
+Mizuno,Wave Inspire 20,800,daily,0,stability
+Mizuno,Wave Mujin 9,750,trail,0,
+Mizuno,Wave Daichi 7,750,trail,0,
+Salomon,S/Lab Ultra 4,750,trail,0,ultra
+Salomon,Pulsar Trail Pro 2,650,trail,0,
+Salomon,Genesis,750,trail,0,
+Salomon,Speedcross 6,750,trail,0,
+Salomon,Sense Ride 5,750,trail,0,
+Salomon,Glide Max TR,800,trail,0,
+Salomon,Aero Glide 2,800,daily,0,
+Topo,Cyclone 2,500,uptempo,0,
+Topo,Specter 2,800,daily,0,
+Topo,Phantom 3,800,daily,0,max cushion
+Topo,Ultraventure 4,750,trail,0,
+Topo,MTN Racer 3,750,trail,0,
+Puma,Deviate Nitro Elite 3,450,race-day,1,
+Puma,Deviate Nitro 3,650,super-trainer,1,
+Puma,Velocity Nitro 3,800,daily,0,
+Puma,Magnify Nitro 2,800,daily,0,max cushion
+Puma,ForeverRun Nitro 2,800,daily,0,stability
+Diadora,Nucleo,800,daily,0,
+Diadora,Mythos Blushield Volo,800,daily,0,
+Diadora,Atomo,650,super-trainer,0,
+Reebok,FloatRide Run Energy 5,800,daily,0,
+Under Armour,Velociti 3,650,uptempo,0,
+Under Armour,Infinite Pro,800,daily,0,
+Under Armour,HOVR Sonic 6,650,daily,0,
+Skechers,GO Run Razor Excess 2,500,race-day,0,
+Skechers,GO Run Persistence,800,daily,0,
+Skechers,Speed Beast,650,super-trainer,1,
+Inov-8,Trailfly Ultra G 300 Max,750,trail,0,ultra
+Inov-8,X-Talon G 235 v2,650,trail,0,fell
+Inov-8,Mudclaw G 260 v2,650,trail,0,fell
+La Sportiva,Bushido III,750,trail,0,
+La Sportiva,Cyklon Cross GTX,750,trail,0,
+La Sportiva,Prodigio Pro,650,trail,0,
+La Sportiva,Mutant,750,trail,0,
+La Sportiva,Akasha II,750,trail,0,
+Scarpa,Ribelle Run XT,750,trail,0,
+Scarpa,Spin Planet,750,trail,0,
+Merrell,Agility Peak 5,750,trail,0,
+Merrell,Long Sky 2,750,trail,0,
+Merrell,MTL Long Sky,750,trail,0,
+Tracksmith,Eliot Runner,800,daily,0,
+Tracksmith,Eliot Racer,400,race-day,0,
+Norda,001,750,trail,0,
+Norda,002,500,race-day,1,trail carbon
+Speedland,SL:PDX,750,trail,0,
+Speedland,SL:HSV,500,trail,1,
+Craft,Pro Endur Distance,800,daily,0,
+Craft,Endurance Trail,750,trail,0,
+Lululemon,Beyondfeel,800,daily,0,
+Lululemon,Blissfeel 2,800,daily,0,
+Tarkine,Goshawk V2,800,daily,0,
+Tarkine,Trail Devil,750,trail,0,
+Anta,C202 GT,450,race-day,1,
+Xtep,160X 5.0,400,race-day,1,
+361,Eros 2 Pro,450,race-day,1,
+Li-Ning,Feidian 4 Ultra,450,race-day,1,

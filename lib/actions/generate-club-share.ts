@@ -120,7 +120,7 @@ async function buildWeeksForExport(weekCount: number): Promise<
       const periodStart = new Date(activePlan.params.startDate + 'T00:00:00');
       const diffDays = Math.floor((monday.getTime() - periodStart.getTime()) / 86400000);
       const wkNum = Math.floor(diffDays / 7) + 1;
-      if (wkNum >= 1 && wkNum <= activePlan.params.programWeeks) {
+      if (wkNum >= 1 && wkNum <= (activePlan.params.programWeeks ?? activePlan.engine.defaultProgramWeeks)) {
         template = activePlan.engine.renderWeek(activePlan.params, wkNum, weekContext);
       }
     }
