@@ -300,6 +300,11 @@ $requiredFiles = @(
     'lib\race\execution-pure.test.ts',
     'lib\race\execution.ts',
 
+    # Library - weather (Phase 7)
+    'lib\weather\heat-adjust-pure.ts',
+    'lib\weather\heat-adjust-pure.test.ts',
+    'lib\weather\forecast.ts',
+
     # Library - DB
     'lib\db\data-dir.ts',
     'lib\db\index.ts',
@@ -449,6 +454,7 @@ $requiredFiles = @(
     'components\race\pace-plan-card.tsx',
     'components\race\fueling-card.tsx',
     'components\race\carb-load-card.tsx',
+    'components\race\forecast-card.tsx',
 
     # Components - shoes
     'components\shoes\add-manual-shoe-form.tsx',

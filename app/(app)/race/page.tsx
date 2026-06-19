@@ -4,6 +4,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { PacePlanCard } from '@/components/race/pace-plan-card';
 import { FuelingCard } from '@/components/race/fueling-card';
 import { CarbLoadCard } from '@/components/race/carb-load-card';
+import { ForecastCard } from '@/components/race/forecast-card';
 import { formatDuration } from '@/lib/plans/derive';
 
 /**
@@ -49,6 +50,13 @@ export default async function RacePage() {
             )}
           </div>
 
+          <ForecastCard
+            forecast={view.forecast}
+            heat={view.heat}
+            goalPaceSpk={view.goalPaceSpk}
+            heatAdjustedPaceSpk={view.heatAdjustedPaceSpk}
+            raceDate={view.race.raceDate}
+          />
           <PacePlanCard pacing={view.pacing} />
           <FuelingCard fueling={view.fueling} />
           <CarbLoadCard carbLoad={view.carbLoad} />

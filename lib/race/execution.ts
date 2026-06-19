@@ -20,6 +20,8 @@ import {
   type PacePlan,
   type PaceStrategy,
 } from './execution-pure';
+import { getForecastForDate, type DayForecast } from '@/lib/weather/forecast';
+import { heatAdjust, applyHeatToPaceSpk, type HeatAdjustment } from '@/lib/weather/heat-adjust-pure';
 
 export type {
   PacePlan,
@@ -29,6 +31,8 @@ export type {
   CarbLoadPlan,
   CarbLoadDay,
 } from './execution-pure';
+export type { DayForecast } from '@/lib/weather/forecast';
+export type { HeatAdjustment, HeatSeverity } from '@/lib/weather/heat-adjust-pure';
 
 const STRATEGIES: PaceStrategy[] = ['even', 'negative', 'progressive'];
 
@@ -41,6 +45,12 @@ export interface RaceExecutionView {
   fueling: ReturnType<typeof fuelingPlan>;
   carbLoad: ReturnType<typeof carbLoadPlan> | null;
   weightKg: number | null;
+  /** Race-day forecast (Open-Meteo, Auckland default); null if >16 days out or fetch failed. */
+  forecast: DayForecast | null;
+  /** Heat advisory from the forecast; null when no forecast/temperature. */
+  heat: HeatAdjustment | null;
+  goalPaceSpk: number;
+  heatAdjustedPaceSpk: number | null;
 }
 
 export async function getRaceExecution(): Promise<RaceExecutionView | null> {
@@ -59,6 +69,18 @@ export async function getRaceExecution(): Promise<RaceExecutionView | null> {
     STRATEGIES.map((s) => [s, pacePlan(goal.distanceKm, goal.targetTimeS as number, s)])
   ) as Record<PaceStrategy, PacePlan>;
 
+  // Phase 7 - race-day forecast (Open-Meteo, Auckland default) + heat advisory.
+  // Degrades to null when the race is >16 days out or the fetch fails.
+  const goalPaceSpk = goal.targetTimeS / goal.distanceKm;
+  const forecast = await getForecastForDate(goal.raceDate);
+  let heat: HeatAdjustment | null = null;
+  let heatAdjustedPaceSpk: number | null = null;
+  if (forecast && forecast.tempMaxC !== null) {
+    const conditions = { tempC: forecast.tempMaxC, humidityPct: forecast.humidityPct ?? 50 };
+    heat = heatAdjust(conditions);
+    heatAdjustedPaceSpk = applyHeatToPaceSpk(goalPaceSpk, conditions);
+  }
+
   return {
     race: {
       name: goal.name,
@@ -72,5 +94,9 @@ export async function getRaceExecution(): Promise<RaceExecutionView | null> {
     fueling: fuelingPlan(goal.targetTimeS),
     carbLoad: profile.weightKg ? carbLoadPlan(profile.weightKg) : null,
     weightKg: profile.weightKg ?? null,
+    forecast,
+    heat,
+    goalPaceSpk,
+    heatAdjustedPaceSpk,
   };
 }
