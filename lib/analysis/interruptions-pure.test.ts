@@ -3,6 +3,7 @@ import {
   isActive,
   durationDays,
   hasActiveInjuryOrIllness,
+  windowsOverlapping,
   returnToTraining,
   assessInjuryRisk,
   type Interruption,
@@ -40,6 +41,43 @@ describe('hasActiveInjuryOrIllness', () => {
   });
   it('false when injury is resolved', () => {
     expect(hasActiveInjuryOrIllness([mk({ type: 'injury', endDate: '2026-06-05' })])).toBe(false);
+  });
+});
+
+describe('windowsOverlapping', () => {
+  const WEEK_START = '2026-06-15';
+  const WEEK_END = '2026-06-21';
+  const TYPES = ['illness', 'travel'] as const;
+
+  it('returns a travel window fully inside the week', () => {
+    const w = mk({ id: 2, type: 'travel', startDate: '2026-06-16', endDate: '2026-06-18' });
+    expect(windowsOverlapping([w], WEEK_START, WEEK_END, [...TYPES])).toHaveLength(1);
+  });
+  it('excludes an illness that resolved before the week', () => {
+    const w = mk({ id: 3, type: 'illness', startDate: '2026-05-20', endDate: '2026-06-01' });
+    expect(windowsOverlapping([w], WEEK_START, WEEK_END, [...TYPES])).toHaveLength(0);
+  });
+  it('includes an open (ongoing) illness that started before the week', () => {
+    const w = mk({ id: 4, type: 'illness', startDate: '2026-06-10', endDate: null });
+    expect(windowsOverlapping([w], WEEK_START, WEEK_END, [...TYPES])).toHaveLength(1);
+  });
+  it('excludes a future window that starts after the week ends', () => {
+    const w = mk({ id: 5, type: 'travel', startDate: '2026-07-01', endDate: '2026-07-05' });
+    expect(windowsOverlapping([w], WEEK_START, WEEK_END, [...TYPES])).toHaveLength(0);
+  });
+  it('filters by type (injury excluded when only illness/travel requested)', () => {
+    const w = mk({ id: 6, type: 'injury', startDate: '2026-06-16', endDate: '2026-06-18' });
+    expect(windowsOverlapping([w], WEEK_START, WEEK_END, [...TYPES])).toHaveLength(0);
+  });
+  it('treats boundary touch (ends exactly on week start) as overlapping', () => {
+    const w = mk({ id: 7, type: 'travel', startDate: '2026-06-08', endDate: WEEK_START });
+    expect(windowsOverlapping([w], WEEK_START, WEEK_END, [...TYPES])).toHaveLength(1);
+  });
+  it('separates illness from travel when only one type is requested', () => {
+    const ill = mk({ id: 8, type: 'illness', startDate: '2026-06-16', endDate: '2026-06-17' });
+    const trv = mk({ id: 9, type: 'travel', startDate: '2026-06-16', endDate: '2026-06-17' });
+    expect(windowsOverlapping([ill, trv], WEEK_START, WEEK_END, ['illness'])).toEqual([ill]);
+    expect(windowsOverlapping([ill, trv], WEEK_START, WEEK_END, ['travel'])).toEqual([trv]);
   });
 });
 

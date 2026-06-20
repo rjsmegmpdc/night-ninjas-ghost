@@ -53,16 +53,26 @@ export interface AthleteState {
   activityCount: number;
 }
 
-export async function getAthleteState(
-  calibration: AthleteCalibration = {},
-  asOfIso?: string
-): Promise<AthleteState | null> {
-  const today = asOfIso ?? new Date().toISOString().slice(0, 10);
+interface DailyLoadQuery {
+  dailyLoad: Map<string, number>;
+  confidenceCounts: { calibrated: number; 'pace-only': number; estimated: number };
+  withLoad: number;
+}
+
+/**
+ * Shared query + per-day aggregation behind getAthleteState and
+ * getDailyLoadMap. Returns null when the window holds no activities.
+ */
+async function queryDailyLoad(
+  calibration: AthleteCalibration,
+  today: string,
+  windowDays: number
+): Promise<DailyLoadQuery | null> {
   // UTC-anchored: windowStartIso is compared against startDateLocal (a plain
   // 'YYYY-MM-DD...' string) in SQL, so a local-construct + UTC-read would start
   // the window a day early in NZ (UTC+12).
   const windowStart = new Date(today + 'T00:00:00Z');
-  windowStart.setUTCDate(windowStart.getUTCDate() - WINDOW_DAYS);
+  windowStart.setUTCDate(windowStart.getUTCDate() - windowDays);
   const windowStartIso = windowStart.toISOString().slice(0, 10);
 
   const db = getDb();
@@ -92,8 +102,19 @@ export async function getAthleteState(
     dailyLoad.set(dayIso, (dailyLoad.get(dayIso) ?? 0) + load.points);
   }
 
-  const ctl = computeEwma(dailyLoad, today, WINDOW_DAYS, CTL_TIME_CONSTANT);
-  const atl = computeEwma(dailyLoad, today, WINDOW_DAYS, ATL_TIME_CONSTANT);
+  return { dailyLoad, confidenceCounts, withLoad };
+}
+
+export async function getAthleteState(
+  calibration: AthleteCalibration = {},
+  asOfIso?: string
+): Promise<AthleteState | null> {
+  const today = asOfIso ?? new Date().toISOString().slice(0, 10);
+  const q = await queryDailyLoad(calibration, today, WINDOW_DAYS);
+  if (!q) return null;
+
+  const ctl = computeEwma(q.dailyLoad, today, WINDOW_DAYS, CTL_TIME_CONSTANT);
+  const atl = computeEwma(q.dailyLoad, today, WINDOW_DAYS, ATL_TIME_CONSTANT);
   const tsb = ctl - atl;
 
   return {
@@ -102,7 +123,22 @@ export async function getAthleteState(
     atl: round1(atl),
     tsb: round1(tsb),
     formClass: classifyForm(tsb),
-    confidence: rollupConfidence(confidenceCounts, withLoad),
-    activityCount: withLoad,
+    confidence: rollupConfidence(q.confidenceCounts, q.withLoad),
+    activityCount: q.withLoad,
   };
+}
+
+/**
+ * Per-day load points over a recent window, keyed by plain 'YYYY-MM-DD'
+ * (the same keys getAthleteState's EWMA walks). Feeds the Phase 3b part 2
+ * monotony trigger. Returns an empty Map when there is no recent activity.
+ */
+export async function getDailyLoadMap(
+  calibration: AthleteCalibration = {},
+  asOfIso?: string,
+  windowDays = 28
+): Promise<Map<string, number>> {
+  const today = asOfIso ?? new Date().toISOString().slice(0, 10);
+  const q = await queryDailyLoad(calibration, today, windowDays);
+  return q?.dailyLoad ?? new Map<string, number>();
 }

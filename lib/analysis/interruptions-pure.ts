@@ -56,6 +56,32 @@ export function hasActiveInjuryOrIllness(interruptions: Interruption[]): boolean
   return interruptions.some((i) => isActive(i) && (i.type === 'injury' || i.type === 'illness'));
 }
 
+/**
+ * Interruptions (of the given types) whose date span OVERLAPS a week window.
+ *
+ * Overlap = starts on/before the week ends AND (still open OR ends on/after the
+ * week starts). Unlike isActive() - which only asks "open right now?" - this is
+ * the per-week check the 3b multi-week pipeline needs, so a long-resolved
+ * illness does not flag every week and a future-dated travel window flags only
+ * the week(s) it actually covers.
+ *
+ * Dates are plain 'YYYY-MM-DD' strings, compared lexicographically (correct for
+ * zero-padded ISO dates).
+ */
+export function windowsOverlapping(
+  interruptions: Interruption[],
+  weekStartIso: string,
+  weekEndIso: string,
+  types: InterruptionType[]
+): Interruption[] {
+  return interruptions.filter((i) => {
+    if (!types.includes(i.type)) return false;
+    const startsOnOrBeforeWeekEnd = i.startDate <= weekEndIso;
+    const endsOnOrAfterWeekStart = i.endDate === null || i.endDate >= weekStartIso;
+    return startsOnOrBeforeWeekEnd && endsOnOrAfterWeekStart;
+  });
+}
+
 export interface ReturnPhase {
   /** Phase index 1..n */
   phase: number;

@@ -11,7 +11,12 @@ import {
   type PlanPeriodResolved,
 } from '@/lib/plans/plan-periods';
 import { renderBaseMaintenanceWeek } from '@/lib/plans/base-maintenance';
-import type { WeekTemplate, PlanParams } from '@/lib/plans/types';
+import type { WeekTemplate, PlanParams, DojoStateProfile } from '@/lib/plans/types';
+import { DEFAULT_PROFILE } from '@/lib/plans/state-awareness';
+import {
+  loadMatrixAdjustmentContext,
+  overlayWeekAdjustment,
+} from '@/lib/plans/matrix-adjustments';
 
 /**
  * Serialisable shape returned to the client. Same as the server-side
@@ -131,6 +136,10 @@ async function buildSerializedRows(weekMondays: Date[]): Promise<SerializedMatri
 
   const periods = await getPlanPeriodsInRange(fromIso, toIso);
 
+  // Phase 3b part 2: applied adjustments + interruption windows, loaded once
+  // and overlaid per week (hybrid - see lib/plans/matrix-adjustments.ts).
+  const adjCtx = await loadMatrixAdjustmentContext();
+
   // Resolve each period once
   const resolvedCache = new Map<number, PlanPeriodResolved | null>();
   async function resolveOnce(p: typeof periods[number]): Promise<PlanPeriodResolved | null> {
@@ -164,6 +173,7 @@ async function buildSerializedRows(weekMondays: Date[]): Promise<SerializedMatri
     let dayCompliance: ('hit' | 'soft' | 'miss' | 'planned' | null)[] | undefined = undefined;
     let weekCompliancePct: number | null = null;
     let isBaseMaintenance = false;
+    let profile: DojoStateProfile = DEFAULT_PROFILE;
 
     const weekContext = await resolveWeekContext({ weekStartIso, weekEndIso });
     const dayEvents = distributeEventsByDay(weekContext.events, weekStartIso);
@@ -182,6 +192,7 @@ async function buildSerializedRows(weekMondays: Date[]): Promise<SerializedMatri
           template = resolved.engine.renderWeek(resolved.params, wkNum, weekContext);
           programWeekNumber = wkNum;
           totalKmTarget = template.totalKmTarget;
+          profile = resolved.engine.stateProfile ?? DEFAULT_PROFILE;
         }
       }
     }
@@ -208,6 +219,23 @@ async function buildSerializedRows(weekMondays: Date[]): Promise<SerializedMatri
           isBaseMaintenance = true;
         }
       }
+    }
+
+    // Phase 3b part 2: overlay applied adjustments (any week) + display-only
+    // sickness/travel window previews (future weeks). Mirrors program-matrix.tsx.
+    if (template) {
+      const overlay = overlayWeekAdjustment({
+        weekStartIso,
+        weekEndIso,
+        isFuture: weekStartIso > today,
+        weekNumber: programWeekNumber,
+        programWeeks: period?.programWeeks ?? null,
+        rawTemplate: template,
+        profile,
+        ctx: adjCtx,
+      });
+      template = overlay.template;
+      totalKmTarget = template.totalKmTarget;
     }
 
     let weekActivities: Awaited<ReturnType<typeof getActivitiesInRange>> = [];

@@ -108,3 +108,13 @@ export async function hasActiveInjuryOrIllnessNow(): Promise<boolean> {
   const all = await readInterruptions();
   return hasActiveInjuryOrIllness(all);
 }
+
+/**
+ * Raw interruption list for callers that apply their own pure filters - e.g.
+ * the 3b part 2 per-week window-overlap checks (windowsOverlapping) and the
+ * automatic-suppression gate (hasActiveInjuryOrIllness), computed from one
+ * read. Degrades to [] when the table is absent (pre-migration).
+ */
+export async function listInterruptions(): Promise<Interruption[]> {
+  return readInterruptions();
+}

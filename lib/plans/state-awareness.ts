@@ -26,6 +26,11 @@ import type { WeekTemplate, SessionType, PhaseBand, DojoStateProfile } from './t
 
 export type { PhaseBand, DojoStateProfile };
 import type { FormClass } from '@/lib/analysis/athlete-state-pure';
+import { MONOTONY_THRESHOLD, MONOTONY_MAGNITUDE } from '@/lib/analysis/monotony-pure';
+
+/* Week-anchored life-context magnitudes (Phase 3b part 2). Tunable. */
+export const SICKNESS_MAGNITUDE = 0.15; // illness week - trim volume
+export const TRAVEL_MAGNITUDE = 0.1;    // travel week - lighter, add recovery
 
 /* ----------------------------------------------------------------------------
  * Phase banding - collapse program position into coarse bands that
@@ -73,10 +78,13 @@ export function computeAcwr(acute7dKm: number, chronic28dKm: number): number | n
 
 export type AdjustmentKind = 'hold' | 'reduce-volume' | 'reduce-intensity' | 'add-recovery';
 export type AdjustmentTrigger =
-  | 'acwr-high'      // hard rail, >= 1.5
-  | 'acwr-caution'   // >= 1.3
-  | 'tsb-low'        // below dojo floor for the band
-  | 'overreached';   // form class floor
+  | 'acwr-high'         // hard rail, >= 1.5
+  | 'acwr-caution'      // >= 1.3
+  | 'tsb-low'           // below dojo floor for the band
+  | 'overreached'       // form class floor
+  | 'monotony'          // high training monotony (Foster) for the trailing week
+  | 'sickness-window'   // an illness window overlaps this week
+  | 'travel-window';    // a travel window overlaps this week
 
 export interface StateInterpretation {
   verdict: 'in-range' | 'over-fatigued' | 'injury-risk';
@@ -94,6 +102,23 @@ export interface InterpretInput {
   formClass: FormClass;
   acwr: number | null;
   band: PhaseBand;
+  /**
+   * Foster monotony for the trailing week, or null when it is not
+   * trigger-worthy (too few training days / below threshold). Now-state.
+   */
+  monotony?: number | null;
+  /** An illness window overlaps this week (life-context, per-week). */
+  illnessWindow?: boolean;
+  /** A travel window overlaps this week (life-context, per-week). */
+  travelWindow?: boolean;
+  /**
+   * When false, now-state triggers (ACWR / TSB / overreached / monotony) are
+   * suppressed and only the week-anchored window triggers are evaluated.
+   * Future matrix weeks pass false: today's ACWR/TSB/monotony say nothing about
+   * a week six weeks out, but a known illness/travel window for that week does.
+   * Defaults to true.
+   */
+  evaluateNowState?: boolean;
 }
 
 const HOLD: StateInterpretation = {
@@ -109,10 +134,11 @@ export function interpretState(
   input: InterpretInput,
   profile: DojoStateProfile = DEFAULT_PROFILE
 ): StateInterpretation {
-  const { tsb, formClass, acwr, band } = input;
+  const { tsb, formClass, acwr, band, monotony, illnessWindow, travelWindow } = input;
+  const nowState = input.evaluateNowState ?? true;
 
-  // Rail 1 - ACWR hard cap. Fires regardless of dojo or phase.
-  if (acwr !== null && acwr >= ACWR_HARD_RAIL) {
+  // Rail 1 - ACWR hard cap. Now-state; fires regardless of dojo or phase.
+  if (nowState && acwr !== null && acwr >= ACWR_HARD_RAIL) {
     return {
       verdict: 'injury-risk',
       adjustment: 'reduce-volume',
@@ -125,8 +151,22 @@ export function interpretState(
 
   if (band === 'off-program') return HOLD;
 
-  // Rail 2 - ACWR caution band.
-  if (acwr !== null && acwr >= ACWR_CAUTION) {
+  // Week-anchored: an illness window overlapping this week is a strong,
+  // specific reason to trim - above the soft now-state signals. Evaluated for
+  // future weeks too (a logged illness window is knowable ahead of time).
+  if (illnessWindow) {
+    return {
+      verdict: 'over-fatigued',
+      adjustment: 'reduce-volume',
+      magnitude: SICKNESS_MAGNITUDE,
+      trigger: 'sickness-window',
+      rail: false,
+      rationale: 'An illness is logged across this week. Trimming volume so the week is recoverable rather than another stressor - apply if it still fits how you feel.',
+    };
+  }
+
+  // Rail 2 - ACWR caution band. Now-state.
+  if (nowState && acwr !== null && acwr >= ACWR_CAUTION) {
     return {
       verdict: 'over-fatigued',
       adjustment: 'reduce-volume',
@@ -137,9 +177,9 @@ export function interpretState(
     };
   }
 
-  // Dojo-specific TSB floor for this band.
+  // Dojo-specific TSB floor for this band. Now-state.
   const floor = profile.tsbFloor[band];
-  if (tsb < floor) {
+  if (nowState && tsb < floor) {
     const depth = Math.min((floor - tsb) / 15, 1); // 15 TSB points below floor = max
     const magnitude = Math.round((0.1 + depth * 0.15) * 100) / 100; // 0.10..0.25
     const kind: AdjustmentKind = profile.preferIntensityCut ? 'reduce-intensity' : 'reduce-volume';
@@ -153,8 +193,21 @@ export function interpretState(
     };
   }
 
-  // Form-class floor - overreached always earns at least added recovery.
-  if (formClass === 'overreached') {
+  // Week-anchored: a travel window is a milder, logistical disruption - keep
+  // the week light with an added recovery day rather than cut hard.
+  if (travelWindow) {
+    return {
+      verdict: 'over-fatigued',
+      adjustment: 'add-recovery',
+      magnitude: TRAVEL_MAGNITUDE,
+      trigger: 'travel-window',
+      rail: false,
+      rationale: 'Travel is logged across this week. Converting an easy day to recovery so the disrupted week stays light and realistic.',
+    };
+  }
+
+  // Form-class floor - overreached always earns at least added recovery. Now-state.
+  if (nowState && formClass === 'overreached') {
     return {
       verdict: 'over-fatigued',
       adjustment: 'add-recovery',
@@ -162,6 +215,19 @@ export function interpretState(
       trigger: 'overreached',
       rail: false,
       rationale: 'Form class is overreached. Converting an easy day to recovery to absorb the fatigue before it compounds.',
+    };
+  }
+
+  // Training monotony - lowest priority now-state signal. High monotony (little
+  // day-to-day variation) earns a recovery day to break the sameness.
+  if (nowState && monotony != null && monotony >= MONOTONY_THRESHOLD) {
+    return {
+      verdict: 'over-fatigued',
+      adjustment: 'add-recovery',
+      magnitude: MONOTONY_MAGNITUDE,
+      trigger: 'monotony',
+      rail: false,
+      rationale: `Training has been highly monotonous (little day-to-day variation, monotony ${monotony.toFixed(1)}). Adding a recovery day - monotony is an independent illness / overtraining risk even at moderate volume.`,
     };
   }
 

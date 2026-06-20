@@ -113,28 +113,33 @@ doesn't, it doesn't ship.
 
 ## Current focus
 
-**Phase 4 - Interruption tracking + injury risk.** Block-critical: the
-Hansons 18-week block starts ~28/06/2026 (sub-3:00 Auckland Marathon
-01/11/2026). The pure engine - `lib/analysis/interruptions-pure.ts`
-(status/duration, graded 3-phase return-to-training, ACWR + history
-injury-risk read) and its 17 tests - is in place. Remaining to ship:
-migration 0009 + `interruptions` table; server read layer + log/resolve/
-delete actions; the 3b automatic-mode suppression wire
-(`hasActiveInjuryOrIllness` gate in `state-aware-week.ts` - currently
-design intent only, not enforced); the Wellness/journal page UI (still a
-placeholder); and a Patrol active-interruption indicator.
+**Phase 3b part 2 - SHIPPED (pending commit).** Built: matrix multi-week
+integration (hybrid - now-state triggers stay current-week; sickness/travel
+windows + already-applied adjustments reflect on future cells); the
+proposal-history view at `/coach-log` (Analytics); the monotony trigger
+(Foster mean/SD of daily load); and sickness/travel-window triggers reading the
+Phase 4 interruption data. tsc-clean, 264 tests green. **Next candidates:**
+Phase 6 part 2 (taper / post-race / multi-block / course-profile pacing); the
+rest of Phase 5 (the `/profile` route); R1 polish (active nav state,
+streak->flame, avatar dropdown, mobile pass). Block context: the Hansons
+18-week block starts ~28/06/2026 (sub-3:00 Auckland Marathon 01/11/2026).
 
-**Recently shipped** (see the SHIPPED blocks at the top of this file): R1
-visual rebrand, R1.5 club export (VELOCITY side), R2 part 1 (Trends),
-R2.5 VO2 max page, R2.6 VO2 insights, Phase 12 biometric surfacing, the
-Norwegian Singles dojo (NS-1) + NS-2/NS-3 guardrails + HR-readiness
-callout + personal HR calibration, and Phase 3b core (state-aware engine).
+**Recently shipped** (see the SHIPPED markers in this file): R1 visual
+rebrand, R1.5 club export, R2 part 1 (Trends) + part 2 (adherence chip +
+program-shape card), R2.5 VO2 max page, R2.6 VO2 insights, Phase 12
+biometric surfacing, the Norwegian Singles dojo (NS-1) + NS-2/NS-3
+guardrails + HR-readiness callout + personal HR calibration, Phase 3b core,
+**Phase 4 (interruptions + injury risk), the Phase 5 editable start date,
+Phase 6 v1 (race execution), and Phase 7 (weather forecast + heat
+advisory)**, plus the timezone-hardening pass.
 
-**Queued after Phase 4:** R2 part 2 (macrocycle bar / microcycle preview /
-7-bar adherence chip); Phase 5 (calibration / editable start date); Phase
-6 (race execution); Phase 7 (weather); 3b part 2. Polish (streak->flame,
-avatar dropdown, mobile pass) and post-race items (Phases 8-10/13/14,
-Apple Health/Whoop/Coros adapters, club PR consumer) follow.
+**Queued after 3b part 2:** Phase 6 part 2 (taper view, post-race protocol,
+multi-block awareness, course-profile pacing); Phase 7 deferred (past-activity
+temp + compliance heat-adjust - BLOCKED on stored per-activity weather); the
+rest of Phase 5 (the `/profile` route - strength preferences, injury ledger,
+wellness slider); R1 polish (active nav state, streak->flame, avatar
+dropdown, mobile pass). Post-v1 items (Phases 8-10/13/14, Apple
+Health/Whoop/Coros adapters, first live Garmin sync, club PR consumer) follow.
 
 The deferred Category C work (AI Coach, etc.) remains on the v2 horizon,
 not in scope for the marathon build.
@@ -247,7 +252,7 @@ OR substantive schedule change since last publish.
 
 ---
 
-## Phase R2 - Surface existing data 🟡 PART 1 SHIPPED
+## Phase R2 - Surface existing data 🟢 PARTS 1 + 2 SHIPPED
 
 **Shipped (Trends page):** monthly volume bars with month-over-month delta
 (6 months); 5-zone HR intensity distribution over 28 days (E/M/T/I/R
@@ -258,10 +263,10 @@ same EWMA the athlete-state card uses). Pure aggregation in trends-pure
 (9 tests). Cards render from raw activity data, so they appear even
 before the 4-week compliance-trend gate.
 
-**R2 part 2 (deferred):** macrocycle phase bar + microcycle (next-7-days)
-preview on the Methodology/dojo cards; 7-bar weekly adherence chip on
-Patrol. Tightly coupled to those surfaces; lower marginal value than the
-data views just shipped.
+**R2 part 2 ✅ SHIPPED:** 7-bar weekly adherence chip on Patrol
+(`components/patrol/week-adherence-chip.tsx`) + program-shape card on the
+dojo surface (`components/dojo/program-shape-card.tsx`) covering the
+macro/micro program shape.
 
 ## Phase R2 (original scope) — superseded
 
@@ -358,7 +363,7 @@ detection), field-test module (Cooper/Rockport/VDOT-from-race resolver).
 Note: rename the existing "Rockford" test to Rockport and confirm the
 formula when that module commences.
 
-## Phase 3b - Engine state-awareness ✅ CORE SHIPPED (part 2 pending)
+## Phase 3b - Engine state-awareness ✅ SHIPPED (core + part 2)
 
 **Shipped:** philosophy-as-data profiles on all 8 engines (tsbFloor per
 phase band, protected session types, intensity-vs-volume preference);
@@ -370,9 +375,13 @@ Apply/Dismiss (rail dismissal needs explicit confirmation); Coach Mode
 section in Settings; adjusted template feeds Patrol compliance + volume
 cells when applied/automatic.
 
-**Part 2 (next 3b session):** matrix multi-week integration (future-week
-rows through the pipeline), proposal history view, monotony trigger,
-sickness/travel-window triggers (needs Phase 4 interruption data).
+**Part 2 ✅ SHIPPED:** matrix multi-week integration (hybrid overlay -
+`lib/plans/matrix-adjustments.ts`); proposal-history view at `/coach-log`
+(`lib/plans/adjustment-history.ts` + `components/patrol/proposal-history.tsx`);
+the **monotony** trigger (Foster mean/SD of daily load, `lib/analysis/monotony-pure.ts`);
+and **sickness/travel-window** triggers (`windowsOverlapping` over Phase 4
+interruptions). New triggers gated by `evaluateNowState` so future weeks only
+reflect week-anchored windows; life-context proposals never auto-apply.
 
 ## Phase 3b (original scope) — superseded
 
@@ -401,7 +410,16 @@ sickness/travel-window triggers (needs Phase 4 interruption data).
 
 ---
 
-## Phase 4 — Interruption tracking + injury risk
+## Phase 4 — Interruption tracking + injury risk ✅ SHIPPED
+
+**Shipped:** migration 0009 + `interruptions` table; pure
+`interruptions-pure.ts` (status/duration, graded 3-phase return-to-training,
+ACWR + history injury-risk read, `hasActiveInjuryOrIllness` gate) with tests;
+server read layer + log/resolve/delete actions (`lib/actions/interruptions.ts`);
+the 3b automatic-mode injury-suppression gate; Journal/Wellness UI
+(interruption log form + active-interruption banner); and the Patrol
+active-interruption indicator. Injury-risk-chip inputs scale as later phases
+add data sources.
 
 **Why this matters:** training plans break against life. Right now
 calendar holds work/family commitments but nothing else. Injuries are
@@ -431,7 +449,14 @@ the input signals scaling as later phases add data sources
 
 ---
 
-## Phase 5 — Athlete profile (calibration + preferences + injury ledger)
+## Phase 5 — Athlete profile (calibration + preferences + injury ledger) 🟡 PARTIAL
+
+**Shipped so far:** the editable program **start date**
+(`lib/actions/plan-start-date.ts`, canonical `plan_periods.startDate`); and
+the **body & calibration** basics, which landed earlier under R2.5 (athlete
+profile in settings: age/weight/sex/maxHr/restingHr) + the NS personal HR
+caps. **Still pending:** a dedicated `/profile` route; strength-modality
+preferences; the injury/illness ledger; and the daily wellness slider.
 
 **Why this matters:** the engine and freshness model are running on
 generic assumptions. The profile is where the athlete tells the system
@@ -475,7 +500,17 @@ generic assumptions. The profile is where the athlete tells the system
 
 ---
 
-## Phase 6 — Race execution
+## Phase 6 — Race execution 🟢 v1 SHIPPED (part 2 pending)
+
+**v1 shipped:** pacing-strategy generator (even/negative/progressive,
+per-5km targets), fueling protocol, and pre-race carb-loading protocol -
+`lib/race/execution.ts` (+ pure engine & tests) rendered on the `/race`
+page (pace-plan / fueling / carb-load cards). Heat/humidity overlay added by
+Phase 7.
+
+**Part 2 (pending):** taper view + daily checklist; post-race recovery
+protocol + debrief; multi-block macrocycle awareness; course-profile pacing
+(elevation-aware).
 
 **Why this matters:** the race is the entire point. The current product
 helps you train *for* it then goes silent on race day and after. As a
@@ -517,7 +552,18 @@ race execution (#6), taper view (#8), self-comparison (#16)
 
 ---
 
-## Phase 7 — Environmental context
+## Phase 7 — Environmental context 🟢 FORECAST SHIPPED (heat-adjust deferred)
+
+**Shipped:** keyless Open-Meteo daily forecast reader (`lib/weather/`),
+Auckland default, degrades to null; a pure heat/humidity → pace-adjust
+advisory (Daniels-inspired, capped 10%, observed/advisory-only); both
+surfaced as a race-day `ForecastCard` on `/race`.
+
+**Deferred / BLOCKED:** the past-activity + compliance-heat-adjust items
+below need *stored per-activity weather*, which we do NOT capture today (see
+the corrected bullet). They need per-activity lat-lon (Strava streams, not
+fetched) + a historical-weather backfill. The next-week cell temp glyph is
+buildable on the live forecast but is deferred.
 
 **Why this matters:** a tempo run prescribed at 4:15/km in 28°C humid
 conditions is a 4:30/km run in adjusted-pace terms — and the athlete
@@ -526,17 +572,19 @@ is blind to legitimate reasons sessions look "off."
 
 **Build:**
 
-- **Past activities:** surface temperature/humidity from Strava activity
-  data (already there, never displayed). Show on cell drill-down.
-- **Compliance heat-adjustment:** when activity occurred in conditions
-  warranting adjustment, compliance evaluator uses adjusted-pace targets
-  (Daniels' tables for heat/humidity → equivalent sea-level pace)
-- **Pre-session forecast:** integrate a weather API (Open-Meteo —
-  free, no key required, no cloud OAuth) for the next 7-14 days
-- **Forecast on next-week cells:** small temperature glyph on cells
-  where forecast suggests pace adjustment will be needed
-- **Race day forecast:** as race approaches, show forecast in the
-  taper view; pacing strategy auto-adjusts
+- **Past activities:** surface temperature/humidity for past runs. ⚠️
+  CORRECTION: contrary to an earlier assumption, Strava activity summaries do
+  NOT carry weather - nothing is captured today. BLOCKED on a per-activity
+  weather backfill (needs per-activity lat-lon + historical-weather lookup).
+- **Compliance heat-adjustment:** when an activity occurred in conditions
+  warranting adjustment, the compliance evaluator uses adjusted-pace targets
+  (Daniels' tables for heat/humidity → equivalent sea-level pace). BLOCKED on
+  the same stored-weather dependency.
+- **Pre-session forecast:** ✅ done - keyless Open-Meteo reader (`lib/weather/`).
+- **Forecast on next-week cells:** small temperature glyph on cells where the
+  forecast suggests a pace adjustment. Deferred (buildable on the live forecast).
+- **Race day forecast:** ✅ done on `/race` (ForecastCard). Auto-adjusting the
+  pacing strategy by forecast is still deferred.
 
 **Note on local-first:** Open-Meteo doesn't require accounts or keys.
 Each forecast is a simple HTTPS GET. Doesn't break the local-first
@@ -776,9 +824,9 @@ A serious distance runner can:
 - Set a goal race + tune-ups, pick a dojo, get a plan that respects
   their current state (✓ now / ⏳ phase 3)
 - See where they are against the plan, including environmental + life
-  context (⏳ phases 2, 4, 7)
+  context (phase 4 ✓; phase 7 forecast ✓, heat-adjust ⏳; phase 2 ⏳)
 - Get tactical race-execution support (pacing, fueling, taper, post-race
-  recovery) (⏳ phase 6)
+  recovery) (phase 6 v1 ✓ pacing/fueling/carb-load; part 2 ⏳ taper/post-race)
 - Have an AI coach available for context-aware questions and daily
   briefings, paid via their own API key (⏳ phase 10)
 

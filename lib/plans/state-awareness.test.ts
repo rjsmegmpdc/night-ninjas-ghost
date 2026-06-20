@@ -120,6 +120,66 @@ describe('interpretState', () => {
   });
 });
 
+describe('interpretState - part 2 triggers (monotony + windows)', () => {
+  const calm = { tsb: 0, formClass: 'maintained' as const, acwr: 1.0, band: 'build' as const };
+
+  it('fires monotony when high and now-state is evaluated', () => {
+    const r = interpretState({ ...calm, monotony: 2.4 }, HANSONS_LIKE);
+    expect(r.trigger).toBe('monotony');
+    expect(r.adjustment).toBe('add-recovery');
+    expect(r.magnitude).toBe(0.1);
+  });
+
+  it('does not fire monotony below threshold', () => {
+    const r = interpretState({ ...calm, monotony: 1.4 }, HANSONS_LIKE);
+    expect(r.adjustment).toBe('hold');
+  });
+
+  it('suppresses monotony when evaluateNowState is false (future week)', () => {
+    const r = interpretState({ ...calm, monotony: 2.4, evaluateNowState: false }, HANSONS_LIKE);
+    expect(r.adjustment).toBe('hold');
+  });
+
+  it('fires sickness-window (reduce-volume) for an overlapping illness', () => {
+    const r = interpretState({ ...calm, illnessWindow: true }, HANSONS_LIKE);
+    expect(r.trigger).toBe('sickness-window');
+    expect(r.adjustment).toBe('reduce-volume');
+    expect(r.magnitude).toBe(0.15);
+  });
+
+  it('fires window triggers even on a future week (evaluateNowState false)', () => {
+    const ill = interpretState({ ...calm, illnessWindow: true, evaluateNowState: false }, HANSONS_LIKE);
+    expect(ill.trigger).toBe('sickness-window');
+    const trv = interpretState({ ...calm, travelWindow: true, evaluateNowState: false }, HANSONS_LIKE);
+    expect(trv.trigger).toBe('travel-window');
+    expect(trv.adjustment).toBe('add-recovery');
+  });
+
+  it('illness window outranks the ACWR caution band', () => {
+    const r = interpretState({ ...calm, acwr: 1.35, illnessWindow: true }, HANSONS_LIKE);
+    expect(r.trigger).toBe('sickness-window');
+  });
+
+  it('ACWR hard rail still outranks an illness window', () => {
+    const r = interpretState({ ...calm, acwr: 1.6, illnessWindow: true }, HANSONS_LIKE);
+    expect(r.trigger).toBe('acwr-high');
+    expect(r.rail).toBe(true);
+  });
+
+  it('evaluateNowState=false suppresses now-state triggers but lets windows through', () => {
+    // acwr caution would normally fire; suppressed for a future week
+    const none = interpretState({ ...calm, acwr: 1.35, evaluateNowState: false }, HANSONS_LIKE);
+    expect(none.adjustment).toBe('hold');
+    const trv = interpretState({ ...calm, acwr: 1.35, travelWindow: true, evaluateNowState: false }, HANSONS_LIKE);
+    expect(trv.trigger).toBe('travel-window');
+  });
+
+  it('off-program holds even with a window (no real sessions to adjust)', () => {
+    const r = interpretState({ ...calm, band: 'off-program', illnessWindow: true }, HANSONS_LIKE);
+    expect(r.adjustment).toBe('hold');
+  });
+});
+
 describe('applyAdjustment', () => {
   it('returns the same template on hold', () => {
     const raw = week();

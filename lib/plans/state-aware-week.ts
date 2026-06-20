@@ -23,9 +23,11 @@ import 'server-only';
 
 import { and, eq, isNull } from 'drizzle-orm';
 import { getDb, schema } from '@/lib/db';
-import { getAthleteState } from '@/lib/analysis/athlete-state';
+import { getAthleteState, getDailyLoadMap } from '@/lib/analysis/athlete-state';
 import { getActivitiesInRange } from '@/lib/analysis/week-queries';
-import { hasActiveInjuryOrIllnessNow } from '@/lib/analysis/interruptions';
+import { listInterruptions } from '@/lib/analysis/interruptions';
+import { hasActiveInjuryOrIllness, windowsOverlapping } from '@/lib/analysis/interruptions-pure';
+import { dailyLoadSeries, evaluateMonotony } from '@/lib/analysis/monotony-pure';
 import { getCoachMode, type CoachMode } from '@/lib/store/settings';
 import { getEngine } from './index';
 import type { Dojo, WeekTemplate } from './types';
@@ -37,6 +39,13 @@ import {
   DEFAULT_PROFILE,
   type StateInterpretation,
 } from './state-awareness';
+
+/** Monday-anchored week end (start + 6 days), UTC-anchored to match keys. */
+function weekEndIsoFor(weekStartIso: string): string {
+  const end = new Date(weekStartIso + 'T00:00:00Z');
+  end.setUTCDate(end.getUTCDate() + 6);
+  return end.toISOString().slice(0, 10);
+}
 
 export interface CoachAdjustmentView {
   /** plan_adjustments row id, when one exists */
@@ -89,13 +98,12 @@ export async function resolveCoachAdjustment(opts: {
   const { dojo, weekStartIso, weekNumber, programWeeks, rawTemplate } = opts;
   const db = getDb();
   const mode = await getCoachMode();
-  // Phase 4: an active injury/illness pauses AUTOMATIC mode - it is downgraded
-  // to assisted so the proposal is still surfaced but never auto-applied
-  // (locked rule: athlete-logged injuries never auto-adjust; the athlete drives
-  // recovery). Other modes are unaffected. Degrades to false pre-migration.
-  const injuryPaused = await hasActiveInjuryOrIllnessNow();
-  const effectiveMode: CoachMode =
-    injuryPaused && mode === 'automatic' ? 'assisted' : mode;
+  // Phase 4: read interruptions once - drives both the injury/illness AUTOMATIC
+  // gate (locked rule: athlete-logged injuries never auto-adjust; the athlete
+  // drives recovery) and the per-week sickness/travel window triggers. Degrades
+  // to [] pre-migration.
+  const interruptions = await listInterruptions();
+  const injuryPaused = hasActiveInjuryOrIllness(interruptions);
   const engine = getEngine(dojo);
   const profile = engine.stateProfile ?? DEFAULT_PROFILE;
 
@@ -117,10 +125,37 @@ export async function resolveCoachAdjustment(opts: {
   }
   const acwr = await getAcwrNow();
   const band = phaseBandFor(weekNumber, programWeeks);
+
+  // Now-state monotony (Foster): high day-to-day sameness over the trailing
+  // week. Passed to the engine only when it is actually trigger-worthy.
+  const monoEval = evaluateMonotony(dailyLoadSeries(await getDailyLoadMap(), state.asOfIso, 7));
+  const monotony = monoEval.shouldTrigger ? monoEval.monotony : null;
+
+  // Week-anchored life-context windows overlapping THIS week.
+  const weekEndIso = weekEndIsoFor(weekStartIso);
+  const illnessWindow = windowsOverlapping(interruptions, weekStartIso, weekEndIso, ['illness']).length > 0;
+  const travelWindow = windowsOverlapping(interruptions, weekStartIso, weekEndIso, ['travel']).length > 0;
+
   const interp: StateInterpretation = interpretState(
-    { tsb: state.tsb, formClass: state.formClass, acwr, band },
+    {
+      tsb: state.tsb,
+      formClass: state.formClass,
+      acwr,
+      band,
+      monotony,
+      illnessWindow,
+      travelWindow,
+      evaluateNowState: true,
+    },
     profile
   );
+
+  // Life-context (illness/travel) proposals are surfaced, never auto-applied -
+  // the athlete owns those calls, same spirit as the injury pause.
+  const lifeContextTrigger =
+    interp.trigger === 'sickness-window' || interp.trigger === 'travel-window';
+  const effectiveMode: CoachMode =
+    (injuryPaused || lifeContextTrigger) && mode === 'automatic' ? 'assisted' : mode;
 
   const base = {
     mode,
