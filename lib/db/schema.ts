@@ -671,3 +671,30 @@ export const interruptions = sqliteTable(
 
 export type InterruptionRow = typeof interruptions.$inferSelect;
 export type NewInterruptionRow = typeof interruptions.$inferInsert;
+
+/* ----------------------------------------------------------------------------
+ * Race results — post-race debrief for the goal race (Phase 6 part 2).
+ *
+ * One row per race. Keeps the races row immutable: the plan is set before the
+ * race; the result is logged after. Holds achieved finish time, conditions,
+ * perceived effort (RPE 1-10), and lessons to carry into the next block.
+ * -------------------------------------------------------------------------- */
+export const raceResults = sqliteTable(
+  'race_results',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    raceId: integer('race_id').notNull(),
+    finishTimeS: integer('finish_time_s'), // achieved finish time, seconds
+    conditions: text('conditions'),        // weather / course / how it felt
+    rpe: integer('rpe'),                    // 1-10 perceived effort
+    lessons: text('lessons'),              // what to carry into the next block
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    raceIdx: index('idx_race_results_race').on(t.raceId),
+  })
+);
+
+export type RaceResultRow = typeof raceResults.$inferSelect;
+export type NewRaceResultRow = typeof raceResults.$inferInsert;

@@ -5,6 +5,9 @@ import { PacePlanCard } from '@/components/race/pace-plan-card';
 import { FuelingCard } from '@/components/race/fueling-card';
 import { CarbLoadCard } from '@/components/race/carb-load-card';
 import { ForecastCard } from '@/components/race/forecast-card';
+import { TaperCard } from '@/components/race/taper-card';
+import { PostRaceCard } from '@/components/race/post-race-card';
+import { MacrocycleCard } from '@/components/race/macrocycle-card';
 import { formatDuration } from '@/lib/plans/derive';
 
 /**
@@ -50,16 +53,27 @@ export default async function RacePage() {
             )}
           </div>
 
-          <ForecastCard
-            forecast={view.forecast}
-            heat={view.heat}
-            goalPaceSpk={view.goalPaceSpk}
-            heatAdjustedPaceSpk={view.heatAdjustedPaceSpk}
-            raceDate={view.race.raceDate}
-          />
-          <PacePlanCard pacing={view.pacing} />
-          <FuelingCard fueling={view.fueling} />
-          <CarbLoadCard carbLoad={view.carbLoad} />
+          {view.postRace ? (
+            <>
+              <PostRaceCard postRace={view.postRace} raceName={view.race.name} />
+              {view.macrocycle && <MacrocycleCard macrocycle={view.macrocycle} />}
+            </>
+          ) : (
+            <>
+              {view.taper && <TaperCard taper={view.taper} />}
+              <ForecastCard
+                forecast={view.forecast}
+                heat={view.heat}
+                goalPaceSpk={view.goalPaceSpk}
+                heatAdjustedPaceSpk={view.heatAdjustedPaceSpk}
+                raceDate={view.race.raceDate}
+              />
+              <PacePlanCard pacing={view.pacing} />
+              <FuelingCard fueling={view.fueling} />
+              <CarbLoadCard carbLoad={view.carbLoad} />
+              {view.macrocycle && <MacrocycleCard macrocycle={view.macrocycle} />}
+            </>
+          )}
         </>
       )}
     </div>

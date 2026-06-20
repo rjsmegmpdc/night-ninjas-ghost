@@ -245,6 +245,7 @@ $requiredFiles = @(
     'lib\actions\vo2max.ts',
     'lib\actions\interruptions.ts',
     'lib\actions\plan-start-date.ts',
+    'lib\actions\race-debrief.ts',
     'lib\actions\garmin.ts',
     'lib\actions\switch-dojo.ts',
     'lib\actions\races.ts',
@@ -302,6 +303,15 @@ $requiredFiles = @(
     'lib\race\execution-pure.ts',
     'lib\race\execution-pure.test.ts',
     'lib\race\execution.ts',
+    'lib\race\taper-pure.ts',
+    'lib\race\taper-pure.test.ts',
+    'lib\race\post-race-pure.ts',
+    'lib\race\post-race-pure.test.ts',
+    'lib\race\macrocycle-pure.ts',
+    'lib\race\macrocycle-pure.test.ts',
+    'lib\race\macrocycle.ts',
+    'lib\race\debrief-pure.ts',
+    'lib\race\debrief-pure.test.ts',
 
     # Library - weather (Phase 7)
     'lib\weather\heat-adjust-pure.ts',
@@ -321,6 +331,7 @@ $requiredFiles = @(
     'lib\db\migrations\0007_daily_health_metrics.sql',
     'lib\db\migrations\0008_vo2max_observations.sql',
     'lib\db\migrations\0009_interruptions.sql',
+    'lib\db\migrations\0010_race_results.sql',
 
     # Library - plans (8 dojos + framework)
     'lib\plans\active-plan.ts',
@@ -463,6 +474,10 @@ $requiredFiles = @(
     'components\race\fueling-card.tsx',
     'components\race\carb-load-card.tsx',
     'components\race\forecast-card.tsx',
+    'components\race\taper-card.tsx',
+    'components\race\post-race-card.tsx',
+    'components\race\race-debrief-form.tsx',
+    'components\race\macrocycle-card.tsx',
 
     # Components - shoes
     'components\shoes\add-manual-shoe-form.tsx',

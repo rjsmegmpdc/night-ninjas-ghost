@@ -113,16 +113,18 @@ doesn't, it doesn't ship.
 
 ## Current focus
 
-**Phase 3b part 2 - SHIPPED (pending commit).** Built: matrix multi-week
-integration (hybrid - now-state triggers stay current-week; sickness/travel
-windows + already-applied adjustments reflect on future cells); the
-proposal-history view at `/coach-log` (Analytics); the monotony trigger
-(Foster mean/SD of daily load); and sickness/travel-window triggers reading the
-Phase 4 interruption data. tsc-clean, 264 tests green. **Next candidates:**
-Phase 6 part 2 (taper / post-race / multi-block / course-profile pacing); the
-rest of Phase 5 (the `/profile` route); R1 polish (active nav state,
-streak->flame, avatar dropdown, mobile pass). Block context: the Hansons
-18-week block starts ~28/06/2026 (sub-3:00 Auckland Marathon 01/11/2026).
+**Phase 6 part 2 - SHIPPED.** Race execution, second pass: taper view +
+arrive-fresh checklist + confidence cues; post-race recovery protocol + debrief
+(new `race_results` table, migration 0010); multi-block macrocycle awareness +
+year-over-year - all on `/race`, conditional on program phase. Course-profile
+pacing deferred (blocked on per-activity elevation). tsc-clean, 285 tests green.
+(Phase 3b part 2 shipped just before: monotony + sickness/travel triggers,
+multi-week matrix, `/coach-log` history.) **Next candidates:** the rest of
+Phase 5 (the `/profile` route - strength prefs, injury ledger, wellness
+slider); R1 polish (active nav state, streak->flame, avatar dropdown, mobile
+pass); Phase 8+ (recovery prescription / session matching, coach voice). Block
+context: the Hansons 18-week block starts ~28/06/2026 (sub-3:00 Auckland
+Marathon 01/11/2026).
 
 **Recently shipped** (see the SHIPPED markers in this file): R1 visual
 rebrand, R1.5 club export, R2 part 1 (Trends) + part 2 (adherence chip +
@@ -133,13 +135,13 @@ guardrails + HR-readiness callout + personal HR calibration, Phase 3b core,
 Phase 6 v1 (race execution), and Phase 7 (weather forecast + heat
 advisory)**, plus the timezone-hardening pass.
 
-**Queued after 3b part 2:** Phase 6 part 2 (taper view, post-race protocol,
-multi-block awareness, course-profile pacing); Phase 7 deferred (past-activity
-temp + compliance heat-adjust - BLOCKED on stored per-activity weather); the
-rest of Phase 5 (the `/profile` route - strength preferences, injury ledger,
-wellness slider); R1 polish (active nav state, streak->flame, avatar
-dropdown, mobile pass). Post-v1 items (Phases 8-10/13/14, Apple
-Health/Whoop/Coros adapters, first live Garmin sync, club PR consumer) follow.
+**Queued next:** the rest of Phase 5 (the `/profile` route - strength
+preferences, injury ledger, wellness slider); R1 polish (active nav state,
+streak->flame, avatar dropdown, mobile pass). Deferred/blocked: Phase 6
+course-profile pacing (per-activity elevation) and Phase 7 past-activity
+temp + compliance heat-adjust (stored per-activity weather). Post-v1 items
+(Phases 8-10/13/14, Apple Health/Whoop/Coros adapters, first live Garmin
+sync, club PR consumer) follow.
 
 The deferred Category C work (AI Coach, etc.) remains on the v2 horizon,
 not in scope for the marathon build.
@@ -500,7 +502,7 @@ generic assumptions. The profile is where the athlete tells the system
 
 ---
 
-## Phase 6 — Race execution 🟢 v1 SHIPPED (part 2 pending)
+## Phase 6 — Race execution 🟢 SHIPPED (v1 + part 2; course-profile deferred)
 
 **v1 shipped:** pacing-strategy generator (even/negative/progressive,
 per-5km targets), fueling protocol, and pre-race carb-loading protocol -
@@ -508,9 +510,16 @@ per-5km targets), fueling protocol, and pre-race carb-loading protocol -
 page (pace-plan / fueling / carb-load cards). Heat/humidity overlay added by
 Phase 7.
 
-**Part 2 (pending):** taper view + daily checklist; post-race recovery
-protocol + debrief; multi-block macrocycle awareness; course-profile pacing
-(elevation-aware).
+**Part 2 ✅ SHIPPED:** taper view + arrive-fresh checklist + honest confidence
+cues (`lib/race/taper-pure.ts`, `TaperCard`, auto-surfaces in taper/race week);
+post-race recovery protocol + debrief form writing to a new `race_results`
+table (migration 0010; `lib/race/post-race-pure.ts`, `PostRaceCard` +
+`race-debrief-form`); multi-block macrocycle awareness + year-over-year
+self-comparison (`lib/race/macrocycle*.ts`, `MacrocycleCard`). All on `/race`,
+conditional on program phase.
+**Deferred:** course-profile (elevation-aware) pacing - BLOCKED on per-activity
+elevation (Strava elevation streams not fetched). Revisit when that data lands;
+nothing else depends on it.
 
 **Why this matters:** the race is the entire point. The current product
 helps you train *for* it then goes silent on race day and after. As a

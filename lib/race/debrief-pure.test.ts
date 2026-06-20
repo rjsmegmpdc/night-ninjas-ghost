@@ -1,0 +1,21 @@
+import { describe, it, expect } from 'vitest';
+import { parseHmsToSeconds } from './debrief-pure';
+
+describe('parseHmsToSeconds', () => {
+  it('parses H:MM:SS', () => {
+    expect(parseHmsToSeconds('2:58:30')).toBe(2 * 3600 + 58 * 60 + 30);
+  });
+  it('parses MM:SS', () => {
+    expect(parseHmsToSeconds('42:10')).toBe(42 * 60 + 10);
+  });
+  it('rejects out-of-range minutes/seconds', () => {
+    expect(parseHmsToSeconds('1:75:00')).toBeNull();
+    expect(parseHmsToSeconds('40:90')).toBeNull();
+  });
+  it('rejects non-numeric, empty, or wrong-arity input', () => {
+    expect(parseHmsToSeconds('abc')).toBeNull();
+    expect(parseHmsToSeconds('')).toBeNull();
+    expect(parseHmsToSeconds('1:2:3:4')).toBeNull();
+    expect(parseHmsToSeconds('2::30')).toBeNull();
+  });
+});

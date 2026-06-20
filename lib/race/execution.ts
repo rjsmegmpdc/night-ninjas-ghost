@@ -11,8 +11,9 @@ import 'server-only';
 
 import { eq } from 'drizzle-orm';
 import { getDb, schema } from '@/lib/db';
+import type { RaceResultRow } from '@/lib/db/schema';
 import { getAthleteProfile } from '@/lib/store/settings';
-import { getProgramPhase } from '@/lib/plans/program-phase';
+import { getProgramPhase, type ProgramPhaseKind } from '@/lib/plans/program-phase';
 import {
   pacePlan,
   fuelingPlan,
@@ -22,6 +23,11 @@ import {
 } from './execution-pure';
 import { getForecastForDate, type DayForecast } from '@/lib/weather/forecast';
 import { heatAdjust, applyHeatToPaceSpk, type HeatAdjustment } from '@/lib/weather/heat-adjust-pure';
+import { taperChecklist, buildTaperCues, type TaperChecklistItem } from './taper-pure';
+import { recoveryProtocol, type RecoveryProtocol } from './post-race-pure';
+import { getMacrocycleContext, type MacrocycleContext } from './macrocycle';
+import { buildReconAggregate } from '@/lib/analysis/recent-weeks';
+import { topWeeks } from '@/lib/analysis/best-week';
 
 export type {
   PacePlan,
@@ -33,6 +39,21 @@ export type {
 } from './execution-pure';
 export type { DayForecast } from '@/lib/weather/forecast';
 export type { HeatAdjustment, HeatSeverity } from '@/lib/weather/heat-adjust-pure';
+export type { TaperChecklistItem } from './taper-pure';
+export type { RecoveryPhase, RecoveryProtocol } from './post-race-pure';
+export type { MacrocycleContext } from './macrocycle';
+
+export interface TaperView {
+  daysToRace: number;
+  checklist: TaperChecklistItem[];
+  cues: string[];
+}
+
+export interface PostRaceView {
+  daysSinceRace: number;
+  recovery: RecoveryProtocol;
+  debrief: RaceResultRow | null;
+}
 
 const STRATEGIES: PaceStrategy[] = ['even', 'negative', 'progressive'];
 
@@ -41,6 +62,9 @@ export interface RaceExecutionView {
   daysToRace: number | null;
   /** Within taper or race week - the execution surface matters most now. */
   isTaper: boolean;
+  phaseKind: ProgramPhaseKind;
+  /** Days since race day (post-race window); null otherwise. */
+  daysSinceRace: number | null;
   pacing: Record<PaceStrategy, PacePlan>;
   fueling: ReturnType<typeof fuelingPlan>;
   carbLoad: ReturnType<typeof carbLoadPlan> | null;
@@ -51,6 +75,12 @@ export interface RaceExecutionView {
   heat: HeatAdjustment | null;
   goalPaceSpk: number;
   heatAdjustedPaceSpk: number | null;
+  /** Phase 6 part 2 - taper view, when in taper / race week; null otherwise. */
+  taper: TaperView | null;
+  /** Phase 6 part 2 - post-race protocol + debrief, when post-race; null otherwise. */
+  postRace: PostRaceView | null;
+  /** Phase 6 part 2 - multi-block / year-over-year context; null when unavailable. */
+  macrocycle: MacrocycleContext | null;
 }
 
 export async function getRaceExecution(): Promise<RaceExecutionView | null> {
@@ -81,6 +111,47 @@ export async function getRaceExecution(): Promise<RaceExecutionView | null> {
     heatAdjustedPaceSpk = applyHeatToPaceSpk(goalPaceSpk, conditions);
   }
 
+  const isTaper = phase.kind === 'taper' || phase.kind === 'race-week';
+
+  // Phase 6 part 2 - taper view: discipline checklist + honest confidence cues
+  // drawn from block aggregates (no fabricated per-zone pace trends).
+  let taper: TaperView | null = null;
+  if (isTaper) {
+    const [recon, best] = await Promise.all([buildReconAggregate(), topWeeks(8)]);
+    const biggestWeekKm = best.length ? best[0].totalKm : null;
+    const longestRunKm = best.length ? Math.max(...best.map((w) => w.longRunKm)) : null;
+    taper = {
+      daysToRace: phase.daysToRace ?? 0,
+      checklist: taperChecklist(phase.daysToRace ?? 0),
+      cues: buildTaperCues({
+        volumeDeltaPct: recon?.totalKm.deltaPct ?? null,
+        biggestWeekKm,
+        compliancePct: recon?.compliance.currentPct ?? null,
+        longestRunKm,
+      }),
+    };
+  }
+
+  // Phase 6 part 2 - post-race protocol + any logged debrief.
+  let postRace: PostRaceView | null = null;
+  if (phase.kind === 'post-race' && phase.daysSinceRace != null) {
+    let debrief: RaceResultRow | null = null;
+    try {
+      debrief =
+        (await db.select().from(schema.raceResults).where(eq(schema.raceResults.raceId, goal.id)).get()) ?? null;
+    } catch {
+      debrief = null; // table absent pre-migration
+    }
+    postRace = {
+      daysSinceRace: phase.daysSinceRace,
+      recovery: recoveryProtocol(phase.daysSinceRace, goal.distanceKm),
+      debrief,
+    };
+  }
+
+  // Phase 6 part 2 - multi-block / year-over-year context (degrades to null).
+  const macrocycle = await getMacrocycleContext();
+
   return {
     race: {
       name: goal.name,
@@ -89,7 +160,9 @@ export async function getRaceExecution(): Promise<RaceExecutionView | null> {
       targetTimeS: goal.targetTimeS,
     },
     daysToRace: phase.daysToRace,
-    isTaper: phase.kind === 'taper' || phase.kind === 'race-week',
+    isTaper,
+    phaseKind: phase.kind,
+    daysSinceRace: phase.daysSinceRace,
     pacing,
     fueling: fuelingPlan(goal.targetTimeS),
     carbLoad: profile.weightKg ? carbLoadPlan(profile.weightKg) : null,
@@ -98,5 +171,8 @@ export async function getRaceExecution(): Promise<RaceExecutionView | null> {
     heat,
     goalPaceSpk,
     heatAdjustedPaceSpk,
+    taper,
+    postRace,
+    macrocycle,
   };
 }
