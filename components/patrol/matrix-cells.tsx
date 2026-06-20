@@ -11,6 +11,8 @@ import type { FirstDayOfWeek } from '@/lib/store/settings';
 import { dowDisplayOrder, dowDisplayLabels } from '@/lib/plans/dow-display';
 import { formatSpk } from '@/lib/plans/derive';
 import { addDaysIso } from '@/lib/dates/iso';
+import type { RecoveryPrescription } from '@/lib/plans/recovery-prescription-pure';
+import type { WeekMatchSummary } from '@/lib/analysis/session-match-pure';
 
 /* ============================================================================
  * MatrixRowData — the serialisable row record. Rendered the same way
@@ -63,6 +65,18 @@ export interface MatrixRowData {
    * within the week, giving a visible streak across the row.
    */
   dayEvents?: (DayEvent[] | null)[];
+  /**
+   * Phase 8 - per-day recovery prescription for rest days, indexed [Mon..Sun].
+   * Tuned to the prior day's actual load, so only populated for the current
+   * week (where yesterday's load is known); null elsewhere.
+   */
+  restPrescriptions?: (RecoveryPrescription | null)[];
+  /**
+   * Phase 8 - additive session-match summary for the week (shifted sessions +
+   * extra activities). Surfaced as a compact annotation; does not change the
+   * per-day compliance dots. Null for weeks without actuals.
+   */
+  matchSummary?: WeekMatchSummary | null;
 }
 
 /** A single recorded activity on a day, condensed for matrix display. */
@@ -177,6 +191,14 @@ export function MatrixRow({
               ? '(base)'
               : formatShortDate(row.weekStartIso)}
         </span>
+        {row.matchSummary && (row.matchSummary.shifted.length > 0 || row.matchSummary.extras.length > 0) && (
+          <span
+            className="font-mono text-[9px] leading-none text-bone-mute mt-0.5 cursor-default"
+            title={matchSummaryTitle(row.matchSummary)}
+          >
+            ⇄ {row.matchSummary.shifted.length + row.matchSummary.extras.length}
+          </span>
+        )}
       </div>
 
       {/* Day cells - iterated in display order. Each iteration's `dow`
@@ -198,6 +220,7 @@ export function MatrixRow({
             complianceFlag={flag}
             actuals={actuals}
             events={events}
+            recovery={row.restPrescriptions?.[dow] ?? null}
           />
         );
       })}
@@ -239,12 +262,14 @@ function DayCell({
   complianceFlag,
   actuals,
   events,
+  recovery,
 }: {
   day: DayPlan | null;
   isToday: boolean;
   complianceFlag?: DayComplianceFlag | null;
   actuals?: DayActual[] | null;
   events?: DayEvent[] | null;
+  recovery?: RecoveryPrescription | null;
 }) {
   // Branch 1 — actuals present: stack pills, border from highest-intensity actual
   if (actuals && actuals.length > 0) {
@@ -269,6 +294,7 @@ function DayCell({
           ' bg-ink-shadow/30'
         }
       >
+        {recovery && <RecoveryGlyph rx={recovery} />}
         {events && events.length > 0 && <EventOverlay events={events} />}
       </div>
     );
@@ -299,10 +325,43 @@ function DayCell({
           {paceLabel}
         </span>
       )}
+      {recovery && <RecoveryGlyph rx={recovery} />}
       {complianceFlag && <ComplianceDot flag={complianceFlag} />}
       {events && events.length > 0 && <EventOverlay events={events} />}
     </div>
   );
+}
+
+/**
+ * RecoveryGlyph — small ℞ marker on a rest-day cell carrying the Phase 8
+ * recovery prescription (tuned to yesterday's load) in its hover tooltip.
+ */
+function RecoveryGlyph({ rx }: { rx: RecoveryPrescription }) {
+  const title = `${rx.headline}\n` + rx.items.map((i) => '· ' + i).join('\n');
+  return (
+    <span
+      className="absolute top-0.5 left-1 font-mono text-[9px] leading-none text-accent/70 cursor-default"
+      title={title}
+      aria-label={`Recovery: ${rx.headline}`}
+    >
+      ℞
+    </span>
+  );
+}
+
+const DOW_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/** Tooltip text for the week-row session-match annotation (shifted + extras). */
+function matchSummaryTitle(s: WeekMatchSummary): string {
+  const lines: string[] = [];
+  for (const sh of s.shifted) {
+    const t = sh.plannedType.charAt(0).toUpperCase() + sh.plannedType.slice(1);
+    lines.push(`${t} planned ${DOW_SHORT[sh.plannedDow] ?? '?'} - done ${DOW_SHORT[sh.doneDow] ?? '?'}`);
+  }
+  if (s.extras.length > 0) {
+    lines.push(`${s.extras.length} extra ${s.extras.length === 1 ? 'session' : 'sessions'} (not in the plan)`);
+  }
+  return lines.join('\n');
 }
 
 /**

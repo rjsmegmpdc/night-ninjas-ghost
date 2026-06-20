@@ -113,18 +113,20 @@ doesn't, it doesn't ship.
 
 ## Current focus
 
-**Phase 6 part 2 - SHIPPED.** Race execution, second pass: taper view +
-arrive-fresh checklist + confidence cues; post-race recovery protocol + debrief
-(new `race_results` table, migration 0010); multi-block macrocycle awareness +
-year-over-year - all on `/race`, conditional on program phase. Course-profile
-pacing deferred (blocked on per-activity elevation). tsc-clean, 285 tests green.
-(Phase 3b part 2 shipped just before: monotony + sickness/travel triggers,
-multi-week matrix, `/coach-log` history.) **Next candidates:** the rest of
-Phase 5 (the `/profile` route - strength prefs, injury ledger, wellness
-slider); R1 polish (active nav state, streak->flame, avatar dropdown, mobile
-pass); Phase 8+ (recovery prescription / session matching, coach voice). Block
-context: the Hansons 18-week block starts ~28/06/2026 (sub-3:00 Auckland
-Marathon 01/11/2026).
+**Phase 5 (rest) + R1 polish + Phase 8 - SHIPPED.** `/profile` route (strength
+prefs, daily wellness slider writing the journal table, injury & illness ledger
+with per-area vulnerability); R1 polish (real streak count in the nav, avatar
+dropdown + theme toggle, bounded mobile/responsive pass); Phase 8 (rest-day
+recovery prescription tuned to prior-day load + additive session matching -
+shifted-session + extras annotations layered over compliance). tsc clean (only
+garmin-connect), 337 tests. With Phases 4-7 + 3b, the v1 plan/exec/state surface
+is largely complete. **Next candidates:** Phase 9 (coach voice + Sunday journal
+prompt + block-end debrief - the journal write layer now exists); Phase 11 (shoe-
+for-session recommender); Phase 13 (race-fueling depth); Phase 10 (BYOK AI).
+Deferred/blocked: Phase 6 course-profile + Phase 7 stored-weather (per-activity
+data not fetched); first live Garmin sync (garmin-connect not installed - the
+lone tsc error). Block context: the Hansons 18-week block starts ~28/06/2026
+(sub-3:00 Auckland Marathon 01/11/2026).
 
 **Recently shipped** (see the SHIPPED markers in this file): R1 visual
 rebrand, R1.5 club export, R2 part 1 (Trends) + part 2 (adherence chip +
@@ -616,7 +618,24 @@ HTTPS calls).
 
 ---
 
-## Phase 8 — Recovery prescription + session matching
+## Phase 8 — Recovery prescription + session matching 🟢 SHIPPED (additive scope)
+
+**Shipped:**
+- **Recovery prescription** - `lib/plans/recovery-prescription-pure.ts` (+22
+  tests) maps the prior day's actual load to a rest-day prescription
+  (full-rest / light / active, with sleep + mobility targets). Surfaced as an
+  ℞ glyph + hover on the current week's rest cells (tuned to yesterday's load,
+  so current-week only where actual prior load is known).
+- **Session matching (additive)** - `lib/analysis/session-match-pure.ts` (+9
+  tests) layers over the day-of-week compliance engine WITHOUT rewriting it:
+  detects sessions done a day off-schedule (+/-1, same kind) and activities
+  that match no planned session ("extras"). Surfaced as a compact ⇄ annotation
+  (with hover detail) on the matrix week row; the per-day compliance dots are
+  unchanged.
+
+**Deferred:** rewriting compliance scoring from the match (full cross-week
+rematch); explicit voluntary-swap markup; recovery prescriptions on future
+weeks (no actual prior-day load) and injury-aware tuning.
 
 **Why this matters:** rest ≠ recovery, and "planned vs actual on
 assigned days" doesn't survive contact with how athletes actually train.

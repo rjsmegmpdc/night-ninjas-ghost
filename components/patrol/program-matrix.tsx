@@ -18,6 +18,10 @@ import {
   loadMatrixAdjustmentContext,
   overlayWeekAdjustment,
 } from '@/lib/plans/matrix-adjustments';
+import { analyzeWeekMatching } from '@/lib/analysis/session-match-pure';
+import { recoveryPrescription, type RecoveryPrescription } from '@/lib/plans/recovery-prescription-pure';
+import { getDailyLoadMap } from '@/lib/analysis/athlete-state';
+import { addDaysIso } from '@/lib/dates/iso';
 import { getFirstDayOfWeek } from '@/lib/store/settings';
 import {
   MatrixHeader,
@@ -168,6 +172,9 @@ async function buildRows({
   // and overlaid per week (hybrid - see lib/plans/matrix-adjustments.ts).
   const adjCtx = await loadMatrixAdjustmentContext();
 
+  // Phase 8: per-day load for current-week rest-day recovery prescriptions.
+  const dailyLoad = await getDailyLoadMap();
+
   const resolvedCache = new Map<number, PlanPeriodResolved | null>();
   async function resolveOnce(p: typeof periods[number]): Promise<PlanPeriodResolved | null> {
     if (resolvedCache.has(p.id)) return resolvedCache.get(p.id)!;
@@ -314,6 +321,28 @@ async function buildRows({
       }
     }
 
+    // Phase 8 - additive session-match summary (weeks with actuals).
+    let matchSummary = null;
+    if (template && weekActivities.length > 0) {
+      const planned = template.days.flatMap((d) => d.sessions.map((s) => ({ dow: d.dow, type: s.type })));
+      const acts = weekActivities.map((a) => ({ dow: (new Date(a.startDateLocal).getDay() + 6) % 7, type: a.type }));
+      matchSummary = analyzeWeekMatching(planned, acts);
+    }
+
+    // Phase 8 - recovery prescription on the current week's rest days, tuned to
+    // the prior day's actual load.
+    let restPrescriptions: (RecoveryPrescription | null)[] | undefined = undefined;
+    const isCurrentWeekRow = weekStartIso <= today && today <= weekEndIso;
+    if (template && isCurrentWeekRow) {
+      restPrescriptions = [0, 1, 2, 3, 4, 5, 6].map((dow) => {
+        const d = template!.days.find((x) => x.dow === dow);
+        const isRest = !d || d.sessions.length === 0 || d.sessions.every((s) => s.type === 'rest');
+        if (!isRest) return null;
+        const priorIso = addDaysIso(addDaysIso(weekStartIso, dow), -1);
+        return recoveryPrescription(dailyLoad.get(priorIso) ?? 0);
+      });
+    }
+
     rows.push({
       weekStartIso,
       programWeekNumber,
@@ -327,6 +356,8 @@ async function buildRows({
       dayActuals,
       isBaseMaintenance,
       dayEvents,
+      matchSummary,
+      restPrescriptions,
     });
   }
 

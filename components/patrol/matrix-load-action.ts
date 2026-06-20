@@ -17,6 +17,7 @@ import {
   loadMatrixAdjustmentContext,
   overlayWeekAdjustment,
 } from '@/lib/plans/matrix-adjustments';
+import { analyzeWeekMatching, type WeekMatchSummary } from '@/lib/analysis/session-match-pure';
 
 /**
  * Serialisable shape returned to the client. Same as the server-side
@@ -50,6 +51,8 @@ export interface SerializedMatrixRow {
    * events appear on every day they cover within the week.
    */
   dayEvents?: (SerializedDayEvent[] | null)[];
+  /** Phase 8 - additive session-match summary (shifted + extras). */
+  matchSummary?: WeekMatchSummary | null;
 }
 
 export interface SerializedDayActual {
@@ -270,6 +273,14 @@ async function buildSerializedRows(weekMondays: Date[]): Promise<SerializedMatri
       }
     }
 
+    // Phase 8 - additive session-match summary (weeks with actuals).
+    let matchSummary: WeekMatchSummary | null = null;
+    if (template && weekActivities.length > 0) {
+      const planned = template.days.flatMap((d) => d.sessions.map((s) => ({ dow: d.dow, type: s.type })));
+      const acts = weekActivities.map((a) => ({ dow: (new Date(a.startDateLocal).getDay() + 6) % 7, type: a.type }));
+      matchSummary = analyzeWeekMatching(planned, acts);
+    }
+
     rows.push({
       weekStartIso,
       programWeekNumber,
@@ -283,6 +294,7 @@ async function buildSerializedRows(weekMondays: Date[]): Promise<SerializedMatri
       dayActuals,
       isBaseMaintenance,
       dayEvents,
+      matchSummary,
     });
   }
 
