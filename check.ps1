@@ -248,6 +248,8 @@ $requiredFiles = @(
     'lib\actions\plan-start-date.ts',
     'lib\actions\race-debrief.ts',
     'lib\actions\wellness.ts',
+    'lib\actions\sunday-reflection.ts',
+    'lib\actions\block-debrief.ts',
     'lib\actions\profile.ts',
     'lib\actions\garmin.ts',
     'lib\actions\switch-dojo.ts',
@@ -277,6 +279,8 @@ $requiredFiles = @(
     'lib\analysis\ns-guardrails.ts',
     'lib\analysis\ns-guardrails.test.ts',
     'lib\analysis\ns-guardrails-read.ts',
+    'lib\coach\coach-voice-pure.ts',
+    'lib\coach\coach-voice-pure.test.ts',
     'lib\analysis\hr-availability.ts',
     'lib\analysis\interruptions-pure.ts',
     'lib\analysis\interruptions-pure.test.ts',
@@ -339,6 +343,7 @@ $requiredFiles = @(
     'lib\db\migrations\0008_vo2max_observations.sql',
     'lib\db\migrations\0009_interruptions.sql',
     'lib\db\migrations\0010_race_results.sql',
+    'lib\db\migrations\0011_coach_voice.sql',
 
     # Library - plans (8 dojos + framework)
     'lib\plans\active-plan.ts',
@@ -474,13 +479,17 @@ $requiredFiles = @(
     'components\patrol\proposal-history.tsx',
     'components\patrol\ns-guardrails-card.tsx',
     'components\patrol\interruption-indicator.tsx',
+    'components\patrol\coach-voice-card.tsx',
+    'components\patrol\sunday-reflection-card.tsx',
+    'components\patrol\block-debrief-card.tsx',
     'components\garmin\garmin-section.tsx',
 
-    # Components - journal (Phase 4)
+    # Components - journal (Phase 4 + Phase 9)
     'components\journal\interruption-log-form.tsx',
     'components\journal\active-interruption-banner.tsx',
     'components\journal\return-to-training-card.tsx',
     'components\journal\injury-risk-card.tsx',
+    'components\journal\reflection-log.tsx',
 
     # Components - race (Phase 6)
     'components\race\pace-plan-card.tsx',

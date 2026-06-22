@@ -42,6 +42,11 @@ import { NsGuardrailsCard } from '@/components/patrol/ns-guardrails-card';
 import { getNsGuardReport } from '@/lib/analysis/ns-guardrails-read';
 import { getInterruptionsView } from '@/lib/analysis/interruptions';
 import { InterruptionIndicator } from '@/components/patrol/interruption-indicator';
+import { getCoachMessages } from '@/lib/coach/coach-voice-pure';
+import { CoachVoiceCard } from '@/components/patrol/coach-voice-card';
+import { SundayReflectionCard } from '@/components/patrol/sunday-reflection-card';
+import { BlockDebriefCard } from '@/components/patrol/block-debrief-card';
+import { isNull } from 'drizzle-orm';
 
 /**
  * Patrol — this week's training loop.
@@ -151,6 +156,32 @@ async function PatrolDashboard() {
 
   // NS-2/NS-3 - discipline guardrails, only when Norwegian Singles is active.
   const nsReport = engine.dojo === 'norwegian-singles' ? await getNsGuardReport(3) : null;
+
+  // Phase 9 — coach voice + reflection data.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const programWeeks = params.programWeeks ?? engine.defaultProgramWeeks;
+
+  const [activePeriod, todayJournal] = await Promise.all([
+    getDb().select({ id: schema.planPeriods.id }).from(schema.planPeriods).where(isNull(schema.planPeriods.endDate)).get().catch(() => null),
+    getDb().select({
+      reflectionFelt: schema.journal.reflectionFelt,
+      reflectionWorked: schema.journal.reflectionWorked,
+      reflectionUncertain: schema.journal.reflectionUncertain,
+    }).from(schema.journal).where(eq(schema.journal.date, todayIso)).get().catch(() => null),
+  ]);
+
+  const existingBlockDebrief = activePeriod?.id
+    ? await getDb().select({
+        feltAboutBlock: schema.blockDebriefs.feltAboutBlock,
+        mainLearning: schema.blockDebriefs.mainLearning,
+        nextBlockFocus: schema.blockDebriefs.nextBlockFocus,
+      }).from(schema.blockDebriefs).where(eq(schema.blockDebriefs.planPeriodId, activePeriod.id)).get().catch(() => null)
+    : null;
+
+  const coachMessages = getCoachMessages({ weekNumber, programWeeks, dojo: engine.dojo });
+
+  // Show block-end debrief in the final 2 weeks or post-race.
+  const showBlockDebrief = activePeriod?.id != null && weekNumber >= programWeeks - 1;
 
   const activities = await getActivitiesInRange(startIso, endIso);
   const stats = aggregateWeekStats(activities);
@@ -291,6 +322,9 @@ async function PatrolDashboard() {
       {/* NS-2/NS-3 - Norwegian Singles discipline guardrails */}
       {nsReport && <NsGuardrailsCard report={nsReport} />}
 
+      {/* Phase 9 - coach voice: pre-written messages triggered by plan position */}
+      <CoachVoiceCard messages={coachMessages} />
+
       {/* Top stats row — live. Above matrix so the eye lands on
           this-week numbers first. Width matches the matrix below. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-ink-line border border-ink-line">
@@ -420,6 +454,24 @@ async function PatrolDashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Phase 9 - Sunday reflection prompt (Sundays only) */}
+      {todayDow === 6 && (
+        <SundayReflectionCard
+          date={todayIso}
+          existing={todayJournal}
+        />
+      )}
+
+      {/* Phase 9 - block-end debrief (final 2 weeks of block) */}
+      {showBlockDebrief && activePeriod?.id != null && (
+        <BlockDebriefCard
+          planPeriodId={activePeriod.id}
+          weekNumber={weekNumber}
+          programWeeks={programWeeks}
+          existing={existingBlockDebrief}
+        />
+      )}
 
       {/* Demoted shoe nudges — useful but no longer part of the hero */}
       <ShoeNudgeBanner />

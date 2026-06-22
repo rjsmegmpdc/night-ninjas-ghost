@@ -661,31 +661,25 @@ session matching for messy reality (#12)
 
 ---
 
-## Phase 9 — Coach voice + reflection
+## Phase 9 — Coach voice + reflection ✅ SHIPPED
 
-**Why this matters:** information without narrative is just data.
-Athletes who reflect on training stay in their plan longer. Pre-canned
-coach voice and structured reflection both improve adherence — these
-aren't AI features, just behavioural design.
+**Shipped 2026-06-23.**
 
-**Build:**
+- **Coach voice trigger engine** (`lib/coach/coach-voice-pure.ts`) — pure
+  function mapping plan position to pre-written messages: block-start (weeks 1-2),
+  mid-block (proportional centre-third), taper-start (entry week only), block-end
+  (final 2 weeks). 23 tests. Renders as `CoachVoiceCard` on Patrol.
+- **Sunday reflection prompt** — 3-question form (how it felt / what worked /
+  what you're uncertain about) shown on Patrol every Sunday. Written to 3 new
+  columns on the `journal` table (additive migration 0011). Longitudinal log
+  on the Journal page via `ReflectionLog`.
+- **Block-end debrief** — structured retrospective shown in the final 2 weeks
+  of a block. Writes to new `block_debriefs` table (unique per plan period),
+  follows the race_results pattern. `BlockDebriefCard` on Patrol.
+- **Migration 0011** — `ALTER TABLE journal ADD COLUMN reflection_*` × 3,
+  `CREATE TABLE block_debriefs`.
 
-- **Scheduled coach voice** — pre-written messages that fire on
-  specific plan-position triggers:
-  - First taper week: "Volume drops 20% this week. This feels wrong.
-    Trust it."
-  - Mid-block fatigue point (typical week 8-10 of marathon block):
-    "This is when most blocks feel hardest. Hold the line."
-  - Post-missed-Tuesday-tempo pattern: "You missed Tuesday's session —
-    here's how to think about that without spiralling."
-- **Sunday-night journal prompt** — wire up the existing `journal` table:
-  - 3 questions: how did you feel / what worked / what are you uncertain
-    about for next week
-  - Surfaces in Strike as a longitudinal reflection log
-  - Prompts visible on Patrol Sunday afternoon onwards
-- **Block-end debrief** — at end of each plan period, structured
-  reflection captured to journal, used as context for the next block's
-  goal-setting
+**Total tests: 360 (up from 337).**
 
 **Coach review additions integrated:** coach voice (#14), accountability
 journaling (#15)

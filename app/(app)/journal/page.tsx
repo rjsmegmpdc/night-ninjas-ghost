@@ -4,6 +4,7 @@ import { InterruptionLogForm } from '@/components/journal/interruption-log-form'
 import { ActiveInterruptionBanner } from '@/components/journal/active-interruption-banner';
 import { ReturnToTrainingCard } from '@/components/journal/return-to-training-card';
 import { InjuryRiskCard } from '@/components/journal/injury-risk-card';
+import { ReflectionLog } from '@/components/journal/reflection-log';
 
 /**
  * Wellness / Journal - Phase 4 interruption tracking.
@@ -38,6 +39,9 @@ export default async function JournalPage() {
       <InjuryRiskCard risk={view.risk} />
 
       <InterruptionLogForm />
+
+      {/* Phase 9 — longitudinal Sunday reflection log */}
+      <ReflectionLog />
     </div>
   );
 }

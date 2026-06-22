@@ -92,6 +92,11 @@ export const journal = sqliteTable('journal', {
 
   notes: text('notes'),
 
+  // Phase 9 — Sunday-night reflection prompt (3-question weekly retrospective)
+  reflectionFelt: text('reflection_felt'),
+  reflectionWorked: text('reflection_worked'),
+  reflectionUncertain: text('reflection_uncertain'),
+
   createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
@@ -491,6 +496,30 @@ export const planPeriods = sqliteTable(
 
 export type PlanPeriod = typeof planPeriods.$inferSelect;
 export type NewPlanPeriod = typeof planPeriods.$inferInsert;
+
+/* ----------------------------------------------------------------------------
+ * Block debriefs (Phase 9) — one structured reflection per completed plan period.
+ * Follows the race_results pattern: the plan period row stays immutable;
+ * this captures the qualitative retrospective at block end.
+ * -------------------------------------------------------------------------- */
+export const blockDebriefs = sqliteTable(
+  'block_debriefs',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    planPeriodId: integer('plan_period_id').notNull(),
+    feltAboutBlock: text('felt_about_block'),
+    mainLearning: text('main_learning'),
+    nextBlockFocus: text('next_block_focus'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+  },
+  (t) => ({
+    periodIdx: uniqueIndex('idx_block_debriefs_period').on(t.planPeriodId),
+  })
+);
+
+export type BlockDebrief = typeof blockDebriefs.$inferSelect;
+export type NewBlockDebrief = typeof blockDebriefs.$inferInsert;
 
 /* ============================================================================
  * Plan adjustments (Phase 3b plumbing - empty until 3b commences)
