@@ -27,6 +27,7 @@ const KEY = {
   STRAVA_REFRESH_TOKEN: 'strava-refresh-token',
   STRAVA_EXPIRES_AT: 'strava-expires-at',
   GARMIN_SESSION_TOKENS: 'garmin-session-tokens',
+  GITHUB_PAT: 'github-pat',
 } as const;
 
 // Lazy-load keytar — it's a native module and we want to gracefully
@@ -134,4 +135,25 @@ export async function getGarminSessionTokens(): Promise<string | null> {
 
 export async function clearGarminSecrets(): Promise<void> {
   await deleteSecret(KEY.GARMIN_SESSION_TOKENS);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Public API - GitHub PAT.
+ *
+ * Used to publish training schedules to the nightninja-report repo via the
+ * GitHub Contents API. Needs `contents: write` scope on the target repo.
+ * Never logged; stored only in the OS keychain.
+ * -------------------------------------------------------------------------- */
+
+export async function getGitHubPat(): Promise<string | null> {
+  return getSecret(KEY.GITHUB_PAT);
+}
+
+export async function setGitHubPat(pat: string): Promise<void> {
+  await setSecret(KEY.GITHUB_PAT, pat);
+}
+
+export async function clearGitHubPat(): Promise<void> {
+  await deleteSecret(KEY.GITHUB_PAT);
 }

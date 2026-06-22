@@ -31,7 +31,7 @@ export function Vo2TrendCard({ view, profile }: { view: Vo2View; profile: Athlet
         </div>
         <p className="text-bone-dim text-sm leading-relaxed max-w-xl">
           No VO2 max readings yet. Record a Cooper or Rockport test below, enter
-          a lab result, or connect Garmin to pull device estimates. Your
+          a lab result, or connect Garmin (under development) to pull device estimates. Your
           progression will chart here across all sources.
         </p>
       </div>

@@ -1,8 +1,8 @@
 {
-  "name": "night-ninjas-shadow-tracker",
-  "version": "0.1.0",
+  "name": "velocity",
+  "version": "0.2.0",
   "private": true,
-  "description": "Night Ninjas - Shadow Tracker. Local-first running training analysis.",
+  "description": "VELOCITY — local-first running training analysis for the Night Ninjas community club",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

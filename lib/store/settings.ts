@@ -28,6 +28,8 @@ const KEY = {
   CLUB_TERMS_ACCEPTED_AT: 'club.terms_accepted_at',
   CLUB_WINDOW_DEFAULT: 'club.window_default',
   CLUB_LAST_SHARE_GENERATED_AT: 'club.last_share_generated_at',
+  ATHLETE_ID: 'club.athlete_id',
+  SCHEDULE_PASSWORD_HASH: 'club.schedule_password_hash',
   // Phase 12 plumbing - Garmin biometric sync
   GARMIN_SYNC_ENABLED: 'garmin.sync_enabled',
   GARMIN_LAST_SYNC_AT: 'garmin.last_sync_at',
@@ -228,6 +230,24 @@ export async function getClubLastShareGeneratedAt(): Promise<string | null> {
 
 export async function setClubLastShareGeneratedAt(iso: string): Promise<void> {
   await set(KEY.CLUB_LAST_SHARE_GENERATED_AT, iso);
+}
+
+export async function getAthleteId(): Promise<string | null> {
+  const v = await get(KEY.ATHLETE_ID);
+  return v === '' ? null : v;
+}
+
+export async function setAthleteId(id: string): Promise<void> {
+  await set(KEY.ATHLETE_ID, id);
+}
+
+export async function getSchedulePasswordHash(): Promise<string | null> {
+  const v = await get(KEY.SCHEDULE_PASSWORD_HASH);
+  return v === '' ? null : v;
+}
+
+export async function setSchedulePasswordHash(hash: string): Promise<void> {
+  await set(KEY.SCHEDULE_PASSWORD_HASH, hash);
 }
 
 

@@ -150,6 +150,12 @@ export interface GenerateInput {
   generatedAt: Date;
   /** Optional - reason athlete extended window */
   extensionReason?: string;
+  /**
+   * Optional SHA-256 hex of the athlete's schedule password.
+   * Included in the payload so the club site can verify the athlete's
+   * identity client-side without VELOCITY transmitting the raw password.
+   */
+  passwordHash?: string;
 }
 
 /**
@@ -165,7 +171,7 @@ function staleAfterIso(generatedAt: Date): string {
  * The main pure generator. Returns the JSON-serialisable payload.
  */
 export function generateSchedulePayload(input: GenerateInput): ClubSchedulePayload {
-  const { parkrunId, windowOption, weeks, todayIso, completedSessionKeys, dayHasActivity, generatedAt, extensionReason } = input;
+  const { parkrunId, windowOption, weeks, todayIso, completedSessionKeys, dayHasActivity, generatedAt, extensionReason, passwordHash } = input;
 
   if (weeks.length === 0) {
     throw new Error('Cannot generate schedule with empty weeks list');
@@ -220,6 +226,7 @@ export function generateSchedulePayload(input: GenerateInput): ClubSchedulePaylo
     generated_at: generatedAt.toISOString(),
     window,
     schedule,
+    ...(passwordHash ? { password_hash: passwordHash } : {}),
   };
 }
 

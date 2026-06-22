@@ -1,0 +1,251 @@
+# PHASES.md — VELOCITY Development Roadmap
+
+## Current state
+
+**Version**: 0.2.0  
+**Branch**: main (clean)  
+**Status**: Feature-complete for core training analysis. Active phase: post-Phase 8 refinement and Garmin integration planning.
+
+---
+
+## App pages (13 routes)
+
+The VELOCITY app comprises the following pages, organized by navigation bucket:
+
+### Dashboard
+- **/patrol** — Training load matrix, weekly compliance status, quick health check
+
+### Training
+- **/dojo** — Training plan management and selection
+- **/calendar** — Week-by-week calendar view
+- **/race** — Race planning, taper management, weather forecast, heat advisory
+- **/coach-log** — Manual session logging and plan adjustments
+
+### Analytics
+- **/strike** — Fitness metrics: VO2max trends, biometric analysis, load distribution
+- **/recon** — Deep analysis: weekly history, injury vulnerability, monotony detection, interruption patterns
+- **/vo2max** — Dedicated VO2max tracking and insights
+
+### Profile
+- **/profile** — Athlete settings, strength preferences, wellness slider, injury ledger
+- **/settings** — Strava setup, club share configuration, data export
+- **/shoes** — Footwear tracking and mileage management
+- **/journal** — Training notes and reflections
+- **/help** — In-app user guide
+
+---
+
+## Phase ledger
+
+### Phase 3b — State-aware monotony + interruption detection
+**What**: Monotony and sickness/travel trigger detection; multi-week compliance matrix; coach log for manual adjustments.
+
+**Key files**: 
+- `lib/plans/state-awareness.ts` — State-aware week calculation
+- `lib/plans/state-aware-week.ts` — Week template with state flags
+- `lib/analysis/monotony-pure.ts` — Monotony calculation
+- `lib/analysis/interruptions-pure.ts` — Sickness/travel detection
+- `app/(app)/coach-log/page.tsx` — Manual session logging
+
+**Features**:
+- Norwegian Singles dojo (NS-1) — baseline training methodology
+- NS personal HR calibration as editable defaults
+- Absolute-cap guardrails on adjusted sessions
+
+**Status**: Complete. Core foundation for training analysis.
+
+---
+
+### Phase 4–6 — Time handling, race planning, UI refinement
+**What**: Timezone fixes and type cleanup; race-day weather forecast + heat advisory; taper view and post-race protocol; multi-block awareness in plans.
+
+**Key files**:
+- `lib/race/taper-pure.ts` — Taper week calculation
+- `lib/race/post-race-pure.ts` — Post-race recovery protocol
+- `lib/weather/forecast.ts` — Race-day weather forecast
+- `lib/weather/heat-adjust-pure.ts` — Heat advisory calculation
+- `app/(app)/race/page.tsx` — Race planning UI
+- `lib/plans/calendar-blocks.ts` — Multi-block plan support
+
+**Features**:
+- Taper countdown and readiness checks
+- Weather forecast for goal race date
+- Heat advisory for hot conditions
+- Post-race recovery guidance (R1–R4 phases)
+
+**Status**: Complete.
+
+---
+
+### Phase 5 — Athlete profile
+**What**: `/profile` route with editable athlete preferences and wellness tracking.
+
+**Key files**:
+- `app/(app)/profile/page.tsx` — Profile page
+- `components/profile/strength-prefs-form.tsx` — Strength preferences editor
+- `components/profile/wellness-slider-form.tsx` — Wellness tracking slider
+- `components/profile/injury-ledger.tsx` — Injury history ledger
+- `lib/actions/profile.ts` — Profile server actions
+- `lib/actions/wellness.ts` — Wellness updates
+
+**Features**:
+- Strength preferences (speed, endurance, power)
+- Wellness slider (subjective daily wellness 1–10)
+- Injury ledger with date and notes
+- HR calibration settings editable from profile
+
+**Status**: Complete.
+
+---
+
+### Phase 6b — Navigation polish and streak tracking
+**What**: Top navigation redesign; streak indicator in nav; avatar dropdown; bounded mobile responsiveness.
+
+**Key files**:
+- `components/nav/topnav.tsx` — Horizontal top navigation (4 buckets: Dashboard, Training, Analytics, Profile)
+- `components/nav/avatar-menu.tsx` — Avatar dropdown menu
+- `lib/analysis/streak.ts` — Streak calculation
+- `app/(app)/layout.tsx` — App layout with streak integration
+
+**Features**:
+- Sticky top nav with 4-bucket layout (replaces old 9-item sidebar)
+- Flame icon + streak count in top-right nav
+- Avatar menu for quick access to profile/settings
+- Mobile-optimized navigation
+
+**Status**: Complete.
+
+---
+
+### Phase 7 — Race weather integration
+**What**: Full race-day weather forecast and heat advisory system.
+
+**Key files**:
+- `lib/weather/forecast.ts` — Strava weather API integration
+- `lib/weather/heat-adjust-pure.ts` — Heat-based session adjustment
+- `lib/race/execution.ts` — Race execution with weather context
+- `app/(app)/race/page.tsx` — Race page with forecast display
+
+**Features**:
+- 7-day forecast for goal race location
+- Heat advisory (red flag if feels-like temp > 28°C)
+- Humidity and wind integration
+- Session pacing suggestions based on conditions
+
+**Status**: Complete.
+
+---
+
+### Phase 8 — Rest-day recovery prescription
+**What**: Additive session matching and recovery prescription engine for rest days.
+
+**Key files**:
+- `lib/plans/recovery-prescription-pure.ts` — Recovery session logic
+- `lib/plans/recovery-prescription-pure.test.ts` — Recovery tests
+- `lib/analysis/session-match-pure.ts` — Session matching to plan slots
+- `lib/analysis/session-match-pure.test.ts` — Session matching tests
+
+**Features**:
+- Automatic recovery session suggestions for rest days
+- Activity classification (run, cross-training, mobility)
+- Compliance flagging for optional sessions
+- Multi-block recovery planning
+
+**Status**: Complete.
+
+---
+
+## Supported training methodologies
+
+The **Dojo** page supports 13 different training plan methodologies:
+
+1. **Daniels** — Jack Daniels running formula (pace zones)
+2. **Pfitzinger** — Pete Pfitzinger marathon plans
+3. **Hansons** — Hansons marathon method
+4. **Lydiard** — Arthur Lydiard periodization
+5. **Higdon** — Hal Higdon base-building plans
+6. **Polarised** — Polarised training (80/20 intensity distribution)
+7. **Ultra** — Ultramarathon-specific plans
+8. **Norwegian Singles** — Norwegian endurance training (NS-1 calibrated)
+9. **Custom** — User-defined plans
+10. **Base Maintenance** — Fallback when no plan active
+11. **Multi-block** — Plans spanning multiple training blocks
+12. **Ramp** — Progressive ramp-up templates
+13. **Week Context** — Contextual adjustments per weekending
+
+---
+
+## Data sources
+
+- **Strava** — Fully supported. Synced activities power all analysis.
+- **Garmin** — Under development. Connection framework in place; sync engine not yet complete.
+- **Manual entry** — Coach log allows manual session logging for non-Strava activities.
+
+---
+
+## Key analysis engines
+
+- **Compliance** — Compares actual activities vs. planned sessions (hit/partial/miss)
+- **Load** — Weekly training load (CTL, ATL, TSB) calculations
+- **Biometrics** — VO2max trending via Daniels-formula estimates
+- **Interruptions** — Detects sickness/travel breaks in training
+- **Monotony** — Calculates training variety and flagging overuse patterns
+- **Injury Vulnerability** — Predicts injury risk based on load/fatigue
+- **Intensity Distribution** — Analyzes % easy vs. hard vs. threshold
+- **Streak** — Consecutive days with logged activity
+
+---
+
+## Database schema (10 tables)
+
+| Table | Purpose |
+|---|---|
+| `activities` | Synced Strava activities (primary data source) |
+| `planPeriods` | Active training plan + history |
+| `journal` | Daily wellness tracking entries |
+| `settings` | App key/value configuration |
+| `syncLog` | Legacy sync audit trail |
+| `syncJobs` | Stateful, resumable Strava sync jobs |
+| `races` | Goal races and tune-up events |
+| `recurringEvents` | Weekly group runs |
+| `calendarEvents` | Holidays, trips, sickness blocks |
+| `nzHolidays` | Cached NZ public holidays |
+
+---
+
+## Next phase planning
+
+**Garmin integration** (in planning):
+- OAuth setup for Garmin Connect
+- Activity sync engine (similar to Strava runner)
+- Power meter data ingestion
+- Training effect compatibility
+
+**Shoes refinement** (post v0.2):
+- Photo import and rotation view
+- Mileage alerts (retire at 500–800 km threshold)
+- Performance correlation (shoe type vs. injury)
+
+**Export enhancements**:
+- PDF training summary
+- CSV bulk export
+- iCal calendar integration for race dates
+
+---
+
+## Versioning
+
+- **v0.1.0–0.1.x** — Pre-rebrand (Night Ninjas Shadow Tracker)
+- **v0.2.0+** — VELOCITY rebrand (current)
+- Each point release signals a completed phase
+
+---
+
+## Files to read for deep dives
+
+- **Training analysis**: `lib/analysis/` (load, compliance, trends, VO2max)
+- **Plan engines**: `lib/plans/` (all 13+ methodologies)
+- **Strava sync**: `lib/sources/strava-sync.ts` (stateful job runner)
+- **Race logic**: `lib/race/` (taper, weather, execution)
+- **UI components**: `components/` (brand, nav, ui primitives)
+- **Page routes**: `app/(app)/`, `app/setup/` (all 13 main pages + setup wizard)

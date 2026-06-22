@@ -1,145 +1,108 @@
-# BRAND.md
+# BRAND.md — VELOCITY Identity & Conventions
 
-The VELOCITY brand. Identity, voice, naming conventions. Read alongside
-DESIGN.md for visual specifics.
+## Product & Community
 
----
+**Product name**: VELOCITY  
+**Community**: Night Ninjas running club  
+**Heritage**: Originally released as "Night Ninjas Shadow Tracker" (2024–2025); rebranded to VELOCITY in 2026  
+**Repository**: `night-ninjas-shadow-tracker` (unchanged to avoid breaking existing clones)
 
-## Identity
+## Tagline
 
-**Name:** VELOCITY
+> Shadow work in daylight.
 
-**Subtitle (optional, internal use):** marathon training console
+A nod to the Night Ninjas heritage—disciplined, focused training that doesn't need visibility or validation.
 
-**Tagline candidates** (not yet locked):
-- "Train deliberately."
-- "Every session compounds."
-- "The training console for serious runners."
+## Voice & tone
 
-The name reflects the product's central concern: not just running, but
-training with measurable forward motion. Velocity = direction + speed.
-Training plans give direction; pace zones quantify speed. The product
-puts both on one screen.
+Written for serious runners in the Night Ninjas community:
 
----
+- **Friendly but data-driven** — We respect your intelligence. No hype, no marketing speak.
+- **Precise** — Training load, VO2max, monotony, injury vulnerability—these words have meaning.
+- **Practical** — "Here's what you need to do" beats explanations.
+- **Direct** — Short sentences. No padding.
 
-## Naming history
+Example: "You're 15% under plan for the week. Rain forecast for Friday; consider the indoor option on your Wednesday speed work."
 
-| Era        | Name                            | Status      |
-| ---------- | ------------------------------- | ----------- |
-| 2024-2026  | Night Ninjas Shadow Tracker     | Retired UI-side; legacy code paths remain |
-| 2026+      | VELOCITY                        | Active      |
+## Naming conventions
 
-**Why the rename:** the *Night Ninjas* identity emerged from a personal
-brand context and read more like a stealth-ops product than a training
-console. The visual restyle (rounded cards, layered surfaces, semantic
-colour palette) needed a name with the same precision. VELOCITY honours
-the cockpit-grade design vocabulary the redesign aims for.
+### In user-facing UI
 
-**What did NOT change:**
-- The codebase folder is still `night-ninjas-shadow-tracker` (no rename)
-- The `package.json` name is still `night-ninjas-shadow-tracker`
-- The GitHub repo is still `https://github.com/rjsmegmpdc/night-ninjas-shadow-tracker`
-- The local data folder is still `%APPDATA%\NightNinjas\shadow-tracker.db`
+All surfaces use "VELOCITY":
 
-These are deliberate non-changes - renaming files/repos/storage paths
-is a follow-up task that may or may not be worth the refactor cost.
-For now: **the user-visible product is VELOCITY; the underlying machinery
-keeps its original names.**
+- App title: "VELOCITY"
+- Metadata: "VELOCITY — local-first running training analysis for the Night Ninjas community club"
+- Package.json: `"name": "velocity"`, `"version": "0.2.0+"`
+- Browser tabs, window titles, help text: Always "VELOCITY"
 
----
+### In codebase
 
-## Wordmark
+- **Folder**: `night-ninjas-shadow-tracker` — unchanged for backward compatibility
+- **GitHub repo**: `night-ninjas-shadow-tracker` (same)
+- **Package name**: `velocity` (since v0.2.0)
+- **App imports**: Use generic names (`app`, `lib`) — no hardcoded brand strings outside config
 
-```
-VELOCITY
-```
+### In internal storage (immutable)
 
-- Display font: Bebas Neue
-- Default colour: VELOCITY orange `#FF5F00`
-- Always uppercase
-- Letter-spacing: standard (0.04em via `tracking-wide-display`)
-- Size: scale to context. Top nav: ~24-28px. Hero / login: 56px+.
+These paths must never change—users' existing databases depend on them:
 
-The wordmark stands alone. No tagline beneath it in nav contexts.
-Optional subtitle in onboarding hero contexts only.
+- **Database file**: `%APPDATA%\NightNinjas\shadow-tracker.db`
+- **Keychain service** (macOS/Linux): `NightNinjas-ShadowTracker`
+- **Database folder**: `%APPDATA%\NightNinjas\` (Windows) · `~/Library/Application Support/NightNinjas/` (macOS) · `~/.config/night-ninjas/` (Linux)
 
----
+User-facing exports and settings directories use VELOCITY:
 
-## Voice
+- **Exports root**: `~/VELOCITY/exports/`
+- **Settings files**: `~/VELOCITY/settings.json` (if ever added)
 
-VELOCITY speaks the way a competent training partner would:
+## Visual identity
 
-- **Direct.** "You missed last week's long run." Not "It looks like..."
-- **Measured.** Numbers are presented without celebration or alarm.
-  Hitting a PB is acknowledged, not confettied.
-- **Honest about what it knows.** When data is sparse, the product says
-  "estimated" rather than pretending precision. When confidence is low,
-  the user is told.
-- **Never paternal.** No "great job!" No "you can do it!" No motivational
-  framing. The athlete is the agent. The product is the instrument.
-- **Active not passive.** "Sync now" not "Sync when you can." "Choose this
-  dojo" not "If you'd like, you could choose this dojo."
+- **Dark mode first** — The shadow tracker aesthetic. Light mode available as opt-in.
+- **Color palette** — Ink (near-black), Bone (cream), Sage (muted green for good state), Rust (alerts).
+- **Typography** — Bebas Neue (headers, wordmark), IBM Plex Sans (body), JetBrains Mono (data/code).
+- **Logo** — Crossed bones + Night Ninjas mask, rendered as inline SVG in `components/brand/logo.tsx`.
 
-What VELOCITY doesn't do:
+## Key pages and features
 
-- Doesn't gamify ("achievement unlocked!")
-- Doesn't moralise ("you should rest")
-- Doesn't predict feelings ("you must be feeling tired")
-- Doesn't refer to the user in third person ("the athlete")
+- **Patrol** (dashboard) — Load matrix, weekly compliance status
+- **Dojo** (training) — Plan selection and management (13 methodologies including Norwegian Singles)
+- **Strike** (fitness) — VO2max trends, biometric analysis
+- **Recon** (analysis) — Weekly history, injury vulnerability, monotony detection
+- **Race** — Race planning, taper management, weather forecast, heat advisory
+- **Coach Log** — Manual session logging and plan adjustments
+- **Calendar** — Week-by-week calendar view
+- **Shoes** — Footwear tracking
+- **Journal** — Training notes
+- **Profile** — Athlete settings, strength preferences, wellness tracking, injury ledger
+- **Settings** — Strava setup, club share config, data export
+- **Help** — In-app user guide
 
----
+## Club share branding
 
-## Locale defaults
+When generating club-share exports (JSON files in `~/VELOCITY/exports/`):
 
-VELOCITY targets the New Zealand serious-runner market. Locale defaults:
+- Include "VELOCITY" in file headers or metadata if shown
+- Use "generated by VELOCITY" language in any accompanying text
+- Export filenames: `velocity-{parkrunId}-{weekStart}.json`
 
-- Distance: km
-- Pace: min:sec/km
-- Elevation: m
-- Date: DD/MM/YYYY
-- Time: 24-hour
-- First day of week: Monday
-- Timezone: Pacific/Auckland (override available)
+## Version numbering
 
-These are defaults. Settings allow override. But the design assumes the
-NZ defaults unless the user specifies otherwise.
+- **v0.1.x** — Pre-rebrand (Night Ninjas Shadow Tracker)
+- **v0.2.0+** — VELOCITY rebrand
+- Each minor release signals phases of feature development (see `PHASES.md`)
 
----
+## Links & references
 
-## Page-level naming
+- **Internal docs**: `BRAND.md` (this file), `PHASES.md` (feature phases), `README.md` (installation)
+- **In-app help**: Accessible at `/help` page from the sidebar
+- **Source reference**: `lib/actions/generate-club-share.ts` (lines 194–201) documents the rebrand
 
-Pages keep their existing routes (no breaking URL changes for now).
-The user-facing labels are:
+## Immutable decisions
 
-| Route        | Display label   | Nav bucket  |
-| ------------ | --------------- | ----------- |
-| `/patrol`    | Dashboard       | Dashboard   |
-| `/strike`    | Athlete State   | Analytics   |
-| `/recon`     | Trends          | Analytics   |
-| `/dojo`      | Methodology     | Training    |
-| `/calendar`  | Schedule        | Training    |
-| `/shoes`     | Equipment       | Profile     |
-| `/journal`   | Wellness        | Profile     |
-| `/settings`  | Settings        | Profile     |
-| `/help`      | Reference       | Profile     |
+Do not change:
 
-The terms *Patrol / Strike / Recon / Dojo* are retained internally (in
-code, comments, file names) but no longer shown in the UI. The new
-top-nav uses the four bucket labels. Within each bucket, the page title
-on the rendered screen reflects the *Display label* above.
+- Internal storage paths (`%APPDATA%\NightNinjas\`, keychain service names)
+- GitHub repo folder name (`night-ninjas-shadow-tracker`)
+- Database table or column names (backward compatibility required)
 
----
-
-## Open brand decisions (not yet locked)
-
-1. **Streak indicator:** the flame icon next to the avatar in the top
-   nav (visible in the design references) is presumed to be a streak
-   indicator. Confirm whether this stays as a flame or changes.
-2. **Tagline:** none of the candidates above are locked. Pick one or
-   leave the wordmark unaccompanied.
-3. **Favicon:** currently the Night Ninjas logo. Needs a VELOCITY
-   replacement. Probably a stylised "V" or a velocity-vector glyph.
-4. **App icon for Windows shortcut:** same as favicon question.
-5. **Marketing surface:** there isn't one yet. When there is, this
-   document expands to cover web copy, meta tags, OG image.
+These decisions anchor user data. Changing them would orphan every existing installation.

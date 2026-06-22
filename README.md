@@ -1,93 +1,77 @@
-# VELOCITY
+# VELOCITY — Local-First Running Training Analysis
 
-> Local-first marathon training console for serious runners.
+Welcome to VELOCITY, the official training companion for the Night Ninjas running club.
 
-> **Note:** this product was originally branded *Night Ninjas Shadow Tracker*.
-> As of 2026, it has been rebranded to **VELOCITY**. The codebase folder,
-> `package.json` name, and GitHub repository retain the original name to
-> avoid disruptive renames; all UI surfaces show VELOCITY.
-> See [`BRAND.md`](./BRAND.md) for the rebrand spec.
+VELOCITY is a desktop app that tracks and analyzes your running training with precision. All your data stays on your machine—nothing is ever uploaded to the cloud.
 
-This README is for **installing and running** the app. If you want to know
-how to *use* it as a runner - what the screens do, what the words mean,
-what to do when life happens - the in-app **Reference** page is where to
-look. Open `http://localhost:3000/help` once you have the dev server
-running, or read the source at `app/(app)/help/page.tsx`.
+## What VELOCITY does
+
+VELOCITY pulls your training data from Strava and compares it against your chosen training plan (Hansons, Pfitzinger, Daniels, Lydiard, Higdon, Polarised, Ultra, Norwegian Singles, or Custom). It shows you what you were meant to do, what you actually did, and where the gaps are. No cloud, no subscription, no telemetry. Your data stays on your machine.
+
+For development and brand identity, see [`BRAND.md`](./BRAND.md) and [`PHASES.md`](./PHASES.md).
 
 ---
 
-## What it does (one paragraph)
+## System requirements
 
-Pulls your training data from Strava and compares it against a real plan
-(Hansons, Pfitzinger, Daniels, Lydiard, Higdon, Polarised, Ultra, or Custom).
-Tells you what you were meant to do, what you actually did, and where the
-gaps are. No cloud, no subscription, no telemetry. Your data stays on
-your machine.
-
-For where the product is going, see [`ROADMAP.md`](./ROADMAP.md). For
-brand identity, see [`BRAND.md`](./BRAND.md). For visual tokens and
-design rules, see [`DESIGN.md`](./DESIGN.md).
-
----
-
-## Install
-
-### Requirements
-
-- **Node.js 22 LTS** (22.13+ avoids ESLint engine warnings)
-- **A Strava account** with at least one activity logged
-- **Native build chain** for `better-sqlite3` and `keytar`:
-  - Windows: usually works out of the box on Node 22 with prebuilt binaries.
-    If not, install Visual Studio Build Tools 2022 with the "Desktop
-    development with C++" workload.
+- **Node.js 20.11.0+** and npm 9.0.0+
+- **A Strava account** (for activity sync)
+- **macOS 11+**, Windows 10+, or recent Linux
+- **Native build dependencies** for `better-sqlite3` and `keytar`:
+  - Windows: Usually built-in with Node 20+. If needed, install Visual Studio Build Tools 2022 with "Desktop development with C++".
   - macOS: Xcode Command Line Tools (`xcode-select --install`)
   - Linux: `build-essential` + `libsecret-1-dev`
 
-### First-time install
+## Installation
 
-```bash
-cd night-ninjas-shadow-tracker
-npm install        # ~30s with prebuilt binaries; ~3min if compiling from source
-npm run dev        # starts dev server on http://localhost:3000
-```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/night-ninjas/velocity.git
+   cd velocity
+   npm install
+   ```
 
-Open the URL. The first-run wizard guides you through Strava setup, plan
-selection, and an initial 90-day sync.
+2. Start the dev server:
+   ```bash
+   npm run dev
+   ```
 
-### After the first install — use the checker
+3. Open your browser to `http://localhost:3000`.
 
-A `check.ps1` script lives in the project root. It:
+On first run, a setup wizard will guide you through Strava connection, training plan selection, and data sync.
 
-- Kills any orphan Node/Next dev server processes
-- Strips UTF-8 BOMs from all `.ts`/`.tsx` files (Turbopack chokes on them)
-- Verifies the project structure matches what the app expects
-- Verifies dependencies installed
-- Auto-applies any pending DB migrations from `lib/db/migrations/`
-- Reports status
+## Optional: Use the health checker
+
+A `check.ps1` script (Windows) or shell equivalent helps verify your setup:
 
 ```powershell
-# First time only — allow local script execution if blocked
+# First time: allow local script execution
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
-# Then any time after extracting a new zip:
+# Then run:
 .\check.ps1
 npm run dev
 ```
 
-The checker is idempotent — safe to run as many times as you want.
+The checker verifies dependencies, applies pending migrations, and reports status.
 
----
+## Data and privacy
 
-## Where data lives
+All your training data stays local and secure:
 
-| What | Path |
-|---|---|
-| SQLite DB | `%APPDATA%\NightNinjas\` (Windows) · `~/Library/Application Support/NightNinjas/` (macOS) · `~/.config/night-ninjas/` (Linux) |
-| Strava `client_secret` + tokens | OS keychain — service `NightNinjas-ShadowTracker` |
-| Project source | The folder you extracted the zip into |
+- **SQLite database**: `%APPDATA%\NightNinjas\shadow-tracker.db` (Windows) · `~/Library/Application Support/NightNinjas/` (macOS) · `~/.config/night-ninjas/` (Linux)
+- **Strava credentials**: Stored securely in OS keychain (service: `NightNinjas-ShadowTracker`)
+- **No cloud sync**: Your data never leaves your machine
+- **No telemetry**: No analytics, no tracking
 
-To wipe everything: delete the data directory above + clear the keychain
-entry. Or use Settings → "Wipe everything" once that screen is built out.
+### Internal naming note
+
+The app uses the `NightNinjas` namespace for internal storage to maintain compatibility with existing user databases. Do not rename these paths:
+
+- Database file: `%APPDATA%\NightNinjas\shadow-tracker.db`
+- Keychain service: `NightNinjas-ShadowTracker`
+
+Renaming them would orphan existing user databases and credentials. User-facing exports use VELOCITY naming.
 
 ---
 

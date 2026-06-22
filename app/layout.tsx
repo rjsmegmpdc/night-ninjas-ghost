@@ -28,9 +28,9 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Night Ninjas — Shadow Tracker',
+  title: 'VELOCITY',
   description:
-    'Local-first running training analysis. Quiet, disciplined work in the dark.',
+    'VELOCITY — local-first running training analysis for the Night Ninjas community club',
   // No icons / Open Graph / etc — this app never goes online.
 };
 

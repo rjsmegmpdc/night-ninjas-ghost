@@ -108,7 +108,7 @@ export function GarminSection({ connected, lastSyncAt }: Props) {
           </h3>
         </div>
         <span className="px-2 py-1 rounded-md bg-signal-warn/10 border border-signal-warn/40 text-signal-warn font-mono text-[10px] uppercase tracking-widest h-fit">
-          Experimental
+          Under Development
         </span>
       </div>
 
@@ -124,6 +124,10 @@ export function GarminSection({ connected, lastSyncAt }: Props) {
         </div>
       </div>
 
+      <p className="text-sm text-bone-mute italic mb-3">
+        Garmin integration is under development and temporarily unavailable.
+      </p>
+      <div className="opacity-50 pointer-events-none select-none" aria-disabled="true">
       {!isConnected ? (
         <>
           {/* Flow 1: credentials */}
@@ -266,6 +270,7 @@ export function GarminSection({ connected, lastSyncAt }: Props) {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }

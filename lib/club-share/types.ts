@@ -94,4 +94,6 @@ export interface ClubSchedulePayload {
   window: SharedWindow;
   /** Pending sessions in date order. Completed sessions are stripped. */
   schedule: SharedSession[];
+  // SHA-256 hex of user's schedule password. Verified client-side by the club site.
+  password_hash?: string;
 }

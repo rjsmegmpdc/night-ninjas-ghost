@@ -127,12 +127,10 @@ export function BiometricsCard({ summary }: { summary: BiometricSummary }) {
             sleep, body battery, stress and weight - they'll appear here as a
             14-day trend and feed future readiness insights.
           </p>
-          <Link
-            href="/settings#garmin"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-ink rounded-lg font-display tracking-wide-display uppercase text-sm hover:bg-accent-hover"
-          >
-            Connect Garmin
-          </Link>
+          {/* <Link href="/settings#garmin" className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-ink rounded-lg font-display tracking-wide-display uppercase text-sm hover:bg-accent-hover">Connect Garmin</Link> */}
+          <span className="inline-flex items-center gap-2 px-4 py-2 bg-accent/30 text-ink/50 rounded-lg font-display tracking-wide-display uppercase text-sm opacity-50 cursor-not-allowed select-none">
+            Garmin &mdash; Under Development <span className="normal-case font-mono text-[10px] tracking-normal">(coming soon)</span>
+          </span>
         </div>
       </div>
     );

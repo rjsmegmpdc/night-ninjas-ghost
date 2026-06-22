@@ -35,6 +35,7 @@ const NAV: NavBucket[] = [
   { label: 'Dashboard', href: '/patrol',   match: ['/patrol'] },
   { label: 'Training',  href: '/dojo',     match: ['/dojo', '/calendar', '/race'] },
   { label: 'Analytics', href: '/strike',   match: ['/strike', '/recon', '/vo2max', '/coach-log'] },
+  { label: 'Club',      href: '/club',     match: ['/club'] },
   { label: 'Profile',   href: '/profile',  match: ['/profile', '/settings', '/help', '/shoes', '/journal'] },
 ];
 

@@ -15,9 +15,13 @@ import {
   getClubTermsAcceptedAt,
   getClubWindowDefault,
   setClubLastShareGeneratedAt,
+  getAthleteId,
+  getSchedulePasswordHash,
   type ClubWindowDefault,
 } from '@/lib/store/settings';
+import { getGitHubPat } from '@/lib/store/secrets';
 import { generateSchedulePayload, buildShareFilename, type GenerateInput } from '@/lib/club-share/generator';
+import { publishScheduleToGitHub } from '@/lib/github/publish-schedule';
 import type { WeekTemplate } from '@/lib/plans/types';
 
 /**
@@ -35,6 +39,10 @@ export interface GenerateShareResult {
   error?: string;
   /** Set when ok=true: number of pending sessions in the output */
   sessionCount?: number;
+  /** True when the schedule was successfully pushed to GitHub */
+  githubPublished?: boolean;
+  /** Set when githubPublished=true: HTML URL of the file on GitHub */
+  githubUrl?: string;
 }
 
 /**
@@ -226,6 +234,13 @@ export async function generateClubShare(formData: FormData): Promise<GenerateSha
       return { ok: false, error: 'parkrun ID not set. Enter your ID in the settings card above.' };
     }
 
+    // Read optional GitHub publish settings (non-blocking — absence means local-only)
+    const [athleteId, passwordHash, githubPat] = await Promise.all([
+      getAthleteId(),
+      getSchedulePasswordHash(),
+      getGitHubPat(),
+    ]);
+
     // Window: caller can override via form field, otherwise use default setting
     const overrideRaw = formData.get('window')?.toString();
     const validWindows: ClubWindowDefault[] = ['1w', '2w', '4w', 'next-race', 'program-end'];
@@ -262,12 +277,13 @@ export async function generateClubShare(formData: FormData): Promise<GenerateSha
       dayHasActivity,
       generatedAt,
       extensionReason,
+      passwordHash: passwordHash ?? undefined,
     };
 
     const payload = generateSchedulePayload(input);
     const json = JSON.stringify(payload, null, 2);
 
-    // Write to disk - latest + history
+    // Write to disk - latest + history (belt-and-suspenders: always kept)
     const exportDir = shareExportRoot();
     const historyDir = join(exportDir, 'history');
     await mkdir(historyDir, { recursive: true });
@@ -282,7 +298,21 @@ export async function generateClubShare(formData: FormData): Promise<GenerateSha
     // Update the last-generated setting
     await setClubLastShareGeneratedAt(generatedAt.toISOString());
 
+    // Optional: publish to GitHub if athleteId + PAT are configured
+    let githubPublished = false;
+    let githubUrl: string | undefined;
+    if (athleteId && githubPat) {
+      const ghResult = await publishScheduleToGitHub({
+        pat: githubPat,
+        athleteId,
+        content: json,
+      });
+      githubPublished = ghResult.ok;
+      githubUrl = ghResult.url;
+    }
+
     revalidatePath('/settings');
+    revalidatePath('/club');
 
     return {
       ok: true,
@@ -290,6 +320,8 @@ export async function generateClubShare(formData: FormData): Promise<GenerateSha
       archivedPath,
       filename,
       sessionCount: payload.schedule.length,
+      githubPublished,
+      githubUrl,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -326,4 +358,49 @@ export async function acceptClubTerms(): Promise<void> {
   const { setClubTermsAcceptedAt } = await import('@/lib/store/settings');
   await setClubTermsAcceptedAt(new Date().toISOString());
   revalidatePath('/settings');
+}
+
+/**
+ * Save the athlete ID (numeric parkrun athlete ID, e.g. 1210722).
+ */
+export async function saveAthleteId(formData: FormData): Promise<void> {
+  const id = formData.get('athlete_id')?.toString().trim() ?? '';
+  const { setAthleteId } = await import('@/lib/store/settings');
+  await setAthleteId(id);
+  revalidatePath('/club');
+}
+
+/**
+ * Hash a plain-text schedule password (SHA-256) and persist only the hash.
+ * The raw password is never stored or logged.
+ */
+export async function saveSchedulePassword(formData: FormData): Promise<void> {
+  const raw = formData.get('schedule_password')?.toString() ?? '';
+  if (raw.trim().length === 0) return;
+  const { createHash } = await import('node:crypto');
+  const hash = createHash('sha256').update(raw).digest('hex');
+  const { setSchedulePasswordHash } = await import('@/lib/store/settings');
+  await setSchedulePasswordHash(hash);
+  revalidatePath('/club');
+}
+
+/**
+ * Persist the GitHub PAT to the OS keychain. The PAT is not validated here —
+ * validation happens implicitly on the next publish attempt.
+ */
+export async function saveGitHubPat(formData: FormData): Promise<void> {
+  const pat = formData.get('github_pat')?.toString() ?? '';
+  if (pat.trim().length === 0) return;
+  const { setGitHubPat } = await import('@/lib/store/secrets');
+  await setGitHubPat(pat);
+  revalidatePath('/club');
+}
+
+/**
+ * Remove the stored GitHub PAT from the OS keychain.
+ */
+export async function clearGitHubPatAction(): Promise<void> {
+  const { clearGitHubPat } = await import('@/lib/store/secrets');
+  await clearGitHubPat();
+  revalidatePath('/club');
 }
