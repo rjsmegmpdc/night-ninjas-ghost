@@ -9,7 +9,10 @@ import { ProgramShapeCard } from '@/components/dojo/program-shape-card';
 import { StartDateEditor } from '@/components/dojo/start-date-editor';
 import { RampCard } from '@/components/patrol/ramp-card';
 import { DojoPicker } from '@/components/dojo/dojo-picker';
+import { NsDojoPanel } from '@/components/dojo/ns-dojo-panel';
+import { NsDisciplineTrendCard } from '@/components/dojo/ns-discipline-trend-card';
 import { getHrAvailability } from '@/lib/analysis/hr-availability';
+import { getNsGuardReport, getNsWeeklyTrend } from '@/lib/analysis/ns-guardrails-read';
 import { switchDojo } from '@/lib/actions/switch-dojo';
 import { getDb, schema } from '@/lib/db';
 import { eq } from 'drizzle-orm';
@@ -65,6 +68,13 @@ export default async function DojoPage() {
   const hrAvailability = selectedDojo === 'norwegian-singles' ? await getHrAvailability(42) : null;
   const level = (goalRace?.level as 'beginner' | 'intermediate' | 'advanced') ?? 'intermediate';
 
+  // NS-specific data: load only when NS is the active dojo
+  const isNsActive = selectedDojo === 'norwegian-singles' && activePlan?.engine.dojo === 'norwegian-singles';
+  const [nsGuardReport, nsTrendData] = isNsActive
+    ? await Promise.all([getNsGuardReport(3), getNsWeeklyTrend(12)])
+    : [null, null];
+  const nsWeekNumber = isNsActive ? (currentWeekNumber(activePlan!.params) ?? 1) : 1;
+
   return (
     <div className="px-4 sm:px-8 lg:px-12 py-8 sm:py-10 max-w-7xl mx-auto space-y-8">
       <header className="border-b border-ink-line pb-6 space-y-1">
@@ -89,6 +99,14 @@ export default async function DojoPage() {
 
       {/* R2 part 2 - macrocycle phase bar + microcycle preview for the active plan. */}
       {programShape && <ProgramShapeCard {...programShape} />}
+
+      {/* NS dojo panel + discipline trend — only when Norwegian Singles is active */}
+      {isNsActive && (
+        <NsDojoPanel weekNumber={nsWeekNumber} guardReport={nsGuardReport} />
+      )}
+      {isNsActive && nsTrendData && (
+        <NsDisciplineTrendCard data={nsTrendData} />
+      )}
 
       {/* Phase 5 - editable program start date (canonical plan_periods.startDate). */}
       {activePlan && (

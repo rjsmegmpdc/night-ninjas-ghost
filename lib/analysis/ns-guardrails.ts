@@ -215,9 +215,33 @@ export interface NsGuardReport {
   maxHrGuard: GuardFlag;
   /** Worst severity across all guards, for a headline badge */
   worst: GuardSeverity;
+  /**
+   * Weighted 0-100 discipline score.
+   * Easy-day discipline 40%, rep intensity 30%, quality cap 20%, max-HR 10%.
+   * 100 = fully on method. Each guard: ok=100, warn=50, miss=0.
+   */
+  disciplineScore: number;
 }
 
 const SEV_RANK: Record<GuardSeverity, number> = { ok: 0, warn: 1, miss: 2 };
+
+function sevScore(s: GuardSeverity): number {
+  return s === 'ok' ? 100 : s === 'warn' ? 50 : 0;
+}
+
+export function computeNsDisciplineScore(
+  easyDiscipline: GuardFlag,
+  repIntensity: GuardFlag,
+  qualityCap: QualityCap,
+  maxHrGuard: GuardFlag,
+): number {
+  return Math.round(
+    sevScore(easyDiscipline.severity) * 0.40 +
+    sevScore(repIntensity.severity) * 0.30 +
+    sevScore(qualityCap.severity) * 0.20 +
+    sevScore(maxHrGuard.severity) * 0.10,
+  );
+}
 
 export function buildNsGuardReport(samples: SessionSample[], maxHr: MaxHrGuardInput, caps: NsHrCaps = {}): NsGuardReport {
   const easyDiscipline = evaluateEasyDiscipline(samples, caps);
@@ -226,5 +250,6 @@ export function buildNsGuardReport(samples: SessionSample[], maxHr: MaxHrGuardIn
   const maxHrGuard = evaluateMaxHrValidity(maxHr);
   const severities = [easyDiscipline.severity, repIntensity.severity, qualityCap.severity, maxHrGuard.severity];
   const worst = severities.reduce((w, s) => (SEV_RANK[s] > SEV_RANK[w] ? s : w), 'ok' as GuardSeverity);
-  return { easyDiscipline, repIntensity, qualityCap, maxHrGuard, worst };
+  const disciplineScore = computeNsDisciplineScore(easyDiscipline, repIntensity, qualityCap, maxHrGuard);
+  return { easyDiscipline, repIntensity, qualityCap, maxHrGuard, worst, disciplineScore };
 }

@@ -1,5 +1,6 @@
 import type { NsGuardReport, GuardSeverity } from '@/lib/analysis/ns-guardrails';
-import { Shield, Check, AlertTriangle, XCircle } from 'lucide-react';
+import { Shield, Check, AlertTriangle, XCircle, SlidersHorizontal } from 'lucide-react';
+import Link from 'next/link';
 
 /**
  * NS-2 / NS-3 - the Norwegian Singles discipline panel. Shown on the
@@ -49,9 +50,17 @@ export function NsGuardrailsCard({ report }: { report: NsGuardReport }) {
             <div className="font-display tracking-wide-display uppercase text-lg text-bone">Discipline check</div>
           </div>
         </div>
-        <span className={`font-mono text-[10px] uppercase tracking-widest ${SEV_TONE[report.worst]}`}>
-          {report.worst === 'ok' ? 'on method' : report.worst === 'warn' ? 'watch' : 'off method'}
-        </span>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className={`font-mono text-xl font-bold tabular-nums leading-none ${report.disciplineScore >= 80 ? 'text-signal-ok' : report.disciplineScore >= 50 ? 'text-signal-warn' : 'text-signal-miss'}`}>
+              {report.disciplineScore}
+            </div>
+            <div className="font-mono text-[9px] uppercase tracking-widest text-bone-mute">score</div>
+          </div>
+          <span className={`font-mono text-[10px] uppercase tracking-widest ${SEV_TONE[report.worst]}`}>
+            {report.worst === 'ok' ? 'on method' : report.worst === 'warn' ? 'watch' : 'off method'}
+          </span>
+        </div>
       </div>
 
       {/* Quality-cap meter */}
@@ -73,6 +82,17 @@ export function NsGuardrailsCard({ report }: { report: NsGuardReport }) {
         <GuardRow {...report.easyDiscipline} />
         <GuardRow {...report.repIntensity} />
         <GuardRow {...report.maxHrGuard} />
+      </div>
+
+      <div className="pt-1 flex items-center justify-between">
+        <p className="font-mono text-[10px] text-bone-mute">3-week rolling window</p>
+        <Link
+          href="/profile#ns-calibration"
+          className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent transition-colors"
+        >
+          <SlidersHorizontal size={10} strokeWidth={1.5} />
+          Edit HR caps
+        </Link>
       </div>
     </div>
   );

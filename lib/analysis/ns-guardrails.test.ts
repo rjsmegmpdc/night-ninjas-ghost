@@ -5,6 +5,7 @@ import {
   computeQualityCap,
   evaluateMaxHrValidity,
   buildNsGuardReport,
+  computeNsDisciplineScore,
   type SessionSample,
 } from './ns-guardrails';
 
@@ -146,5 +147,42 @@ describe('absolute HR caps (NS personal calibration)', () => {
     const r = buildNsGuardReport(samples, { configuredMaxHr: 166, hasMeasuredMax: false, age: null, observedMaxHr: 160 }, { easyHrCap: 128, subThresholdHrCap: 141 });
     expect(r.easyDiscipline.severity).not.toBe('ok');
     expect(r.repIntensity.severity).not.toBe('ok');
+  });
+
+  it('includes disciplineScore in the report', () => {
+    const samples = [easy(0.60), quality(0.82, 25)];
+    const r = buildNsGuardReport(samples, { configuredMaxHr: 166, hasMeasuredMax: true, age: null, observedMaxHr: null });
+    expect(typeof r.disciplineScore).toBe('number');
+    expect(r.disciplineScore).toBeGreaterThanOrEqual(0);
+    expect(r.disciplineScore).toBeLessThanOrEqual(100);
+  });
+});
+
+describe('computeNsDisciplineScore', () => {
+  const okFlag = { severity: 'ok' as const, title: '', body: '' };
+  const warnFlag = { severity: 'warn' as const, title: '', body: '' };
+  const missFlag = { severity: 'miss' as const, title: '', body: '' };
+  const qualOk = { qualityMinutes: 22, totalMinutes: 100, fraction: 0.22, targetFraction: 0.22, severity: 'ok' as const, body: '' };
+  const qualWarn = { ...qualOk, severity: 'warn' as const };
+  const qualMiss = { ...qualOk, severity: 'miss' as const };
+
+  it('returns 100 when all guards are ok', () => {
+    expect(computeNsDisciplineScore(okFlag, okFlag, qualOk, okFlag)).toBe(100);
+  });
+
+  it('returns 0 when all guards miss', () => {
+    expect(computeNsDisciplineScore(missFlag, missFlag, qualMiss, missFlag)).toBe(0);
+  });
+
+  it('applies weights: easy=40%, rep=30%, quality=20%, maxHr=10%', () => {
+    // Only easy misses (0 × 0.40) = 0, rest ok (100 × 0.60 = 60) → 60
+    expect(computeNsDisciplineScore(missFlag, okFlag, qualOk, okFlag)).toBe(60);
+    // Only rep misses (100×0.40 + 0×0.30 + 100×0.20 + 100×0.10 = 70)
+    expect(computeNsDisciplineScore(okFlag, missFlag, qualOk, okFlag)).toBe(70);
+  });
+
+  it('scores warns at 50 each', () => {
+    // All warn: 50×0.40 + 50×0.30 + 50×0.20 + 50×0.10 = 50
+    expect(computeNsDisciplineScore(warnFlag, warnFlag, qualWarn, warnFlag)).toBe(50);
   });
 });
