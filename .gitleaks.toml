@@ -1,0 +1,17 @@
+title = "VELOCITY gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Known safe patterns"
+regexes = [
+  # Next.js public env vars are intentionally public
+  '''NEXT_PUBLIC_''',
+  # Test fixture hashes (SHA-256 hex strings used in tests)
+  '''[0-9a-f]{64}''',
+]
+paths = [
+  # Lock files contain package registry URLs that trip token patterns
+  '''package-lock\.json''',
+]
