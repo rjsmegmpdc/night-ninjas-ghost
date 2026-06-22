@@ -397,6 +397,8 @@ $requiredFiles = @(
     'lib\shoes\queries.ts',
     'lib\shoes\retailers.ts',
     'lib\shoes\retailer-types.ts',
+    'lib\shoes\shoe-recommender-pure.ts',
+    'lib\shoes\shoe-recommender-pure.test.ts',
 
     # Library - external sources
     'lib\sources\nz-holidays.ts',
@@ -482,6 +484,7 @@ $requiredFiles = @(
     'components\patrol\coach-voice-card.tsx',
     'components\patrol\sunday-reflection-card.tsx',
     'components\patrol\block-debrief-card.tsx',
+    'components\patrol\shoe-recommendation-card.tsx',
     'components\garmin\garmin-section.tsx',
 
     # Components - journal (Phase 4 + Phase 9)
@@ -510,6 +513,7 @@ $requiredFiles = @(
     'components\shoes\shoe-quick-add.tsx',
     'components\shoes\shoe-row.tsx',
     'components\shoes\shoe-table.tsx',
+    'components\shoes\rotation-health.tsx',
 
     # Components - sync
     'components\sync\sync-progress.tsx',

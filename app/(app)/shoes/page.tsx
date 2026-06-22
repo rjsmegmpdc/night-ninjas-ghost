@@ -6,6 +6,8 @@ import { getDb, schema } from '@/lib/db';
 import { listAllShoes } from '@/lib/shoes/database';
 import { ShoeQuickAdd } from '@/components/shoes/shoe-quick-add';
 import { ShoeTable } from '@/components/shoes/shoe-table';
+import { computeRotationHealth, type ShoeForRecommender } from '@/lib/shoes/shoe-recommender-pure';
+import { RotationHealthCard } from '@/components/shoes/rotation-health';
 
 /**
  * /shoes — table-style gear inventory.
@@ -48,6 +50,20 @@ export default async function ShoesPage() {
   const hasNoActivities = activityCount === 0;
   const hasNoShoes = allShoes.length === 0;
 
+  // Phase 11 — rotation health
+  const shoeData: ShoeForRecommender[] = allShoes.map((s) => ({
+    id: s.id,
+    name: s.name,
+    category: s.category,
+    pctUsed: s.pctUsed,
+    totalKm: s.totalKm,
+    effectiveTargetKm: s.effectiveTargetKm,
+    status: s.status,
+    lastUsedDate: s.lastUsedDate,
+  }));
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const rotationHealth = computeRotationHealth(shoeData, todayIso);
+
   return (
     <div className="px-4 sm:px-8 lg:px-12 py-8 sm:py-10 max-w-7xl mx-auto space-y-8">
       <header className="border-b border-ink-line pb-6 space-y-1">
@@ -80,6 +96,11 @@ export default async function ShoesPage() {
         <>
           {/* Hero: quick-add */}
           <ShoeQuickAdd catalog={catalog} />
+
+          {/* Phase 11 — rotation health */}
+          {!hasNoShoes && active.length > 0 && (
+            <RotationHealthCard health={rotationHealth} />
+          )}
 
           {hasNoShoes ? (
             <Card className="space-y-3 max-w-2xl border-bone-mute/30">

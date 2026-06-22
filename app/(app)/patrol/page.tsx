@@ -47,6 +47,9 @@ import { CoachVoiceCard } from '@/components/patrol/coach-voice-card';
 import { SundayReflectionCard } from '@/components/patrol/sunday-reflection-card';
 import { BlockDebriefCard } from '@/components/patrol/block-debrief-card';
 import { isNull } from 'drizzle-orm';
+import { getAllShoesWithStats } from '@/lib/shoes/queries';
+import { recommendShoe, type ShoeForRecommender } from '@/lib/shoes/shoe-recommender-pure';
+import { ShoeRecommendationCard } from '@/components/patrol/shoe-recommendation-card';
 
 /**
  * Patrol — this week's training loop.
@@ -189,13 +192,14 @@ async function PatrolDashboard() {
 
   // Phase 2 athlete state surfaces + Phase 3a phase + ramp.
   // All run in parallel.
-  const [athleteState, intensityDist, mileageProg, longRunCheck, programPhase, interruptions] = await Promise.all([
+  const [athleteState, intensityDist, mileageProg, longRunCheck, programPhase, interruptions, allShoesRaw] = await Promise.all([
     getAthleteState({}),
     getIntensityDistribution(startIso, endIso, {}),
     checkMileageProgression(startIso),
     checkLongRunProportion(startIso),
     getProgramPhase(),
     getInterruptionsView(),
+    getAllShoesWithStats(),
   ]);
   // Ramp depends on programPhase, so it sequences after - but only triggers
   // a real fetch when phase is pre-program.
@@ -205,6 +209,19 @@ async function PatrolDashboard() {
   const todayDow = (today.getDay() + 6) % 7; // Mon=0..Sun=6
   const todayPlan = template.days.find((d) => d.dow === todayDow);
   const tonightSession = todayPlan?.sessions[0] ?? null;
+
+  // Phase 11 — shoe recommendation for today's session.
+  const shoeData: ShoeForRecommender[] = allShoesRaw.map((s) => ({
+    id: s.id,
+    name: s.name,
+    category: s.category,
+    pctUsed: s.pctUsed,
+    totalKm: s.totalKm,
+    effectiveTargetKm: s.effectiveTargetKm,
+    status: s.status,
+    lastUsedDate: s.lastUsedDate,
+  }));
+  const shoeRecommendation = recommendShoe(tonightSession?.type ?? null, shoeData);
 
   // Volume cell: actual / target with %
   const volumePct = template.totalKmTarget > 0
@@ -452,6 +469,14 @@ async function PatrolDashboard() {
               </div>
             )}
           </Card>
+
+          {/* Phase 11 — shoe recommendation for today's session */}
+          {shoeRecommendation && tonightSession && (
+            <ShoeRecommendationCard
+              recommendation={shoeRecommendation}
+              sessionType={tonightSession.type}
+            />
+          )}
         </div>
       </div>
 

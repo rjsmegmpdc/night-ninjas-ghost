@@ -113,20 +113,15 @@ doesn't, it doesn't ship.
 
 ## Current focus
 
-**Phase 5 (rest) + R1 polish + Phase 8 - SHIPPED.** `/profile` route (strength
-prefs, daily wellness slider writing the journal table, injury & illness ledger
-with per-area vulnerability); R1 polish (real streak count in the nav, avatar
-dropdown + theme toggle, bounded mobile/responsive pass); Phase 8 (rest-day
-recovery prescription tuned to prior-day load + additive session matching -
-shifted-session + extras annotations layered over compliance). tsc clean (only
-garmin-connect), 337 tests. With Phases 4-7 + 3b, the v1 plan/exec/state surface
-is largely complete. **Next candidates:** Phase 9 (coach voice + Sunday journal
-prompt + block-end debrief - the journal write layer now exists); Phase 11 (shoe-
-for-session recommender); Phase 13 (race-fueling depth); Phase 10 (BYOK AI).
-Deferred/blocked: Phase 6 course-profile + Phase 7 stored-weather (per-activity
-data not fetched); first live Garmin sync (garmin-connect not installed - the
-lone tsc error). Block context: the Hansons 18-week block starts ~28/06/2026
-(sub-3:00 Auckland Marathon 01/11/2026).
+**Phase 9 + Phase 11 - SHIPPED.** Phase 9: coach voice trigger engine
+(block-start/mid/taper/block-end), Sunday reflection (3 journal columns), block-end
+debrief form. Phase 11: rule-based shoe-for-session recommender (category routing +
+km-remaining ranking), shoe recommendation card on Patrol, rotation health card on
+Equipment. 388 tests. **Next candidates:** Phase 13 (race-fueling depth); Phase 10
+(BYOK AI — the big unlock). Deferred/blocked: Phase 6 course-profile + Phase 7
+stored-weather (per-activity data not fetched); first live Garmin sync.
+Block context: Hansons 18-week block starts ~28/06/2026 (sub-3:00 Auckland
+Marathon 01/11/2026).
 
 **Recently shipped** (see the SHIPPED markers in this file): R1 visual
 rebrand, R1.5 club export, R2 part 1 (Trends) + part 2 (adherence chip +
@@ -736,32 +731,32 @@ in #14 graduates from pre-canned to context-aware once this lands.
 
 ---
 
-## Phase 11 — Shoe intelligence
+## Phase 11 — Shoe intelligence ✅ SHIPPED
 
-**Why this matters:** shoes are tracked but the system doesn't help
-the athlete decide *which shoe for which session*. As a coach this is
-basic guidance: long runs in cushioned shoes, intervals in racers,
-recovery in max-cushion. The data is all there — we just don't apply it.
+**Shipped 2026-06-23.**
 
-**Build:**
+- **Rule-based shoe-for-session recommender** (`lib/shoes/shoe-recommender-pure.ts`)
+  — pure function mapping session type to shoe category preference and ranking
+  active shoes by fit. Category priority: long/easy/recovery → daily → super-trainer;
+  tempo/interval → uptempo → super-trainer; repetition → race-day → uptempo.
+  Tiebreaker: most km remaining for endurance sessions, lowest pctUsed for speed.
+  28 pure tests.
+- **Shoe recommendation card on Patrol** (`components/patrol/shoe-recommendation-card.tsx`)
+  — shown in the side column under "tonight's mission" when a running session is
+  planned. Displays shoe name, reason, km remaining, and a life-remaining bar
+  (green/amber/red). Hidden for cross/strength/rest days and when no active shoes exist.
+- **Rotation health card on Equipment** (`components/shoes/rotation-health.tsx`)
+  — surfaces above the active rotation table. Scores `good` (2+ shoes in last 28d),
+  `caution` (1 shoe used despite 2+ active), `poor` (0 shoes recently used).
+  Nudges the athlete toward shoe rotation to reduce repetitive stress.
 
-- **Rule-based shoe-for-session recommender:**
-  - Long run → highest-cushion shoe with most life remaining
-  - Tempo / interval → daily trainer or racer with sufficient life
-  - Recovery → max-cushion / oldest still-safe shoe
-  - Race → reserved race-day shoe
-  - Trail session → trail-specific shoe
-  - Wet/cold conditions → grip-appropriate shoe
-- **Recommendations on Patrol:** today's planned cell shows
-  *"recommended: Saucony Endorphin Speed (47/180 km left)"*
-- **Rotation health:** Strike page surfaces whether the athlete is
-  rotating effectively (uses 2-3+ shoes vs single-shoe risk)
-- **AI-augmented recommendations** (depends on phase 10): adjust
-  recommendations based on injury history per shoe, recent niggles,
-  weather forecast
+**Total tests: 388 (up from 360).**
 
-**Coach review additions integrated:** shoe-for-session (#3 from your
-original brief; #15 here mostly), with AI escalation in phase 10
+**Deferred:** AI-augmented recommendations (phase 10 dependency); trail/wet-weather
+routing (needs per-session terrain tag, not in schema yet).
+
+**Coach review additions integrated:** shoe-for-session (#3 from original brief),
+with AI escalation deferred to phase 10.
 
 ---
 
