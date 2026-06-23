@@ -245,6 +245,7 @@ $requiredFiles = @(
     'lib\actions\coach-mode.ts',
     'lib\actions\vo2max.ts',
     'lib\actions\interruptions.ts',
+    'lib\actions\plan-capacity.ts',
     'lib\actions\plan-start-date.ts',
     'lib\actions\race-debrief.ts',
     'lib\actions\wellness.ts',
@@ -356,6 +357,7 @@ $requiredFiles = @(
     'lib\db\migrations\0009_interruptions.sql',
     'lib\db\migrations\0010_race_results.sql',
     'lib\db\migrations\0011_coach_voice.sql',
+    'lib\db\migrations\0012_plan_period_capacity.sql',
 
     # Library - plans (8 dojos + framework)
     'lib\plans\active-plan.ts',
@@ -401,6 +403,8 @@ $requiredFiles = @(
     'lib\plans\types.ts',
     'lib\plans\ultra.ts',
     'lib\plans\week-context.ts',
+    'lib\plans\capacity-pure.ts',
+    'lib\plans\capacity-pure.test.ts',
 
     # Library - shoes
     'lib\shoes\backfill.ts',
@@ -480,6 +484,7 @@ $requiredFiles = @(
     'components\dojo\level-toggle.tsx',
     'components\dojo\program-shape-card.tsx',
     'components\dojo\start-date-editor.tsx',
+    'components\dojo\program-capacity-editor.tsx',
     'components\settings\destructive-forms.tsx',
     'components\settings\ai-section.tsx',
     'components\settings\export-data-button.tsx',

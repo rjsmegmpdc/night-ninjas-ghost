@@ -3,6 +3,7 @@ import { eq, asc, isNull } from 'drizzle-orm';
 import { getDb, schema } from '@/lib/db';
 import { getEngine, type PlanEngine, type PlanParams } from '@/lib/plans';
 import { SETTINGS_KEYS } from '@/lib/constants/settings-keys';
+import { resolveCapacity } from './capacity-pure';
 
 /* ----------------------------------------------------------------------------
  * Active plan resolver.
@@ -77,23 +78,38 @@ export async function getActivePlan(): Promise<ActivePlan | null> {
   const derivedStart = (naturalStart < today ? naturalStart : today).toISOString().slice(0, 10);
 
   let startDate = derivedStart;
+  let periodWeeklyCap: number | null = null;
+  let periodLongRunCap: number | null = null;
   try {
     const activePeriod = await db
-      .select({ startDate: schema.planPeriods.startDate })
+      .select({
+        startDate: schema.planPeriods.startDate,
+        weeklyVolumeCapKm: schema.planPeriods.weeklyVolumeCapKm,
+        longRunCapKm: schema.planPeriods.longRunCapKm,
+      })
       .from(schema.planPeriods)
       .where(isNull(schema.planPeriods.endDate))
       .get();
     if (activePeriod?.startDate) startDate = activePeriod.startDate;
+    periodWeeklyCap = activePeriod?.weeklyVolumeCapKm ?? null;
+    periodLongRunCap = activePeriod?.longRunCapKm ?? null;
   } catch {
     // plan_periods table missing pre-migration; keep the derived start.
   }
+
+  const { weeklyVolumeCapKm, longRunCapKm } = resolveCapacity({
+    periodWeeklyCap,
+    settingsWeeklyCap: weeklyCapStr ? parseFloat(weeklyCapStr) : null,
+    periodLongRunCap,
+    settingsLongRunCap: longCapStr ? parseFloat(longCapStr) : null,
+  });
 
   const params: PlanParams = {
     goalDistanceKm: goalRace.distanceKm,
     goalTimeS: goalRace.targetTimeS,
     level: (goalRace.level as 'beginner' | 'intermediate' | 'advanced') ?? 'intermediate',
-    weeklyVolumeCapKm: weeklyCapStr ? parseFloat(weeklyCapStr) : undefined,
-    longRunCapKm: longCapStr ? parseFloat(longCapStr) : undefined,
+    weeklyVolumeCapKm,
+    longRunCapKm,
     programWeeks,
     startDate,
   };

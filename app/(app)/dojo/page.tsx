@@ -7,6 +7,7 @@ import { getActivePlan, currentWeekNumber } from '@/lib/plans/active-plan';
 import { phaseBandFor } from '@/lib/plans/state-awareness';
 import { ProgramShapeCard } from '@/components/dojo/program-shape-card';
 import { StartDateEditor } from '@/components/dojo/start-date-editor';
+import { ProgramCapacityEditor } from '@/components/dojo/program-capacity-editor';
 import { RampCard } from '@/components/patrol/ramp-card';
 import { DojoPicker } from '@/components/dojo/dojo-picker';
 import { NsDojoPanel } from '@/components/dojo/ns-dojo-panel';
@@ -15,7 +16,9 @@ import { getHrAvailability } from '@/lib/analysis/hr-availability';
 import { getNsGuardReport, getNsWeeklyTrend } from '@/lib/analysis/ns-guardrails-read';
 import { switchDojo } from '@/lib/actions/switch-dojo';
 import { getDb, schema } from '@/lib/db';
-import { eq } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
+import { SETTINGS_KEYS } from '@/lib/constants/settings-keys';
+import { resolveCapacity } from '@/lib/plans/capacity-pure';
 import type { Dojo, PhaseBand } from '@/lib/plans/types';
 
 export default async function DojoPage() {
@@ -68,6 +71,36 @@ export default async function DojoPage() {
   const hrAvailability = selectedDojo === 'norwegian-singles' ? await getHrAvailability(42) : null;
   const level = (goalRace?.level as 'beginner' | 'intermediate' | 'advanced') ?? 'intermediate';
 
+  // Phase 14 — per-block capacity settings
+  // Read both the active period's caps and the global settings caps so we can
+  // display the source ("this block / global / engine default") in the editor.
+  let blockWeeklyCap: number | null = null;
+  let blockLongRunCap: number | null = null;
+  try {
+    const activePeriodCaps = await db
+      .select({
+        weeklyVolumeCapKm: schema.planPeriods.weeklyVolumeCapKm,
+        longRunCapKm: schema.planPeriods.longRunCapKm,
+      })
+      .from(schema.planPeriods)
+      .where(isNull(schema.planPeriods.endDate))
+      .get();
+    blockWeeklyCap = activePeriodCaps?.weeklyVolumeCapKm ?? null;
+    blockLongRunCap = activePeriodCaps?.longRunCapKm ?? null;
+  } catch {
+    // pre-migration — no capacity columns yet
+  }
+  const settingsRows = await db.select().from(schema.settings).all();
+  const settingsMap = Object.fromEntries(settingsRows.map((r) => [r.key, r.value]));
+  const settingsWeeklyStr = settingsMap[SETTINGS_KEYS.CAPACITY_WEEKLY];
+  const settingsLongStr = settingsMap[SETTINGS_KEYS.CAPACITY_LONG];
+  const capacityResolved = resolveCapacity({
+    periodWeeklyCap: blockWeeklyCap,
+    settingsWeeklyCap: settingsWeeklyStr ? parseFloat(settingsWeeklyStr) : null,
+    periodLongRunCap: blockLongRunCap,
+    settingsLongRunCap: settingsLongStr ? parseFloat(settingsLongStr) : null,
+  });
+
   // NS-specific data: load only when NS is the active dojo
   const isNsActive = selectedDojo === 'norwegian-singles' && activePlan?.engine.dojo === 'norwegian-singles';
   const [nsGuardReport, nsTrendData] = isNsActive
@@ -114,6 +147,20 @@ export default async function DojoPage() {
           startDate={activePlan.params.startDate}
           dojoName={activePlan.engine.displayName}
           programWeeks={activePlan.params.programWeeks ?? activePlan.engine.defaultProgramWeeks}
+        />
+      )}
+
+      {/* Phase 14 — per-block capacity targets (volume cap + long-run cap). */}
+      {activePlan && (
+        <ProgramCapacityEditor
+          dojoName={activePlan.engine.displayName}
+          dojoDefaultLongRunCap={activePlan.engine.defaultLongRunCapKm}
+          blockWeeklyCap={blockWeeklyCap}
+          blockLongRunCap={blockLongRunCap}
+          weeklyCapSource={capacityResolved.weeklyCapSource}
+          longRunCapSource={capacityResolved.longRunCapSource}
+          effectiveWeeklyCap={capacityResolved.weeklyVolumeCapKm}
+          effectiveLongRunCap={capacityResolved.longRunCapKm}
         />
       )}
 

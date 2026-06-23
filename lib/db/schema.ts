@@ -485,6 +485,10 @@ export const planPeriods = sqliteTable(
     goalTargetTimeS: integer('goal_target_time_s'),
     programWeeks: integer('program_weeks').notNull().default(18),
     level: text('level'),
+    /** Phase 14 — per-block volume cap (km/week). NULL = use global settings / engine default. */
+    weeklyVolumeCapKm: real('weekly_volume_cap_km'),
+    /** Phase 14 — per-block long-run cap (km). NULL = use global settings / engine default. */
+    longRunCapKm: real('long_run_cap_km'),
 
     createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
     closedReason: text('closed_reason'),

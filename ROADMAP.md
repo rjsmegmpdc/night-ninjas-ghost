@@ -113,11 +113,12 @@ doesn't, it doesn't ship.
 
 ## Current focus
 
-**Phases 9 + 11 + 10 + 13 - SHIPPED.** Phase 9: coach voice, reflection, debrief. Phase 11:
+**Phases 9 + 11 + 10 + 13 + 14 - SHIPPED.** Phase 9: coach voice, reflection, debrief. Phase 11:
 shoe recommender + rotation health. Phase 10: BYOK AI (briefing, session content, key management).
 Phase 13: long-run fueling guide (Patrol), heat-adjusted fueling (race page), AI fueling
-personalisation. 416 tests.
-**Next candidate:** Phase 14 (dojo maintenance).
+personalisation. Phase 14: per-block volume + long-run capacity caps on Dojo, three-tier fallback
+(block → global → engine default). 422 tests.
+**Next candidate:** Phase 15.
 Deferred/blocked: Phase 6 course-profile + Phase 7 stored-weather (per-activity data not
 fetched); first live Garmin sync.
 Block context: Hansons 18-week block starts ~28/06/2026 (sub-3:00 Auckland
@@ -798,20 +799,26 @@ empty until then); RHR/HRV correlation insights (R2.6 tier).
 
 ---
 
-## Phase 14 — Dojo maintenance + customisation
+## Phase 14 — Dojo maintenance + customisation ✅ SHIPPED
 
 **Why this matters:** static dojos drift from the latest research. As
 the product matures, this becomes a real strategic question.
 
-**Build (when the time comes):**
+**Shipped:**
 
-- Dojo-tuning interface: athlete can adjust mileage caps, long-run
-  caps, intensity distribution within a dojo's framework
+- Per-block volume cap + long-run cap stored in `plan_periods`
+  (migration 0012); overrides global settings for the active block only
+- `resolveCapacity()` pure function — three-tier fallback:
+  block cap → global settings cap → engine default
+- `ProgramCapacityEditor` on Dojo page: shows effective values with
+  source labels (this block / global setting / engine default)
+- `setPlanCapacity()` server action validates and writes to active period
+- `active-plan.ts` reads per-block caps with graceful pre-migration fallback
+
+**Still deferred:**
 - Versioned dojo files with update mechanism
 - "Dojo authoring" mode for coaches to define custom dojos
 - Optional: subscription tier for community-maintained dojo updates
-
-**Coach review additions integrated:** dojo maintenance question (#17)
 
 ---
 
