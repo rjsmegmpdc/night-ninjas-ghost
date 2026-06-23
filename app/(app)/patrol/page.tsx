@@ -55,6 +55,7 @@ import { getAiModel } from '@/lib/store/settings';
 import { MODELS } from '@/lib/ai/models';
 import { DailyBriefingCard } from '@/components/patrol/daily-briefing-card';
 import { SessionContentButton } from '@/components/patrol/session-content-button';
+import { LongRunFuelingCard } from '@/components/patrol/long-run-fueling-card';
 
 /**
  * Patrol — this week's training loop.
@@ -493,6 +494,18 @@ async function PatrolDashboard() {
               sessionType={tonightSession.type}
             />
           )}
+
+          {/* Phase 13 — long-run fueling guide */}
+          {tonightSession?.type === 'long' && (() => {
+            const durationMin =
+              tonightSession.durationMinMax ??
+              (tonightSession.distanceKmMax != null
+                ? Math.round(tonightSession.distanceKmMax * 6.0)
+                : null);
+            return durationMin != null ? (
+              <LongRunFuelingCard durationMin={durationMin} />
+            ) : null;
+          })()}
         </div>
       </div>
 

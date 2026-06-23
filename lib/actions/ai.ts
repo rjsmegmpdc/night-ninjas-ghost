@@ -8,6 +8,8 @@ import { buildBriefingPrompt, generateBriefing } from '@/lib/ai/briefing';
 import { snapshotToText } from '@/lib/ai/context-pure';
 import { estimateCost } from '@/lib/ai/tokens';
 import { generateSessionContent, buildSessionPrompt, type SessionContentInput } from '@/lib/ai/session-content';
+import { generateFuelingBriefing, buildFuelingPrompt, type FuelingBriefingInput } from '@/lib/ai/fueling';
+import { getRaceExecution } from '@/lib/race/execution';
 import { MODELS } from '@/lib/ai/models';
 
 export interface SimpleResult {
@@ -90,6 +92,52 @@ export interface SessionContentResult {
   actualInputTokens?: number;
   actualOutputTokens?: number;
   error?: string;
+}
+
+export interface FuelingBriefingResult {
+  ok: boolean;
+  text?: string;
+  dataSent?: string;
+  actualInputTokens?: number;
+  actualOutputTokens?: number;
+  error?: string;
+}
+
+export async function runFuelingBriefing(): Promise<FuelingBriefingResult> {
+  const key = await getAnthropicApiKey();
+  if (!key) {
+    return { ok: false, error: 'No Anthropic key set. Add one in Settings → AI.' };
+  }
+  const [model, view, snapshot] = await Promise.all([
+    getAiModel(),
+    getRaceExecution(),
+    assembleSnapshot(),
+  ]);
+  if (!view) {
+    return { ok: false, error: 'No goal race with a target time. Set one on the Calendar page.' };
+  }
+  const input: FuelingBriefingInput = {
+    raceName: view.race.name,
+    distanceKm: view.race.distanceKm,
+    targetTimeS: view.race.targetTimeS,
+    fueling: view.fueling,
+    carbLoad: view.carbLoad,
+    heat: view.heat,
+    weightKg: view.weightKg,
+    activeInjuries: snapshot.activeInjuries.map(
+      (i) => `${i.bodyRegion ?? i.type} (${i.severity})`
+    ),
+  };
+  const dataSent = buildFuelingPrompt(input);
+  const r = await generateFuelingBriefing(input, model);
+  if (!r.ok) return { ok: false, error: r.error, dataSent };
+  return {
+    ok: true,
+    text: r.text,
+    dataSent,
+    actualInputTokens: r.inputTokens,
+    actualOutputTokens: r.outputTokens,
+  };
 }
 
 export async function runSessionContent(fd: FormData): Promise<SessionContentResult> {

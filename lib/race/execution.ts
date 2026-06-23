@@ -21,6 +21,7 @@ import {
   type PacePlan,
   type PaceStrategy,
 } from './execution-pure';
+import { applyHeatToFueling } from './fueling-pure';
 import { getForecastForDate, type DayForecast } from '@/lib/weather/forecast';
 import { heatAdjust, applyHeatToPaceSpk, type HeatAdjustment } from '@/lib/weather/heat-adjust-pure';
 import { taperChecklist, buildTaperCues, type TaperChecklistItem } from './taper-pure';
@@ -67,6 +68,8 @@ export interface RaceExecutionView {
   daysSinceRace: number | null;
   pacing: Record<PaceStrategy, PacePlan>;
   fueling: ReturnType<typeof fuelingPlan>;
+  /** Non-null when heat conditions are known and severity is not 'none'. */
+  fuelingHeatNote: string | null;
   carbLoad: ReturnType<typeof carbLoadPlan> | null;
   weightKg: number | null;
   /** Race-day forecast (Open-Meteo, Auckland default); null if >16 days out or fetch failed. */
@@ -164,7 +167,13 @@ export async function getRaceExecution(): Promise<RaceExecutionView | null> {
     phaseKind: phase.kind,
     daysSinceRace: phase.daysSinceRace,
     pacing,
-    fueling: fuelingPlan(goal.targetTimeS),
+    ...(() => {
+      const base = fuelingPlan(goal.targetTimeS as number);
+      const { fueling, heatNote } = heat
+        ? applyHeatToFueling(base, heat.severity)
+        : { fueling: base, heatNote: null };
+      return { fueling, fuelingHeatNote: heatNote };
+    })(),
     carbLoad: profile.weightKg ? carbLoadPlan(profile.weightKg) : null,
     weightKg: profile.weightKg ?? null,
     forecast,
