@@ -50,6 +50,11 @@ import { isNull } from 'drizzle-orm';
 import { getAllShoesWithStats } from '@/lib/shoes/queries';
 import { recommendShoe, type ShoeForRecommender } from '@/lib/shoes/shoe-recommender-pure';
 import { ShoeRecommendationCard } from '@/components/patrol/shoe-recommendation-card';
+import { getAnthropicApiKey } from '@/lib/store/secrets';
+import { getAiModel } from '@/lib/store/settings';
+import { MODELS } from '@/lib/ai/models';
+import { DailyBriefingCard } from '@/components/patrol/daily-briefing-card';
+import { SessionContentButton } from '@/components/patrol/session-content-button';
 
 /**
  * Patrol — this week's training loop.
@@ -192,7 +197,7 @@ async function PatrolDashboard() {
 
   // Phase 2 athlete state surfaces + Phase 3a phase + ramp.
   // All run in parallel.
-  const [athleteState, intensityDist, mileageProg, longRunCheck, programPhase, interruptions, allShoesRaw] = await Promise.all([
+  const [athleteState, intensityDist, mileageProg, longRunCheck, programPhase, interruptions, allShoesRaw, anthropicKey, aiModel] = await Promise.all([
     getAthleteState({}),
     getIntensityDistribution(startIso, endIso, {}),
     checkMileageProgression(startIso),
@@ -200,7 +205,10 @@ async function PatrolDashboard() {
     getProgramPhase(),
     getInterruptionsView(),
     getAllShoesWithStats(),
+    getAnthropicApiKey(),
+    getAiModel(),
   ]);
+  const hasAiKey = anthropicKey != null;
   // Ramp depends on programPhase, so it sequences after - but only triggers
   // a real fetch when phase is pre-program.
   const rampPlan = await getRampPlanForActivePeriod(programPhase);
@@ -462,6 +470,14 @@ async function PatrolDashboard() {
                     {tonightSession.notes}
                   </div>
                 )}
+                {/* Phase 10 — session content generator for cross/strength days */}
+                {(tonightSession.type === 'cross' || tonightSession.type === 'strength') && (
+                  <SessionContentButton
+                    sessionType={tonightSession.type}
+                    durationMin={tonightSession.durationMinMax ?? null}
+                    hasKey={hasAiKey}
+                  />
+                )}
               </>
             ) : (
               <div className="text-bone-dim text-sm">
@@ -500,6 +516,9 @@ async function PatrolDashboard() {
 
       {/* Demoted shoe nudges — useful but no longer part of the hero */}
       <ShoeNudgeBanner />
+
+      {/* Phase 10 — AI coach daily briefing (on-demand) */}
+      <DailyBriefingCard hasKey={hasAiKey} modelLabel={MODELS[aiModel].label} />
     </>
   );
 }

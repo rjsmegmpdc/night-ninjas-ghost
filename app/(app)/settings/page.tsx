@@ -3,8 +3,8 @@ import { Card, CardLabel } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Settings as SettingsIcon, Activity, Database, Trash2, Download, RotateCcw, Footprints, Flame, Calendar } from 'lucide-react';
 import { logPageView } from '@/lib/store/instrument';
-import { getStravaClientId, getLastSyncAt, getUserTimezone, getStreakRunEverydayMode, getFirstDayOfWeek, getClubParkrunId, getClubWindowDefault, getClubTermsAcceptedAt, getClubLastShareGeneratedAt, getGarminSyncEnabled, getGarminLastSyncAt, getCoachMode } from '@/lib/store/settings';
-import { getStravaTokens } from '@/lib/store/secrets';
+import { getStravaClientId, getLastSyncAt, getUserTimezone, getStreakRunEverydayMode, getFirstDayOfWeek, getClubParkrunId, getClubWindowDefault, getClubTermsAcceptedAt, getClubLastShareGeneratedAt, getGarminSyncEnabled, getGarminLastSyncAt, getCoachMode, getAiModel } from '@/lib/store/settings';
+import { getStravaTokens, getAnthropicApiKey } from '@/lib/store/secrets';
 import { listRecentJobs } from '@/lib/sources/sync-runner';
 import { getDataStats } from '@/lib/actions/settings-admin';
 import { countActivitiesNeedingBackfill } from '@/lib/shoes/backfill';
@@ -14,6 +14,7 @@ import { FirstDayOfWeekToggle } from '@/components/settings/first-day-of-week-to
 import { ClubShareSection } from '@/components/club-share/club-share-section';
 import { CoachModeToggle } from '@/components/settings/coach-mode-toggle';
 import { GarminSection } from '@/components/garmin/garmin-section';
+import { AiSection } from '@/components/settings/ai-section';
 import {
   startExtendedHistorySync,
   startIncrementalSync,
@@ -57,6 +58,8 @@ export default async function SettingsPage() {
     clubLastShareGeneratedAt,
     garminConnected,
     garminLastSyncAt,
+    anthropicKey,
+    aiModel,
   ] = await Promise.all([
     getStravaClientId(),
     getLastSyncAt(),
@@ -73,6 +76,8 @@ export default async function SettingsPage() {
     getClubLastShareGeneratedAt(),
     getGarminSyncEnabled(),
     getGarminLastSyncAt(),
+    getAnthropicApiKey(),
+    getAiModel(),
   ]);
 
   const stravaConnected = clientId != null && tokens != null;
@@ -306,6 +311,11 @@ export default async function SettingsPage() {
       {/* Garmin biometrics ----------------------------------------------- */}
       <section id="garmin" className="space-y-3 scroll-mt-8">
         <GarminSection connected={garminConnected} lastSyncAt={garminLastSyncAt} />
+      </section>
+
+      {/* AI coach (BYOK Anthropic) --------------------------------------- */}
+      <section id="ai" className="space-y-3 scroll-mt-8">
+        <AiSection hasKey={anthropicKey != null} model={aiModel} />
       </section>
 
       {/* Streak ---------------------------------------------------------- */}

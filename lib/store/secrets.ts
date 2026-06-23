@@ -28,6 +28,7 @@ const KEY = {
   STRAVA_EXPIRES_AT: 'strava-expires-at',
   GARMIN_SESSION_TOKENS: 'garmin-session-tokens',
   GITHUB_PAT: 'github-pat',
+  ANTHROPIC_API_KEY: 'anthropic-api-key',
 } as const;
 
 // Lazy-load keytar — it's a native module and we want to gracefully
@@ -156,4 +157,24 @@ export async function setGitHubPat(pat: string): Promise<void> {
 
 export async function clearGitHubPat(): Promise<void> {
   await deleteSecret(KEY.GITHUB_PAT);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Public API - Anthropic API key (Phase 10 BYOK AI).
+ *
+ * The athlete's own Anthropic API key. Stored in the OS keychain alongside
+ * Strava tokens. Never in the DB, never in logs.
+ * -------------------------------------------------------------------------- */
+
+export async function getAnthropicApiKey(): Promise<string | null> {
+  return getSecret(KEY.ANTHROPIC_API_KEY);
+}
+
+export async function setAnthropicApiKey(key: string): Promise<void> {
+  await setSecret(KEY.ANTHROPIC_API_KEY, key);
+}
+
+export async function clearAnthropicApiKey(): Promise<void> {
+  await deleteSecret(KEY.ANTHROPIC_API_KEY);
 }

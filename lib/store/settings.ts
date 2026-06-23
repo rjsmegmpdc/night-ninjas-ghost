@@ -47,6 +47,8 @@ const KEY = {
   // Phase 5 - auxiliary strength-work preference
   STRENGTH_MODALITY: 'profile.strength_modality',
   STRENGTH_TARGET_PER_WEEK: 'profile.strength_target_per_week',
+  // Phase 10 - BYOK AI model preference
+  AI_MODEL: 'ai.model',
 } as const;
 
 async function get(key: string): Promise<string | null> {
@@ -408,6 +410,26 @@ export async function setStrengthPreferences(p: Partial<StrengthPreferences>): P
     writes.push(set(KEY.STRENGTH_TARGET_PER_WEEK, String(Math.max(0, Math.min(3, Math.round(p.targetPerWeek))))));
   }
   await Promise.all(writes);
+}
+
+
+/* ============================================================================
+ * AI model preference (Phase 10 - BYOK Anthropic).
+ *
+ * Persists which Claude model the athlete has selected for AI features.
+ * Default: haiku (cheapest, fastest — appropriate for daily briefings).
+ * The key itself is stored in the OS keychain (see secrets.ts), not here.
+ * ========================================================================== */
+
+export type AiModel = 'haiku' | 'sonnet';
+
+export async function getAiModel(): Promise<AiModel> {
+  const v = await get(KEY.AI_MODEL);
+  return v === 'sonnet' ? 'sonnet' : 'haiku';
+}
+
+export async function setAiModel(value: AiModel): Promise<void> {
+  await set(KEY.AI_MODEL, value);
 }
 
 /**
