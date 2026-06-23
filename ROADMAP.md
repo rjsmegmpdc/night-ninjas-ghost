@@ -113,13 +113,12 @@ doesn't, it doesn't ship.
 
 ## Current focus
 
-**Phase 9 + Phase 11 - SHIPPED.** Phase 9: coach voice trigger engine
-(block-start/mid/taper/block-end), Sunday reflection (3 journal columns), block-end
-debrief form. Phase 11: rule-based shoe-for-session recommender (category routing +
-km-remaining ranking), shoe recommendation card on Patrol, rotation health card on
-Equipment. 388 tests. **Next candidates:** Phase 13 (race-fueling depth); Phase 10
-(BYOK AI — the big unlock). Deferred/blocked: Phase 6 course-profile + Phase 7
-stored-weather (per-activity data not fetched); first live Garmin sync.
+**Phases 9 + 11 + 10 - SHIPPED.** Phase 9: coach voice, Sunday reflection, block-end debrief.
+Phase 11: shoe-for-session recommender + rotation health. Phase 10: BYOK Anthropic AI — key
+management, context assembler, on-demand daily briefing, session content generator. 399 tests.
+**Next candidates:** Phase 13 (race-fueling depth); Phase 14 (dojo maintenance).
+Deferred/blocked: Phase 6 course-profile + Phase 7 stored-weather (per-activity data not
+fetched); first live Garmin sync.
 Block context: Hansons 18-week block starts ~28/06/2026 (sub-3:00 Auckland
 Marathon 01/11/2026).
 
@@ -681,53 +680,37 @@ journaling (#15)
 
 ---
 
-## Phase 10 — AI integration (BYOK Anthropic)
+## Phase 10 — AI integration (BYOK Anthropic) ✅ SHIPPED (MVP)
 
-**Why this matters:** AI without state is a parlour trick. By this point
-we have athlete state, plan-of-record history, freshness, injury ledger,
-calibration, race execution context, environmental data. *Now* AI has
-something to reason about.
+**Shipped 2026-06-23.**
 
-**Architecture:**
+- **BYOK key management** (`lib/store/secrets.ts` + `lib/store/settings.ts`) — Anthropic API
+  key stored in OS keychain via keytar (same path as Strava/Garmin). Model preference
+  (haiku/sonnet) in settings table. `AiSection` component in Settings `/settings#ai`:
+  key save, model toggle, test-connection, remove-key.
+- **Context assembler** (`lib/ai/context.ts` + `lib/ai/context-pure.ts`) — server-side
+  snapshot: today's session, week stats, TSB/freshness, last 3 activities, active injuries,
+  dojo/week number, days to race. Pure `snapshotToText()` renders exactly what's sent to the
+  model — drives the "what data was sent" disclosure accordion. 11 pure tests.
+- **Daily briefing** (`lib/ai/briefing.ts` + `lib/actions/ai.ts`) — on-demand via Patrol.
+  `DailyBriefingCard` (client): button triggers `runDailyBriefing()` server action, renders
+  3-paragraph coach voice text, token counts, and a `<details>` data-sent disclosure. Disabled
+  with a Settings link when no key is saved.
+- **Session content generator** (`lib/ai/session-content.ts`) — `SessionContentButton` on
+  the "tonight's mission" card (Patrol), shown only for cross/strength session types. Generates
+  a ready-to-follow session tailored to modality preference, freshness, and active injuries.
+  Includes its own data-sent disclosure.
 
-- BYOK (bring-your-own-key). User's Anthropic API key, stored in OS
-  keychain via `keytar` (same path as Strava credentials)
-- Setup flow under `/settings#ai`: key input, validation against a
-  small cheap test call, model selection (default Claude Sonnet)
-- Privacy posture: every AI request scoped to a single specific question.
-  No background uploading. User can see exactly what data was sent for
-  each request.
-- Cost transparency: each AI feature shows estimated tokens / cost
-  before the call
+**Deferred to post-v1:** plan-adjustment AI recommendations (separate from Phase 3b rule-based
+system); race-week and post-race debrief co-pilot; cell drill-down explanations; OpenAI adapter.
 
-**Build:**
+**Total tests: 399 (up from 388).**
 
-- **Daily briefing** — generated each morning (or on-demand):
-  *"Today is your Pilates day. Given yesterday's tempo (RPE 8, HR
-  drift suggested under-recovery) and your current freshness (TSB -8,
-  loaded), here's a 30-minute flow focusing on hip mobility and
-  nervous-system downregulation rather than strength work…"*
-- **Plan adjustment recommendations** — when freshness or risk signals
-  suggest deviation, AI proposes a specific swap with reasoning
-- **Session content generation** — for auxiliary work, generate
-  specific session content (Pilates flows, yoga sequences, strength
-  routines) tailored to current state and athlete preferences
-- **Cell drill-down explanation** — click any cell, get a
-  coach-voice explanation of what happened or what's planned and why
-- **Race week briefings** — daily AI-generated briefings during taper
-  and pre-race, drawing on training history + forecast + state
-- **Post-race debrief co-pilot** — AI helps unpack what happened,
-  drawing on the training block's data alongside the race-day data
+**Why specifically Anthropic for v1:** Matt has Max, the simplest BYOK path. Model registry
+in `lib/ai/models.ts` isolates IDs and pricing — easy to add providers later.
 
-**Why specifically Anthropic for v1:** Matt has Max, the simplest BYOK
-path. Plus the API itself supports tool calling, which lets the AI
-*ask the app for data* rather than us pre-stuffing context — better for
-both cost and relevance. Can add OpenAI / others later via the same
-abstraction.
-
-**Coach review additions integrated:** the AI layer is what makes
-several earlier coach review items genuinely useful — the coach voice
-in #14 graduates from pre-canned to context-aware once this lands.
+**Coach review additions integrated:** the AI layer graduates the pre-canned coach voice (#14)
+to context-aware briefings using real athlete data.
 
 ---
 
