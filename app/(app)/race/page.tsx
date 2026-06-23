@@ -1,8 +1,12 @@
 import { logPageView } from '@/lib/store/instrument';
 import { getRaceExecution } from '@/lib/race/execution';
+import { getAnthropicApiKey, } from '@/lib/store/secrets';
+import { getAiModel } from '@/lib/store/settings';
+import { MODELS } from '@/lib/ai/models';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PacePlanCard } from '@/components/race/pace-plan-card';
 import { FuelingCard } from '@/components/race/fueling-card';
+import { FuelingAiButton } from '@/components/race/fueling-ai-button';
 import { CarbLoadCard } from '@/components/race/carb-load-card';
 import { ForecastCard } from '@/components/race/forecast-card';
 import { TaperCard } from '@/components/race/taper-card';
@@ -16,7 +20,12 @@ import { formatDuration } from '@/lib/plans/derive';
  */
 export default async function RacePage() {
   logPageView('/race');
-  const view = await getRaceExecution();
+  const [view, anthropicKey, aiModel] = await Promise.all([
+    getRaceExecution(),
+    getAnthropicApiKey(),
+    getAiModel(),
+  ]);
+  const hasAiKey = anthropicKey != null;
 
   return (
     <div className="px-4 sm:px-8 lg:px-12 py-8 sm:py-10 max-w-5xl mx-auto space-y-8">
@@ -69,7 +78,8 @@ export default async function RacePage() {
                 raceDate={view.race.raceDate}
               />
               <PacePlanCard pacing={view.pacing} />
-              <FuelingCard fueling={view.fueling} />
+              <FuelingCard fueling={view.fueling} heatNote={view.fuelingHeatNote} />
+              <FuelingAiButton hasKey={hasAiKey} modelLabel={MODELS[aiModel].label} />
               <CarbLoadCard carbLoad={view.carbLoad} />
               {view.macrocycle && <MacrocycleCard macrocycle={view.macrocycle} />}
             </>

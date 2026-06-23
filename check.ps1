@@ -290,6 +290,7 @@ $requiredFiles = @(
     'lib\ai\client.ts',
     'lib\ai\briefing.ts',
     'lib\ai\session-content.ts',
+    'lib\ai\fueling.ts',
     'lib\analysis\hr-availability.ts',
     'lib\analysis\interruptions-pure.ts',
     'lib\analysis\interruptions-pure.test.ts',
@@ -323,6 +324,8 @@ $requiredFiles = @(
     'lib\race\execution-pure.ts',
     'lib\race\execution-pure.test.ts',
     'lib\race\execution.ts',
+    'lib\race\fueling-pure.ts',
+    'lib\race\fueling-pure.test.ts',
     'lib\race\taper-pure.ts',
     'lib\race\taper-pure.test.ts',
     'lib\race\post-race-pure.ts',
@@ -497,6 +500,7 @@ $requiredFiles = @(
     'components\patrol\shoe-recommendation-card.tsx',
     'components\patrol\daily-briefing-card.tsx',
     'components\patrol\session-content-button.tsx',
+    'components\patrol\long-run-fueling-card.tsx',
     'components\garmin\garmin-section.tsx',
 
     # Components - journal (Phase 4 + Phase 9)
@@ -506,9 +510,10 @@ $requiredFiles = @(
     'components\journal\injury-risk-card.tsx',
     'components\journal\reflection-log.tsx',
 
-    # Components - race (Phase 6)
+    # Components - race (Phase 6 + Phase 13)
     'components\race\pace-plan-card.tsx',
     'components\race\fueling-card.tsx',
+    'components\race\fueling-ai-button.tsx',
     'components\race\carb-load-card.tsx',
     'components\race\forecast-card.tsx',
     'components\race\taper-card.tsx',

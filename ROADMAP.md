@@ -113,10 +113,11 @@ doesn't, it doesn't ship.
 
 ## Current focus
 
-**Phases 9 + 11 + 10 - SHIPPED.** Phase 9: coach voice, Sunday reflection, block-end debrief.
-Phase 11: shoe-for-session recommender + rotation health. Phase 10: BYOK Anthropic AI — key
-management, context assembler, on-demand daily briefing, session content generator. 399 tests.
-**Next candidates:** Phase 13 (race-fueling depth); Phase 14 (dojo maintenance).
+**Phases 9 + 11 + 10 + 13 - SHIPPED.** Phase 9: coach voice, reflection, debrief. Phase 11:
+shoe recommender + rotation health. Phase 10: BYOK AI (briefing, session content, key management).
+Phase 13: long-run fueling guide (Patrol), heat-adjusted fueling (race page), AI fueling
+personalisation. 416 tests.
+**Next candidate:** Phase 14 (dojo maintenance).
 Deferred/blocked: Phase 6 course-profile + Phase 7 stored-weather (per-activity data not
 fetched); first live Garmin sync.
 Block context: Hansons 18-week block starts ~28/06/2026 (sub-3:00 Auckland
@@ -771,24 +772,27 @@ empty until then); RHR/HRV correlation insights (R2.6 tier).
 
 ---
 
-## Phase 13 — Race fueling specifically (not full nutrition)
+## Phase 13 — Race fueling depth ✅ SHIPPED
 
-**Why this matters:** full nutrition logging is hugely expensive and
-modestly useful. But race fueling is a *calculation*, not a log, and it
-materially affects race outcomes. Worth surfacing as a focused capability.
+**Shipped 2026-06-23.**
 
-**Build:**
+- **Long-run fueling protocol** (`lib/race/fueling-pure.ts` — `longRunFuelingPlan`) — training-run
+  fueling guide surfaced on Patrol when today's session is `long`. Fueling starts at 45 min;
+  carb ladder matches race day (30/60/90 g/hr). Heat-adjusted fluid/sodium when conditions are
+  warm (fetches today's Open-Meteo forecast inside the Server Component). 17 pure tests.
+- **Heat-adjusted race-day fueling** (`applyHeatToFueling`) — applies Sawka et al. sweat-rate
+  adjustments (+150/300/500 ml fluid, +200/400/600 mg sodium) to the Phase 6 `FuelingPlan` based
+  on the existing Phase 7 heat severity. FuelingCard shows "heat adjusted" badge + coloured note
+  when active.
+- **AI fueling personalisation** (`lib/ai/fueling.ts` + `FuelingAiButton` on `/race`) — on-demand
+  button that sends race context (name, distance, duration, fueling targets, heat, weight,
+  injuries) to the BYOK Anthropic model and returns a personalised advice paragraph with
+  data-sent disclosure.
+- Phase 6 carb-load and race-day fueling grid were already complete; Phase 13 enriched them.
 
-- **Long-run fueling protocol** — calculated from weight + duration:
-  carbs/hour, hydration ml/hour, electrolyte targets
-- **Race-week carb-load protocol** — 3-day plan, gram targets
-- **Race-day fueling plan** — gel/drink timing, calculated for race
-  duration with conditions overlay
-- Lives in Patrol's race-execution surface (phase 6) and gets enriched
-  by AI (phase 10) for personalised tweaks
+**Total tests: 416 (up from 399).**
 
-**Explicitly out of scope:** food diary, daily macro tracking, meal
-logging. Those belong in a nutrition app, not a training app.
+**Explicitly out of scope:** food diary, daily macro tracking, meal logging.
 
 **Coach review additions integrated:** race fueling (#13)
 
