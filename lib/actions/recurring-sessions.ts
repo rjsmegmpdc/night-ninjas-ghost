@@ -10,10 +10,19 @@ function revalidateGroupRuns() {
   revalidatePath('/patrol');
 }
 
+const VALID_SESSION_TYPES = [
+  'recovery', 'easy', 'long', 'tempo', 'interval', 'repetition', 'cross', 'strength',
+] as const;
+type SessionType = typeof VALID_SESSION_TYPES[number];
+
+function toSessionType(v: string | undefined): SessionType {
+  return VALID_SESSION_TYPES.includes(v as SessionType) ? (v as SessionType) : 'easy';
+}
+
 export async function createRecurringSession(formData: FormData) {
   const name = formData.get('name')?.toString().trim() || 'Group run';
   const dow = parseInt(formData.get('dow')?.toString() || '0', 10);
-  const sessionType = formData.get('sessionType')?.toString() as any;
+  const sessionType = toSessionType(formData.get('sessionType')?.toString());
   const distMin = formData.get('typicalDistanceKmMin')?.toString();
   const distMax = formData.get('typicalDistanceKmMax')?.toString();
   const paceLabel = formData.get('paceLabel')?.toString().trim() || null;

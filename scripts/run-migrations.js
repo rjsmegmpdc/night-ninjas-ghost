@@ -42,6 +42,28 @@ function main() {
 
   const db = new Database(dbPath);
 
+  // Bootstrap migration tracking table.
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS schema_migrations (" +
+    "  name TEXT PRIMARY KEY," +
+    "  applied_at TEXT NOT NULL DEFAULT (datetime('now'))" +
+    ")"
+  );
+
+  // Determine if this is a pre-existing installation (has tables other than
+  // schema_migrations). If so, any SQL files that have been successfully
+  // applied via the old idempotent runner but are absent from schema_migrations
+  // need to be bootstrapped as "already applied" after this run.
+  const existingTables = db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != 'schema_migrations'")
+    .all();
+  const isExistingDb = existingTables.length > 0;
+
+  const alreadyApplied = new Set(
+    db.prepare('SELECT name FROM schema_migrations').all().map(function (r) { return r.name; })
+  );
+  const insertMigration = db.prepare('INSERT OR IGNORE INTO schema_migrations (name) VALUES (?)');
+
   const sqlFiles = fs
     .readdirSync(migrationsDir)
     .filter(function (f) { return f.endsWith('.sql'); })
@@ -56,6 +78,13 @@ function main() {
 
   for (let i = 0; i < sqlFiles.length; i++) {
     const f = sqlFiles[i];
+
+    if (alreadyApplied.has(f)) {
+      console.log('  ' + f + ': skipped (recorded in schema_migrations)');
+      totalSkipped++;
+      continue;
+    }
+
     const filePath = path.join(migrationsDir, f);
     const sql = fs.readFileSync(filePath, 'utf8');
 
@@ -105,6 +134,17 @@ function main() {
     let line = '  ' + f + ': ' + applied + ' applied, ' + skipped + ' skipped';
     if (firstUnexpected) line += '  [! ' + firstUnexpected + ']';
     console.log(line);
+
+    // Record this file in schema_migrations so it's skipped on future runs.
+    // We record even if there were unexpected errors — the file has been
+    // processed and should not be re-attempted without manual intervention.
+    insertMigration.run(f);
+  }
+
+  // Bootstrap: if this was a pre-existing installation, any files just processed
+  // that weren't in schema_migrations before are now recorded. Nothing extra needed.
+  if (isExistingDb && alreadyApplied.size === 0) {
+    console.log('[migrations] bootstrapped schema_migrations for existing installation.');
   }
 
   console.log('');

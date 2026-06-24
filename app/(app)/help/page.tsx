@@ -264,6 +264,56 @@ export default function HelpPage() {
         </div>
       </section>
 
+      {/* ----- Analytics metrics ----- */}
+      <section id="analytics" className="space-y-4">
+        <SectionHeading icon={BookOpen} label="analytics">
+          What the numbers mean
+        </SectionHeading>
+        <Card className="space-y-3">
+          <p className="text-bone-dim text-sm leading-relaxed mb-4">
+            VELOCITY surfaces training-load metrics drawn from exercise science.
+            Here's what each one represents.
+          </p>
+          <GlossaryTable
+            rows={[
+              ['CTL', 'chronic training load', 'Your 42-day rolling fitness score — a weighted average of daily training stress. A rising CTL means fitness is accumulating. Also called "form" in some tools.'],
+              ['ATL', 'acute training load', 'Your 7-day rolling fatigue score — same formula, shorter window. Spikes sharply after a hard block; drops quickly with rest.'],
+              ['TSB', 'training stress balance', 'CTL minus ATL. Positive = fresh (more fitness than fatigue). Negative = tired. Race-day target: +5 to +25. Deeply negative means you need rest before you can perform.'],
+              ['HR Reserve', 'heart rate reserve', 'Max HR minus resting HR. The range your heart operates in. Used as the denominator in the Karvonen method for calculating effort zones.'],
+              ['Karvonen', 'target HR formula', '(Max HR − Resting HR) × intensity % + Resting HR. Gives a personalised HR target for each zone. A 75% effort feels harder for a low-resting-HR athlete than the raw number suggests.'],
+              ['Pace zones', 'prescribed speed bands', 'Derived from your goal race pace. Easy zone: ~65–75% of threshold pace. Tempo/threshold: ~80–90%. Interval: 95–100%. The app uses these to flag FAST/SLOW on each session.'],
+            ]}
+          />
+        </Card>
+      </section>
+
+      {/* ----- Dojo methodologies ----- */}
+      <section id="methodologies" className="space-y-4">
+        <SectionHeading icon={BookOpen} label="dojo methodologies">
+          The training philosophies
+        </SectionHeading>
+        <Card className="space-y-3">
+          <p className="text-bone-dim text-sm leading-relaxed mb-4">
+            Each dojo is a distinct training philosophy with different assumptions
+            about how fitness is built. Two sentences each — enough to pick the
+            right one.
+          </p>
+          <GlossaryTable
+            rows={[
+              ['Hansons', 'cumulative fatigue model', 'Heavy weekly mileage at controlled paces; no single monster long run. The stimulus is the accumulated tiredness of training on tired legs day after day.'],
+              ['Daniels', 'VDOT periodisation', 'Phase-based structure anchored to your estimated aerobic capacity (VDOT). Each phase has a single purpose — base, quality, competition — with workouts keyed precisely to that number.'],
+              ['Pfitzinger', 'high-mileage / LT focus', 'The most demanding option: high volume, medium-long midweek runs alongside the true long run, and heavy lactate-threshold emphasis. Built for experienced runners chasing serious PRs.'],
+              ['Higdon', 'approachable structure', 'Lower mid-week stress with one long run per week — the classic approachable shape. Covers novice through competitive; a good starting point if the others feel overwhelming.'],
+              ['Lydiard', 'aerobic base first', 'Months of pure aerobic conditioning before any speedwork, then a focused speed development phase once the base is built. Needs a long runway — best if your race is 20+ weeks out.'],
+              ['Polarised', '80/20 intensity split', '80% of training volume at easy/recovery pace; 20% at high intensity with almost nothing in between. Designed to eliminate junk-mile grey-zone work; evidence-based for endurance performance.'],
+              ['Ultra', 'volume over pace', 'Structured for 50km and beyond: more time on feet, less pace-zone specificity, back-to-back long days to simulate race fatigue. Shorter, less aggressive taper than road plans.'],
+              ['Norwegian Singles', 'threshold via lactate', 'High-controlled-intensity threshold work — singles only (one session per day) guided by lactate measurement, derived from the Norwegian elite methodology. Demands honest pacing discipline.'],
+              ['Custom', 'your own structure', "No prescribed engine — you define the week directly. Use when you're following a coach's spreadsheet or when none of the above fits your situation."],
+            ]}
+          />
+        </Card>
+      </section>
+
       {/* ----- Compliance flags ----- */}
       <section id="flags" className="space-y-4">
         <SectionHeading icon={Flag} label="compliance flags">

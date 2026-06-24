@@ -83,7 +83,9 @@ export const journal = sqliteTable('journal', {
   perceivedEffort: integer('perceived_effort'), // 1-10 (today's session)
   energy: integer('energy'),               // 1-10 (morning self-assessment)
 
-  // Reserved for future health-source overlays
+  // Manual overrides entered via the Journal wellness form.
+  // Device-sourced biometrics (Garmin, Apple Health, etc) live in daily_health_metrics.
+  // These fields exist for athletes without a device or who prefer manual entry.
   hrvMs: real('hrv_ms'),
   restingHr: integer('resting_hr'),
   bodyBattery: integer('body_battery'),

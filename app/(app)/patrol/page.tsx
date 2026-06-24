@@ -61,6 +61,8 @@ import { MODELS } from '@/lib/ai/models';
 import { DailyBriefingCard } from '@/components/patrol/daily-briefing-card';
 import { SessionContentButton } from '@/components/patrol/session-content-button';
 import { LongRunFuelingCard } from '@/components/patrol/long-run-fueling-card';
+import { OrientationBanner } from '@/components/patrol/orientation-banner';
+import { getPatrolOrientationDismissed } from '@/lib/store/settings';
 
 /**
  * Patrol — this week's training loop.
@@ -76,12 +78,16 @@ import { LongRunFuelingCard } from '@/components/patrol/long-run-fueling-card';
  */
 export default async function PatrolPage() {
   logPageView('/patrol');
-  const activityCount = await getDb().$count(schema.activities);
+  const [activityCount, orientationDismissed] = await Promise.all([
+    getDb().$count(schema.activities),
+    getPatrolOrientationDismissed(),
+  ]);
   const hasData = activityCount > 0;
 
   return (
     <div className="px-4 sm:px-8 lg:px-12 py-8 sm:py-10 max-w-7xl mx-auto space-y-10">
       <SyncStatusBanner />
+      {hasData && !orientationDismissed && <OrientationBanner />}
 
       {!hasData && (
         <>

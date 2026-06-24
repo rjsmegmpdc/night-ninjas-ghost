@@ -11,18 +11,33 @@ function revalidateEvents() {
   revalidatePath('/patrol');
 }
 
+const VALID_EVENT_TYPES = [
+  'holiday', 'work_trip', 'birthday', 'sickness', 'caregiving', 'ninja_loop_holiday', 'other',
+] as const;
+type EventType = typeof VALID_EVENT_TYPES[number];
+
+const VALID_IMPACTS = ['none', 'reduced', 'travel_only', 'no_training', 'group_run'] as const;
+type Impact = typeof VALID_IMPACTS[number];
+
+function toEventType(v: string | undefined): EventType {
+  return VALID_EVENT_TYPES.includes(v as EventType) ? (v as EventType) : 'other';
+}
+function toImpact(v: string | undefined): Impact {
+  return VALID_IMPACTS.includes(v as Impact) ? (v as Impact) : 'reduced';
+}
+
 export async function createCalendarEvent(formData: FormData) {
-  const eventType = formData.get('eventType')?.toString() as any;
+  const eventType = toEventType(formData.get('eventType')?.toString());
   const title = formData.get('title')?.toString().trim() || null;
   const startDate = formData.get('startDate')?.toString().trim();
   const endDate = formData.get('endDate')?.toString().trim() || null;
-  const impact = (formData.get('impact')?.toString() as any) || 'reduced';
+  const impact = toImpact(formData.get('impact')?.toString());
   const notes = formData.get('notes')?.toString().trim() || null;
 
   if (!startDate) throw new Error('Start date required.');
 
   await getDb().insert(schema.calendarEvents).values({
-    eventType: eventType || 'other',
+    eventType,
     title,
     startDate,
     endDate,

@@ -140,6 +140,8 @@ export async function runJob(jobId: number): Promise<SyncJob> {
 
   let cursorBefore = job.cursorBefore;
   const cursorAfter = job.cursorAfter;
+  // Track gear IDs already processed in this run to avoid redundant /gear fetches
+  const gearRefreshedThisRun = new Set<string>();
 
   try {
     while (true) {
@@ -179,9 +181,11 @@ export async function runJob(jobId: number): Promise<SyncJob> {
       // 0-2 calls per sync. Failures here don't break the sync.
       const pageGearIds = activities
         .map((a) => a.gear_id)
-        .filter((id): id is string => id != null);
+        .filter((id): id is string => id != null)
+        .filter((id) => !gearRefreshedThisRun.has(id));
       if (pageGearIds.length > 0) {
         await ensureShoesForGearIds(pageGearIds);
+        pageGearIds.forEach((id) => gearRefreshedThisRun.add(id));
       }
 
       // Advance cursor: next page should fetch activities older than the

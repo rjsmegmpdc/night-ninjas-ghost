@@ -49,6 +49,8 @@ const KEY = {
   STRENGTH_TARGET_PER_WEEK: 'profile.strength_target_per_week',
   // Phase 10 - BYOK AI model preference
   AI_MODEL: 'ai.model',
+  // Phase 17 - first-run orientation banner
+  PATROL_ORIENTATION_DISMISSED: 'prefs.patrol_orientation_dismissed',
 } as const;
 
 async function get(key: string): Promise<string | null> {
@@ -430,6 +432,22 @@ export async function getAiModel(): Promise<AiModel> {
 
 export async function setAiModel(value: AiModel): Promise<void> {
   await set(KEY.AI_MODEL, value);
+}
+
+
+/* ============================================================================
+ * Patrol orientation banner (Phase 17).
+ *
+ * Shown once on first visit to Patrol after setup. Dismissed via a server
+ * action and never shown again. Persisted in settings so it survives restarts.
+ * ========================================================================== */
+
+export async function getPatrolOrientationDismissed(): Promise<boolean> {
+  return (await get(KEY.PATROL_ORIENTATION_DISMISSED)) === 'true';
+}
+
+export async function markPatrolOrientationDismissed(): Promise<void> {
+  await set(KEY.PATROL_ORIENTATION_DISMISSED, 'true');
 }
 
 /**

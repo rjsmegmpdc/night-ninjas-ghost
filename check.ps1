@@ -211,6 +211,8 @@ $requiredFiles = @(
     'app\(app)\settings\page.tsx',
     'app\(app)\shoes\page.tsx',
     'app\(app)\strike\page.tsx',
+    'app\(app)\club\page.tsx',
+    'app\(app)\vo2max\page.tsx',
 
     # API routes
     'app\api\feedback\log-summary\route.ts',
