@@ -358,6 +358,31 @@ Plus: `/setup` (7-step first-run wizard) · `/api/*` (Strava OAuth + sync endpoi
 
 ---
 
+### Phase 18 — Skills audit improvements
+**What**: Three-dimension audit (code correctness, UI design consistency, content quality) driven by humanizer, stitch, and code-review skills. 17 backlog items identified and implemented.
+
+**Code correctness**:
+- `lib/actions/recurring-sessions.ts` — `dow` validated to `[-1, 6]`; `distMin`/`distMax` parseFloat guarded against NaN; unreachable `|| 'easy'` removed
+- `lib/actions/calendar-events.ts` — date strings validated as `YYYY-MM-DD` with `endDate ≥ startDate`; `includes()` type cast replaced with array widening; `enableNinjaLoopHolidays` wrapped in a DB transaction with batched inserts (concurrent-safe)
+- `lib/analysis/compliance.ts` — `dowOf()` rewritten to parse date components explicitly; eliminates day-of-week shift near midnight for timezones west of UTC
+- `lib/store/settings.ts` — `getClubParkrunId()` null round-trip normalised to match all other nullable getters
+- `lib/ai/client.ts` — content block cast replaced with type predicate filter
+
+**Component consistency**:
+- `components/patrol/ramp-card.tsx`, `progression-flag-card.tsx`, `ns-guardrails-card.tsx` — migrated from raw `div` borders to `Card` / `CardLabel`; closes 3 design-system gaps
+- `components/patrol/interruption-indicator.tsx` — fixed full-card-as-anchor accessibility failure; outer `Link` wrapping entire card replaced with `Card` + internal `Manage on journal →` link
+
+**Content quality** (humanizer skill pass):
+- `app/(app)/test-lab/page.tsx` — removed 8 AI structural preamble paragraphs; added audience clarity notice; fixed holiday source wording
+- `app/(app)/help/page.tsx` — removed 3 throat-clearing openers; fixed Strike copy; added 8-pill in-page section navigation
+- `components/patrol/orientation-banner.tsx` — replaced "training command centre" with "What you did vs what the plan said."; migrated to `Card active`; replaced Unicode ✕ with Lucide `X` icon
+
+**Deferred** (own phase): shadcn Tooltip/Progress/Alert/Skeleton additions; ComplianceRow responsive mobile layout; Patrol chip cluster redesign; Patrol skeleton loading state.
+
+**Status**: Complete.
+
+---
+
 ## Next phase candidates
 
 | Item | Priority | Description |

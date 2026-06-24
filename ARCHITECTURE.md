@@ -370,10 +370,15 @@ These properties are enforced by the test suite:
 1. **Volume cap monotonicity**: every engine's `weeklyVolumeCap()` never exceeds `peakVolume`
 2. **ACWR hard rail**: when ACWR ≥ 1.5, `interpretState()` always fires `reduce-volume` regardless of plan methodology
 3. **UTC date arithmetic**: all date comparisons use `new Date(isoStr + 'T00:00:00Z')` + `.getUTCFullYear()`/`.getUTCMonth()`/`.getUTCDate()`
-4. **Load tier priority**: HR-reserve (Tier 1) > age-predicted HR (Tier 2) > pace classification (Tier 3)
-5. **Gear dedup**: each `gear_id` is fetched from Strava at most once per sync run
-6. **Enum safety**: `eventType`, `impact`, and `sessionType` fields are whitelist-guarded before DB writes
-7. **Stale job cleanup**: pending jobs >2 min old are marked `failed`; running jobs with no heartbeat >60s are marked `paused`
+4. **Local day-of-week parsing**: `dowOf()` in compliance uses explicit component parsing (`new Date(y, m-1, d).getDay()`) — never `new Date(isoStr).getDay()`, which shifts by one near midnight for timezones west of UTC
+5. **Load tier priority**: HR-reserve (Tier 1) > age-predicted HR (Tier 2) > pace classification (Tier 3)
+6. **Gear dedup**: each `gear_id` is fetched from Strava at most once per sync run
+7. **Enum safety**: `eventType`, `impact`, and `sessionType` fields are whitelist-guarded before DB writes
+8. **Date string validation**: calendar event `startDate`/`endDate` are validated as `YYYY-MM-DD` format and `endDate >= startDate` before any DB write
+9. **Day-of-week range**: `dow` in recurring sessions is validated to `[0, 6]` (or `-1` for ninja-loop) before insert
+10. **Holiday insert safety**: `enableNinjaLoopHolidays` runs inside a DB transaction with a single batched insert — concurrent calls cannot produce duplicate holiday rows
+11. **Stale job cleanup**: pending jobs >2 min old are marked `failed`; running jobs with no heartbeat >60s are marked `paused`
+12. **Card surface consistency**: all card-level surfaces use the `Card` component (`nn-card` / `nn-card-elevated` / `nn-card-active` tokens) — no raw `div` borders bypass the design system
 
 ---
 
