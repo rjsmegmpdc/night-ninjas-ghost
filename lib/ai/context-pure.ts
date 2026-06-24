@@ -54,7 +54,7 @@ export function snapshotToText(s: AthleteSnapshot): string {
   const lines: string[] = [];
   lines.push(`As of: ${s.asOfIso}`);
   lines.push(`Training method: ${s.dojo}`);
-  if (s.weekNumber && s.programWeeks) {
+  if (s.weekNumber != null && s.programWeeks != null) {
     lines.push(`Program: week ${s.weekNumber} of ${s.programWeeks} (${s.phaseKind})`);
   } else {
     lines.push(`Program phase: ${s.phaseKind}`);

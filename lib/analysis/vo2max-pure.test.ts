@@ -89,4 +89,36 @@ describe('vo2FitnessBand', () => {
     const band = vo2FitnessBand(35, 42, 'male');
     expect(['fair', 'developing']).toContain(band);
   });
+
+  it('higher vo2 yields equal-or-better band at fixed age and sex (monotone)', () => {
+    const BANDS = ['developing', 'fair', 'good', 'excellent', 'superior'];
+    const b40 = BANDS.indexOf(vo2FitnessBand(40, 35, 'male'));
+    const b50 = BANDS.indexOf(vo2FitnessBand(50, 35, 'male'));
+    const b60 = BANDS.indexOf(vo2FitnessBand(60, 35, 'male'));
+    expect(b40).toBeLessThanOrEqual(b50);
+    expect(b50).toBeLessThanOrEqual(b60);
+  });
+
+  it('female gets equal-or-better band than male at same vo2 and age (female norms ~7 lower)', () => {
+    const BANDS = ['developing', 'fair', 'good', 'excellent', 'superior'];
+    const mBand = BANDS.indexOf(vo2FitnessBand(45, 40, 'male'));
+    const fBand = BANDS.indexOf(vo2FitnessBand(45, 40, 'female'));
+    expect(fBand).toBeGreaterThanOrEqual(mBand);
+  });
+});
+
+describe('resolveVo2 — edge cases', () => {
+  it('does not throw when observations contain an unrecognised source', () => {
+    const obs = [
+      { dateIso: '2026-01-01', source: 'device' as const, value: 50 },
+      { dateIso: '2026-02-01', source: 'unknown-gadget' as unknown as 'device', value: 55 },
+    ] as Vo2Observation[];
+    expect(() => resolveVo2(obs)).not.toThrow();
+  });
+
+  it('rankVo2Source returns finite numbers for all known sources', () => {
+    for (const src of ['manual-lab', 'cooper', 'rockport', 'device'] as const) {
+      expect(Number.isFinite(rankVo2Source(src))).toBe(true);
+    }
+  });
 });

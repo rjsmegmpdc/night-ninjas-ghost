@@ -18,4 +18,20 @@ describe('parseHmsToSeconds', () => {
     expect(parseHmsToSeconds('1:2:3:4')).toBeNull();
     expect(parseHmsToSeconds('2::30')).toBeNull();
   });
+
+  it('parses ultra finish time with hours > 9', () => {
+    expect(parseHmsToSeconds('10:30:00')).toBe(10 * 3600 + 30 * 60);
+  });
+
+  it('parses H:MM:SS with a leading-zero hour', () => {
+    expect(parseHmsToSeconds('02:58:30')).toBe(2 * 3600 + 58 * 60 + 30);
+  });
+
+  it('parses MM:SS with leading-zero minutes', () => {
+    expect(parseHmsToSeconds('05:30')).toBe(5 * 60 + 30);
+  });
+
+  it('parses 0:00:00 as zero seconds', () => {
+    expect(parseHmsToSeconds('0:00:00')).toBe(0);
+  });
 });

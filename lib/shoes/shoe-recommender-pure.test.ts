@@ -225,4 +225,29 @@ describe('computeRotationHealth', () => {
     const health = computeRotationHealth(shoes, today);
     expect(health.recentlyUsedCount).toBe(0);
   });
+
+  it('shoe used exactly 28 days ago is counted as recently used (inclusive boundary)', () => {
+    // today='2026-06-23'; cutoff = 2026-06-23 minus 28 days = 2026-05-26
+    const shoes: ShoeForRecommender[] = [
+      makeShoe({ id: 10, lastUsedDate: '2026-05-26', status: 'active' }),
+      makeShoe({ id: 11, lastUsedDate: '2026-05-25', status: 'active' }), // one day outside
+    ];
+    const health = computeRotationHealth(shoes, today);
+    expect(health.recentlyUsedCount).toBe(1);
+  });
+
+  it('tie-break: identical shoes produce a stable recommendation across calls', () => {
+    const twin1 = makeShoe({ id: 20, category: 'daily', pctUsed: 20, totalKm: 160, effectiveTargetKm: 800, name: 'TwinA' });
+    const twin2 = makeShoe({ id: 21, category: 'daily', pctUsed: 20, totalKm: 160, effectiveTargetKm: 800, name: 'TwinB' });
+    const rec1 = recommendShoe('easy', [twin1, twin2]);
+    const rec2 = recommendShoe('easy', [twin1, twin2]);
+    expect(rec1?.shoeId).toBe(rec2?.shoeId);
+  });
+});
+
+describe('recommendShoe — worn-past-target', () => {
+  it('does not recommend a shoe above 100% usage', () => {
+    const worn = makeShoe({ id: 99, category: 'daily', pctUsed: 110, totalKm: 880, effectiveTargetKm: 800, name: 'Worn' });
+    expect(recommendShoe('easy', [worn])).toBeNull();
+  });
 });

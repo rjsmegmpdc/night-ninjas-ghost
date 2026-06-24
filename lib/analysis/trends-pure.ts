@@ -33,11 +33,13 @@ export function monthlyVolume(
   }
 
   // Build the trailing month keys ending at endIso's month.
-  const end = new Date(endIso + 'T00:00:00');
+  const end = new Date(endIso + 'T00:00:00Z');
   const keys: string[] = [];
   for (let i = months - 1; i >= 0; i--) {
-    const d = new Date(end.getFullYear(), end.getMonth() - i, 1);
-    keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    const d = new Date(end.getTime());
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() - i);
+    keys.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
   }
 
   const out: MonthVolume[] = [];

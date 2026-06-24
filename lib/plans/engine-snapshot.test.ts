@@ -100,6 +100,27 @@ describe('engine characterization snapshots (3b regression net)', () => {
           expect(t.totalKmTarget).toBeLessThanOrEqual(60 * 1.05);
         }
       });
+
+      it('a cap at 85% of natural peak is honored within rounding tolerance', () => {
+        const base = paramsFor(engine, 'advanced');
+        const programWeeks = base.programWeeks ?? 18;
+        const uncappedPeak = Math.max(
+          ...Array.from({ length: programWeeks }, (_, i) =>
+            engine.renderWeek(base, i + 1, undefined).totalKmTarget ?? 0
+          )
+        );
+        if (uncappedPeak <= 40) return; // engine naturally low — skip
+        const cap = Math.floor(uncappedPeak * 0.85);
+        const capped: PlanParams = { ...base, weeklyVolumeCapKm: cap };
+        const cappedPeak = Math.max(
+          ...Array.from({ length: programWeeks }, (_, i) =>
+            engine.renderWeek(capped, i + 1, undefined).totalKmTarget ?? 0
+          )
+        );
+        // Per-session rounding can add up to 3km; must still be below the natural peak.
+        expect(cappedPeak).toBeLessThanOrEqual(cap + 3);
+        expect(cappedPeak).toBeLessThan(uncappedPeak);
+      });
     });
   }
 });

@@ -84,4 +84,29 @@ describe('Tier 3 - outliers at 2.5 sigma', () => {
     const r = buildVo2Insights(series([55, 70]));
     expect(r.byTier.outlier).toHaveLength(0);
   });
+
+  it('flags a value clearly beyond 2.5σ from the cluster (large outlier)', () => {
+    // Tight cluster [54-56] with one extreme reading; MAD ≈ 1, z-score of 65 ≈ 6.7σ → flagged
+    const r = buildVo2Insights(series([54, 55, 56, 54, 55, 56, 65]));
+    expect(r.byTier.outlier.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('does not flag a value within 1σ of the cluster', () => {
+    // 57 is only 2 units above the cluster centroid, well within any 2.5σ threshold
+    const r = buildVo2Insights(series([54, 55, 56, 54, 55, 56, 57]));
+    expect(r.byTier.outlier).toHaveLength(0);
+  });
+});
+
+describe('Tier 1 - trend threshold boundary', () => {
+  it('change of exactly 0.5 triggers a positive trend (threshold is exclusive — < not <=)', () => {
+    const r = buildVo2Insights(series([55.0, 55.5]));
+    expect(r.byTier.trend[0].tone).toBe('positive');
+  });
+
+  it('a very small per-period change is treated as stable', () => {
+    // 3 readings, total change 0.1 → linear slope ≈ 0.05/period → within stable range
+    const r = buildVo2Insights(series([55.0, 55.05, 55.1]));
+    expect(r.byTier.trend[0].tone).toBe('neutral');
+  });
 });

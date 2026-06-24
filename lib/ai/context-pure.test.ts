@@ -73,12 +73,25 @@ describe('snapshotToText', () => {
   it('shows phase only when no week number', () => {
     const t = snapshotToText({ ...base, weekNumber: null, programWeeks: null });
     expect(t).toContain('Program phase: program-week-N');
-    expect(t).not.toContain('week null');
+    // Positive assertion: no week/number combination should appear
+    expect(t).not.toMatch(/week\s+\d/);
   });
 
   it('includes recent activity', () => {
     const t = snapshotToText(base);
     expect(t).toContain('2026-06-22 Run "Easy"');
     expect(t).toContain('135bpm');
+  });
+
+  it('omits HR when avgHr is null', () => {
+    const t = snapshotToText({ ...base, week: { ...base.week, avgHr: null } });
+    expect(t).not.toContain('142bpm');
+  });
+
+  it('handles weekNumber 0 without treating it as a missing week', () => {
+    // weekNumber=0 is falsy in JS — implementation must not use `if (weekNumber)` bare
+    const t = snapshotToText({ ...base, weekNumber: 0, programWeeks: 18 });
+    expect(t).not.toContain('Program phase: program-week-N');
+    expect(t).toContain('week 0');
   });
 });

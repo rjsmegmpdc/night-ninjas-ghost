@@ -113,12 +113,14 @@ doesn't, it doesn't ship.
 
 ## Current focus
 
-**Phases 9 + 11 + 10 + 13 + 14 + 15 - SHIPPED.** Phase 9: coach voice, reflection, debrief.
+**Phases 9 + 11 + 10 + 13 + 14 + 15 + 16 - SHIPPED.** Phase 9: coach voice, reflection, debrief.
 Phase 11: shoe recommender + rotation health. Phase 10: BYOK AI (briefing, session content,
 key management). Phase 13: long-run fueling guide, heat-adjusted fueling, AI fueling.
 Phase 14: per-block volume + long-run capacity caps. Phase 15: training pace reference card
-(Dojo), block readiness preview, pace compliance on Patrol. 440 tests.
-**Next candidate:** Phase 16 (software audit + backlog).
+(Dojo), block readiness preview, pace compliance on Patrol. Phase 16: software audit
+remediation (TZ bugs, implementation bug fixes, 32 new domain invariant and boundary tests).
+472 tests.
+**Next candidate:** Phase 17.
 Deferred/blocked: Phase 6 course-profile + Phase 7 stored-weather (per-activity data not
 fetched); first live Garmin sync.
 Block context: Hansons 18-week block starts ~28/06/2026 (sub-3:00 Auckland
@@ -819,6 +821,42 @@ the product matures, this becomes a real strategic question.
 - Versioned dojo files with update mechanism
 - "Dojo authoring" mode for coaches to define custom dojos
 - Optional: subscription tier for community-maintained dojo updates
+
+---
+
+## Phase 16 — Software audit remediation ✅ SHIPPED
+
+**Shipped 2026-06-24.**
+
+Driven by an independent code-reviewer audit. Three production bug fixes and
+32 new tests targeting boundary cases, domain invariants, and edge paths the
+existing suite skipped.
+
+**Production bug fixes:**
+- **TZ-safe date arithmetic** (`lib/shoes/shoe-recommender-pure.ts`) — `computeRotationHealth`
+  was parsing YYYY-MM-DD strings with `new Date(str)` (UTC midnight) then operating in local
+  time via `setDate/getDate`, producing wrong cutoff dates at DST transitions. Fixed to use
+  `new Date(str + 'T00:00:00Z')` + UTC methods throughout.
+- **TZ-safe month key generation** (`lib/analysis/trends-pure.ts`) — `monthlyVolume` was
+  constructing `new Date(endIso + 'T00:00:00')` in local time then reading `getFullYear/getMonth`
+  for month keys. Fixed to use UTC constructor + UTC accessors.
+- **weekNumber=0 falsy guard** (`lib/ai/context-pure.ts`) — `snapshotToText` used
+  `if (s.weekNumber && s.programWeeks)` which treats week 0 as missing. Fixed to
+  `if (s.weekNumber != null && s.programWeeks != null)`.
+
+**New tests (+32, total 472):**
+- Engine snapshot: cap-at-85%-of-peak invariant for all 9 engines
+- Execution: single-segment race (n=1), negative strategy multiplier magnitude,
+  4 fueling boundary values at the 1h and 2.5h ladder steps
+- Shoe recommender: 28-day boundary (inclusive cutoff), tie-break stability,
+  worn-past-target (>100%) rejection
+- VO2max pure: monotone band ordering, female offset direction, unknown-source resilience
+- VO2max insights: outlier with clear z-score separation, trend threshold boundary
+  (0.5 is positive, small slope is neutral), small per-period slope stability
+- Context: avgHr null path, weekNumber=0 handling
+- Debrief: ultra hours (>9h), leading-zero H:MM:SS, leading-zero MM:SS, 0:00:00
+
+**Total tests: 472 (up from 440).**
 
 ---
 

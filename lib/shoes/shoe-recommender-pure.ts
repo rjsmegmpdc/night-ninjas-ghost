@@ -119,8 +119,8 @@ export function computeRotationHealth(
   today: string  // ISO YYYY-MM-DD
 ): RotationHealth {
   const activeShoes = shoes.filter((s) => s.status === 'active');
-  const cutoff = new Date(today);
-  cutoff.setDate(cutoff.getDate() - RECENT_DAYS);
+  const cutoff = new Date(today + 'T00:00:00Z');
+  cutoff.setUTCDate(cutoff.getUTCDate() - RECENT_DAYS);
   const cutoffIso = cutoff.toISOString().slice(0, 10);
 
   const recentlyUsed = activeShoes.filter(
