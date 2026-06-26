@@ -1,6 +1,26 @@
 ## Branch
 feat/weekly-report-patrol-hero
 
+## Session: 2026-06-26 (code-review fixes)
+
+### Completed
+- FIX 1 (BLOCKING): Replaced `currentWeekRange(today)` (local-time) with `getThisMondayIso + addUtcDays` (UTC) in `generateWeeklyReportIfDue`. Week bounds now consistent with watermark and `shouldGenerateReport`. Exported `addUtcDays` from `weekly-report-pure.ts` to enable this.
+- FIX 2 (SHOULD FIX): Added `enabled` check to `getPersistedWeeklyReport` (Option A). Disabling the feature now causes the function to return null immediately — stale snapshot is not surfaced.
+- FIX 3 (SHOULD FIX): Gated `<WeeklyReportHero>` render in `patrol/page.tsx` on `weeklyReportEnabled`. Read flag server-side at `PatrolDashboard` entry; skip all report calls and skip the hero when disabled.
+- Tests: Added 4 UTC boundary regression tests in `weekly-report-pure.test.ts` for the NZ Monday-local/Sunday-UTC scenario (`new Date('2026-06-22T10:00:00+12:00')`). All 553 tests pass.
+
+### In progress
+- Nothing active
+
+### Blocked
+- Pre-existing TS error in components/patrol/shoe-recommendation-card.tsx (line 21 — unterminated string literal). Pre-dates this branch; not introduced by this session.
+- `getPersistedWeeklyReport` enabled-gate test: cannot be unit-tested (server action with DB dependency — see TESTING.md `lib/actions/*.ts` exclusion). Behaviour verified by reading the implementation; integration/manual test required for full coverage.
+
+### Next session should
+- Consider Phase 19 backlog: shadcn Tooltip/Progress/Alert/Skeleton; ComplianceRow responsive layout; Patrol chip cluster redesign
+- Manual smoke-test: disable weekly report in Settings, open Patrol — confirm hero is absent and no stale card shows; re-enable, open Patrol — confirm hero appears
+- Consider pulling WeeklyReportHero outside PatrolDashboard into PatrolPage so it shows even when no active plan is configured
+
 ## Session: 2026-06-26 (frontend pass)
 
 ### Completed
