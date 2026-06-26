@@ -1,4 +1,5 @@
 import { TopNav } from '@/components/nav/topnav';
+import { PrefetchAllRoutes } from '@/components/nav/prefetch-all-routes';
 import { getStreakState } from '@/lib/analysis/streak';
 
 /**
@@ -23,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-ink">
+      <PrefetchAllRoutes />
       <TopNav streakCount={streakCount} />
       <main className="min-w-0">{children}</main>
     </div>
