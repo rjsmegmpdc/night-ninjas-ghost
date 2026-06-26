@@ -51,6 +51,11 @@ const KEY = {
   AI_MODEL: 'ai.model',
   // Phase 17 - first-run orientation banner
   PATROL_ORIENTATION_DISMISSED: 'prefs.patrol_orientation_dismissed',
+  // Weekly push report (feat/weekly-report-patrol-hero)
+  WEEKLY_REPORT_ENABLED: 'weekly_report.enabled',
+  WEEKLY_REPORT_DAY: 'weekly_report.day',
+  WEEKLY_REPORT_LAST_GENERATED_WEEK: 'weekly_report.last_generated_week',
+  WEEKLY_REPORT_PAYLOAD: 'weekly_report.payload',
 } as const;
 
 async function get(key: string): Promise<string | null> {
@@ -449,6 +454,55 @@ export async function getPatrolOrientationDismissed(): Promise<boolean> {
 
 export async function markPatrolOrientationDismissed(): Promise<void> {
   await set(KEY.PATROL_ORIENTATION_DISMISSED, 'true');
+}
+
+/* ============================================================================
+ * Weekly push report (feat/weekly-report-patrol-hero).
+ *
+ * The report is generated at most once per week on the athlete's chosen day.
+ * The full JSON payload is persisted so Patrol can render the last snapshot
+ * without re-running the compliance engine on every page load.
+ *
+ * weeklyReportEnabled        — boolean, default false (opt-in)
+ * weeklyReportDay            — 0=Mon..6=Sun, default 1 (Monday)
+ * weeklyReportLastGeneratedWeek — ISO Monday of the last generated week, or null
+ * weeklyReportPayload        — JSON string of the last WeeklyReport, or null
+ * ========================================================================== */
+
+export async function getWeeklyReportEnabled(): Promise<boolean> {
+  return (await get(KEY.WEEKLY_REPORT_ENABLED)) === 'true';
+}
+
+export async function setWeeklyReportEnabled(value: boolean): Promise<void> {
+  await set(KEY.WEEKLY_REPORT_ENABLED, value ? 'true' : 'false');
+}
+
+export async function getWeeklyReportDay(): Promise<number> {
+  const v = await getNum(KEY.WEEKLY_REPORT_DAY);
+  if (v === null) return 1; // Monday
+  return Math.max(0, Math.min(6, Math.round(v)));
+}
+
+export async function setWeeklyReportDay(dow: number): Promise<void> {
+  await set(KEY.WEEKLY_REPORT_DAY, String(Math.max(0, Math.min(6, Math.round(dow)))));
+}
+
+export async function getWeeklyReportLastGeneratedWeek(): Promise<string | null> {
+  const v = await get(KEY.WEEKLY_REPORT_LAST_GENERATED_WEEK);
+  return v === '' || v === null ? null : v;
+}
+
+export async function setWeeklyReportLastGeneratedWeek(isoMonday: string): Promise<void> {
+  await set(KEY.WEEKLY_REPORT_LAST_GENERATED_WEEK, isoMonday);
+}
+
+export async function getWeeklyReportPayload(): Promise<string | null> {
+  const v = await get(KEY.WEEKLY_REPORT_PAYLOAD);
+  return v === '' || v === null ? null : v;
+}
+
+export async function setWeeklyReportPayload(json: string): Promise<void> {
+  await set(KEY.WEEKLY_REPORT_PAYLOAD, json);
 }
 
 /**
