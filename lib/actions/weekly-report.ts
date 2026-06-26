@@ -2,7 +2,7 @@
 
 import 'server-only';
 import { revalidatePath } from 'next/cache';
-import { getActivePlan, currentWeekRange } from '@/lib/plans/active-plan';
+import { getActivePlan } from '@/lib/plans/active-plan';
 import { resolveWeekContext } from '@/lib/plans/week-context';
 import { evaluateWeek } from '@/lib/analysis/compliance';
 import { getActivitiesInRange } from '@/lib/analysis/week-queries';
@@ -18,6 +18,7 @@ import {
   buildWeeklyReport,
   shouldGenerateReport,
   getThisMondayIso,
+  addUtcDays,
   type WeeklyReport,
 } from '@/lib/analysis/weekly-report-pure';
 
@@ -86,7 +87,12 @@ export async function generateWeeklyReportIfDue(): Promise<WeeklyReport | null> 
 
     // --- Report is due; build it. ---
 
-    const { startIso: weekStart, endIso: weekEnd } = currentWeekRange(today);
+    // Derive week bounds in UTC so they are consistent with getThisMondayIso
+    // and the watermark stored in lastGeneratedWeekStart.  currentWeekRange()
+    // uses local-time getDay() which diverges from UTC in NZ (+12/+13) on
+    // Mondays before midnight UTC.
+    const weekStart = getThisMondayIso(today);
+    const weekEnd = addUtcDays(weekStart, 6);
 
     const [activities, activePlan] = await Promise.all([
       getActivitiesInRange(weekStart, weekEnd),
@@ -169,10 +175,16 @@ export async function generateWeeklyReportIfDue(): Promise<WeeklyReport | null> 
 
 /**
  * Read the last persisted weekly report without triggering generation.
- * Returns null when no report has been generated yet or the payload is invalid.
+ * Returns null when the feature is disabled, no report has been generated
+ * yet, or the payload is invalid.
+ *
+ * The enabled check ensures that disabling the feature clears the hero
+ * immediately — the old snapshot is not surfaced to the caller.
  */
 export async function getPersistedWeeklyReport(): Promise<WeeklyReport | null> {
   try {
+    const enabled = await getWeeklyReportEnabled();
+    if (!enabled) return null;
     const raw = await getWeeklyReportPayload();
     return parsePayload(raw);
   } catch {

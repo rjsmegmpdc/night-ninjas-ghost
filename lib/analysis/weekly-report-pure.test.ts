@@ -3,6 +3,7 @@ import {
   getThisMondayIso,
   shouldGenerateReport,
   buildWeeklyReport,
+  addUtcDays,
   type WeeklyReport,
 } from './weekly-report-pure';
 import type { WeekCompliance } from './compliance';
@@ -119,6 +120,52 @@ describe('shouldGenerateReport', () => {
   it('returns true on Monday when chosenDow is Monday (dow=0) and no prior report', () => {
     // 2026-06-22 is Monday, chosen Monday (dow=0)
     expect(shouldGenerateReport(utcDate('2026-06-22'), 0, null)).toBe(true);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* UTC/local week-boundary divergence — NZ timezone regression                */
+/* -------------------------------------------------------------------------- */
+
+describe('UTC/local boundary — NZ Monday-local / Sunday-UTC scenario', () => {
+  /**
+   * 2026-06-22T10:00:00+12:00 is:
+   *   Local (NZ NZST, UTC+12): Monday 22 June 2026, 10:00
+   *   UTC:                     Sunday 21 June 2026, 22:00
+   *
+   * toISOString() returns the UTC representation: '2026-06-21T22:00:00.000Z'
+   * so today.toISOString().slice(0,10) === '2026-06-21' (Sunday UTC).
+   *
+   * Both getThisMondayIso and shouldGenerateReport must operate in UTC and
+   * therefore agree that this is still the week starting 2026-06-15 (the most
+   * recent UTC Monday before the UTC Sunday 2026-06-21).
+   *
+   * The watermark stored by generateWeeklyReportIfDue is also UTC-based, so
+   * both sides of the dedup check resolve to the same ISO string — no mismatch.
+   */
+  const nzMonday10am = new Date('2026-06-22T10:00:00+12:00');
+
+  it('getThisMondayIso returns the UTC-based Monday (2026-06-15) not the local Monday (2026-06-22)', () => {
+    // UTC representation of the moment is Sunday 2026-06-21, so UTC-Monday is 2026-06-15
+    expect(getThisMondayIso(nzMonday10am)).toBe('2026-06-15');
+  });
+
+  it('shouldGenerateReport uses same UTC Monday as getThisMondayIso — dedup check is consistent', () => {
+    // Watermark stored as getThisMondayIso result: '2026-06-15'
+    // shouldGenerateReport also derives '2026-06-15' for this moment
+    // so it returns false (already generated this UTC week)
+    const utcMondayFromThisMoment = getThisMondayIso(nzMonday10am);
+    expect(shouldGenerateReport(nzMonday10am, 4, utcMondayFromThisMoment)).toBe(false);
+  });
+
+  it('shouldGenerateReport returns true when watermark is prior UTC week (2026-06-08)', () => {
+    // Same NZ Monday 10am moment, but last generated was 2 UTC weeks ago
+    expect(shouldGenerateReport(nzMonday10am, 0, '2026-06-08')).toBe(true);
+  });
+
+  it('addUtcDays produces weekEnd 6 days after the UTC Monday', () => {
+    // weekStart from UTC = '2026-06-15', weekEnd = '2026-06-21' (UTC Sunday)
+    expect(addUtcDays('2026-06-15', 6)).toBe('2026-06-21');
   });
 });
 

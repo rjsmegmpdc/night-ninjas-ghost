@@ -62,7 +62,7 @@ function utcDow(isoDate: string): number {
 /**
  * Add `n` UTC days to an ISO date and return the resulting ISO date string.
  */
-function addUtcDays(isoDate: string, n: number): string {
+export function addUtcDays(isoDate: string, n: number): string {
   const d = new Date(isoDate + 'T00:00:00Z');
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);

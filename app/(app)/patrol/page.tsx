@@ -62,7 +62,7 @@ import { DailyBriefingCard } from '@/components/patrol/daily-briefing-card';
 import { SessionContentButton } from '@/components/patrol/session-content-button';
 import { LongRunFuelingCard } from '@/components/patrol/long-run-fueling-card';
 import { OrientationBanner } from '@/components/patrol/orientation-banner';
-import { getPatrolOrientationDismissed } from '@/lib/store/settings';
+import { getPatrolOrientationDismissed, getWeeklyReportEnabled } from '@/lib/store/settings';
 import { WeeklyReportHero } from '@/components/patrol/weekly-report-hero';
 import {
   generateWeeklyReportIfDue,
@@ -114,11 +114,15 @@ export default async function PatrolPage() {
 }
 
 async function PatrolDashboard() {
-  // Weekly report: try to generate if due, fall back to last persisted snapshot.
-  // Non-critical — generateWeeklyReportIfDue swallows all errors and returns null.
-  const weeklyReport =
-    (await generateWeeklyReportIfDue()) ??
-    (await getPersistedWeeklyReport());
+  // Weekly report: only attempt generation and display when the feature is
+  // enabled.  getWeeklyReportEnabled is cheap (single settings row read).
+  // generateWeeklyReportIfDue already gates on enabled internally, but we
+  // skip the call entirely here so disabled users pay zero overhead and the
+  // hero is never rendered.
+  const weeklyReportEnabled = await getWeeklyReportEnabled();
+  const weeklyReport = weeklyReportEnabled
+    ? (await generateWeeklyReportIfDue()) ?? (await getPersistedWeeklyReport())
+    : null;
 
   const activePlan = await getActivePlan();
 
@@ -286,8 +290,8 @@ async function PatrolDashboard() {
 
   return (
     <>
-      {/* Weekly report hero — rendered first when report exists or as prompt */}
-      <WeeklyReportHero report={weeklyReport} />
+      {/* Weekly report hero — only rendered when the feature is enabled */}
+      {weeklyReportEnabled && <WeeklyReportHero report={weeklyReport} />}
 
       {/* Header — compact title strip with streak counter + sync on right */}
       <header className="space-y-4 border-b border-ink-line pb-5">
