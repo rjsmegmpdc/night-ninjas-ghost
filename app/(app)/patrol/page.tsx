@@ -197,20 +197,20 @@ async function PatrolDashboard() {
   const programWeeks = params.programWeeks ?? engine.defaultProgramWeeks;
 
   const [activePeriod, todayJournal] = await Promise.all([
-    getDb().select({ id: schema.planPeriods.id }).from(schema.planPeriods).where(isNull(schema.planPeriods.endDate)).get().catch(() => null),
-    getDb().select({
+    (async () => getDb().select({ id: schema.planPeriods.id }).from(schema.planPeriods).where(isNull(schema.planPeriods.endDate)).get() ?? null)().catch(() => null),
+    (async () => getDb().select({
       reflectionFelt: schema.journal.reflectionFelt,
       reflectionWorked: schema.journal.reflectionWorked,
       reflectionUncertain: schema.journal.reflectionUncertain,
-    }).from(schema.journal).where(eq(schema.journal.date, todayIso)).get().catch(() => null),
+    }).from(schema.journal).where(eq(schema.journal.date, todayIso)).get() ?? null)().catch(() => null),
   ]);
 
   const existingBlockDebrief = activePeriod?.id
-    ? await getDb().select({
+    ? await (async () => getDb().select({
         feltAboutBlock: schema.blockDebriefs.feltAboutBlock,
         mainLearning: schema.blockDebriefs.mainLearning,
         nextBlockFocus: schema.blockDebriefs.nextBlockFocus,
-      }).from(schema.blockDebriefs).where(eq(schema.blockDebriefs.planPeriodId, activePeriod.id)).get().catch(() => null)
+      }).from(schema.blockDebriefs).where(eq(schema.blockDebriefs.planPeriodId, activePeriod.id)).get() ?? null)().catch(() => null)
     : null;
 
   const coachMessages = getCoachMessages({ weekNumber, programWeeks, dojo: engine.dojo });
