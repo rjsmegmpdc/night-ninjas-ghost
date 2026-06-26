@@ -14,7 +14,7 @@ import { getDb, schema } from '@/lib/db';
  */
 export async function selectDojo(formData: FormData) {
   const dojo = formData.get('dojo')?.toString();
-  if (!dojo || !['hansons', 'lydiard', 'daniels', 'pfitzinger', 'higdon', 'polarised', 'ultra', 'custom'].includes(dojo)) {
+  if (!dojo || !['hansons', 'norwegian-singles', 'lydiard', 'daniels', 'pfitzinger', 'higdon', 'polarised', 'ultra', 'custom'].includes(dojo)) {
     throw new Error('Invalid dojo');
   }
 

@@ -5,7 +5,7 @@ import { eq, isNull } from 'drizzle-orm';
 import { getDb, schema } from '@/lib/db';
 import { ensureActivePlanPeriod } from '@/lib/plans/plan-periods';
 
-const VALID_DOJOS = ['hansons', 'lydiard', 'daniels', 'pfitzinger', 'higdon', 'polarised', 'ultra', 'custom'] as const;
+const VALID_DOJOS = ['hansons', 'norwegian-singles', 'lydiard', 'daniels', 'pfitzinger', 'higdon', 'polarised', 'ultra', 'custom'] as const;
 
 /**
  * Switch the active dojo from within the app (post-setup).
