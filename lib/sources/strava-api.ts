@@ -109,10 +109,12 @@ export async function fetchActivityPage(opts: {
     throw new Error(`Strava API ${res.status} ${res.statusText}: ${body.slice(0, 200)}`);
   }
 
-  const raw = (await res.json()) as Array<Record<string, unknown>>;
+  const raw = (await res.json()) as unknown[];
   const activities = raw.filter(
     (a): a is StravaActivity =>
-      typeof a.start_date === 'string' && a.start_date.length > 0
+      typeof a === 'object' && a !== null &&
+      typeof (a as Record<string, unknown>).start_date === 'string' &&
+      ((a as Record<string, unknown>).start_date as string).length > 0
   );
   return {
     activities,

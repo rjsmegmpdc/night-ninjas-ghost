@@ -6,7 +6,7 @@ import {
   addUtcDays,
   type WeeklyReport,
 } from './weekly-report-pure';
-import type { WeekCompliance } from './compliance';
+import type { WeekCompliance, ComplianceFlag } from './compliance';
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                     */
@@ -14,7 +14,7 @@ import type { WeekCompliance } from './compliance';
 
 /** Build a minimal WeekCompliance with the supplied day-flag overrides. */
 function mkCompliance(
-  dayFlags: Array<{ dow: number; flags: string[] }>,
+  dayFlags: Array<{ dow: number; flags: ComplianceFlag[] }>,
   totalKmActual = 0,
   longRunKmActual = 0,
 ): WeekCompliance {

@@ -49,7 +49,7 @@ export async function generateFuelingBriefing(
 ) {
   const userPrompt = buildFuelingPrompt(input);
   return callModel(
-    MODELS[model].id,
+    model,
     SYSTEM,
     `Given this context, provide one concise paragraph of personalised race-day fueling advice:\n\n${userPrompt}`,
     500,
