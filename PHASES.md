@@ -2,10 +2,10 @@
 
 ## Current state
 
-**Version**: 0.2.23  
+**Version**: 0.2.24  
 **Branch**: main (clean)  
 **Test coverage**: 33 test files · 609 tests · all passing  
-**Status**: Phase 23 complete. Core product is feature-complete. Plan engine, Patrol UX, and quick-log flow all hardened.
+**Status**: Phase 24 complete. Setup wizard redesigned with Strava-first flow, visual Strava registration guide, and new Life Events primer step.
 
 ---
 
@@ -28,7 +28,7 @@
 | `/settings` | Settings | Profile | Strava connection, sync, data export, wipe |
 | `/help` | Help | Profile | In-app user guide, glossary, how-to |
 
-Plus: `/setup` (7-step first-run wizard) · `/api/*` (Strava OAuth + sync endpoints)
+Plus: `/setup` (7-step first-run wizard: Welcome → Strava → Connect → Sync → Race → Plan → Life Events) · `/api/*` (Strava OAuth + sync endpoints)
 
 ---
 
@@ -504,6 +504,41 @@ Plus: `/setup` (7-step first-run wizard) · `/api/*` (Strava OAuth + sync endpoi
   - Away: from/to date pickers + impact select → `createCalendarEvent(eventType=holiday)`
 - Error surfaces inline; success closes the panel; `revalidatePath('/patrol')` in existing server actions fires automatically
 
+**Status**: Complete.
+
+---
+
+### Phase 24 — Setup Wizard Redesign
+**What**: Rebuilt the 7-step setup wizard with a Strava-first flow, Calendar Matrix as the product hero, and a visual Strava registration guide. Race and Plan selection are now optional and come after the first sync.
+
+**New step order**:
+- Step 1: Welcome — Calendar Matrix preview hero (sample past/now/future run data)
+- Step 2: Strava — 3-stage visual walkthrough: open URL, fill form (with copy button for `localhost` callback domain), note credentials
+- Step 3: Connect — credential paste (unchanged functionally)
+- Step 4: Sync — moved from step 7; framed as "show me my matrix" hero payoff
+- Step 5: Race — optional, skip button, back to /sync
+- Step 6: Plan/Dojo — optional, skip button, back to /races
+- Step 7: Life Events — new step; explains injury/sick/away with quick-log strip preview
+
+**Key files**:
+- `app/setup/page.tsx` — Calendar Matrix preview hero; date sample grid (past/now/future)
+- `app/setup/strava-app/page.tsx` — 3-stage visual guide with callout border + copy button for `localhost`
+- `app/setup/connect/page.tsx` — STEPS array updated
+- `app/setup/sync/page.tsx` — moved to step 4; "show me my matrix" framing; continue → /setup/races
+- `app/setup/races/page.tsx` — step 5, optional badge, skip button
+- `app/setup/dojo/page.tsx` — step 6, optional badge, skip button
+- `app/setup/life-events/page.tsx` — **new**, step 7; three event type cards + quick-log strip preview
+- `app/setup/weekly/page.tsx` — converted to redirect shim → /setup/life-events (weekly config lives in Calendar page)
+- `components/setup/copy-button.tsx` — **new** client component; clipboard API with 2s signal-ok feedback
+- `lib/actions/dojo.ts` — redirect on dojo selection changed from /setup/races to /setup/life-events
+- `app/api/strava/callback/route.ts` — OAuth success redirect fixed from /setup/dojo to /setup/sync
+
+**Key decisions**:
+- Sync first (step 4), plan optional (step 6): the matrix is the payoff, not the plan; users see 90 days of their data before committing to a training method
+- Weekly pattern config removed from the wizard flow — advanced config accessible from Calendar page; `/setup/weekly` preserved as a redirect shim to avoid broken `revalidatePath` references
+- OAuth callback redirect was missed during page-level nav updates — evaluator caught it before merge
+
+**Test count**: 609 (no new tests — all UI/routing changes)  
 **Status**: Complete.
 
 ---

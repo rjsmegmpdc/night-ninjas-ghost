@@ -1,5 +1,5 @@
 ## Branch
-feat/setup-wizard-redesign (active)
+main (clean — feat/setup-wizard-redesign merged)
 
 ## Session: 2026-06-28
 
