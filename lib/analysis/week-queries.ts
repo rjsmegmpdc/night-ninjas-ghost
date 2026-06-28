@@ -50,6 +50,16 @@ export interface WeekStats {
   avgPaceSpk: number | null;
   /** Average HR across activities that recorded it. Null if none did. */
   avgHr: number | null;
+  /** Total elevation gain across all runs (metres). */
+  totalElevationGainM: number;
+  /** Combined km from Saturday + Sunday runs — ultra back-to-back metric. */
+  backToBackKm: number;
+}
+
+function dowOf(isoLocal: string): number {
+  const [y, m, d] = isoLocal.slice(0, 10).split('-').map(Number);
+  const js = new Date(y, m - 1, d).getDay(); // Sun=0..Sat=6
+  return (js + 6) % 7; // Mon=0..Sun=6
 }
 
 /** Return type alignment with how Patrol displays the metrics. */
@@ -63,6 +73,12 @@ export function aggregateWeekStats(activities: Activity[]): WeekStats {
     ? Math.max(...runs.map((a) => (a.distanceM ?? 0) / 1000))
     : 0;
   const totalMovingTimeS = runs.reduce((sum, a) => sum + (a.movingTimeS ?? 0), 0);
+  const totalElevationGainM = runs.reduce((sum, a) => sum + (a.elevationGainM ?? 0), 0);
+
+  // Back-to-back: km from Sat (dow=5) + Sun (dow=6) runs
+  const backToBackKm = runs
+    .filter((a) => { const dow = dowOf(a.startDateLocal); return dow === 5 || dow === 6; })
+    .reduce((sum, a) => sum + (a.distanceM ?? 0) / 1000, 0);
 
   // Average pace: weighted by distance (a 20km run at 5:00 weighs more than a 5km at 4:30)
   let avgPaceSpk: number | null = null;
@@ -89,5 +105,7 @@ export function aggregateWeekStats(activities: Activity[]): WeekStats {
     totalSessions: activities.length,
     avgPaceSpk,
     avgHr,
+    totalElevationGainM,
+    backToBackKm,
   };
 }
