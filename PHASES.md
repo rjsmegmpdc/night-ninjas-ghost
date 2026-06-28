@@ -2,10 +2,10 @@
 
 ## Current state
 
-**Version**: 0.2.17  
+**Version**: 0.2.23  
 **Branch**: main (clean)  
-**Test coverage**: 29 test files · 472 tests · all passing  
-**Status**: Phase 17 complete. Core product is feature-complete, documented, and robustness-hardened.
+**Test coverage**: 33 test files · 609 tests · all passing  
+**Status**: Phase 23 complete. Core product is feature-complete. Plan engine, Patrol UX, and quick-log flow all hardened.
 
 ---
 
@@ -405,6 +405,109 @@ Plus: `/setup` (7-step first-run wizard) · `/api/*` (Strava OAuth + sync endpoi
 
 ---
 
+### Phase 20 — NS Engine ICS Alignment + Per-dojo framework stats
+**What**: Full rewrite of Norwegian Singles engine to match the ICS training plan exactly. Per-dojo framework stat rows dispatched from a pure module.
+
+**NS Engine changes** (`lib/plans/norwegian-singles.ts`):
+- `defaultProgramWeeks: 20`, `defaultLongRunCapKm: 34`, `status: 'full'`
+- ICS-exact long run progression via `LONG_KM` table (weeks 1–20: 16→18→20→22→24→22↓→28→30→32→26↓→32→34→28+6MP→30+8MP→32+10MP→Devonport→30+12MP→32+12MP→18+5MP→Race)
+- MP finish segments embedded in long run labels and notes (weeks 13–15, 17–19)
+- Phase-accurate sub-T session labels: Base Early=20×400m/6×5min/4×8min; Base Mid=24×400m/7×5min/5×8min; Specificity=20×400m/6×5min+MP/4×8min; Taper 1=12×400m/4×5min+MP; Taper 2=6×400m sharpener/shakeouts/race
+- `VOLUME_SCALE` capped at 1.0 — `weeklyVolumeCapKm` is a hard ceiling, not a peak to exceed
+
+**Framework stats** (`lib/analysis/framework-stats.ts`):
+- `getFrameworkStats()` dispatches 4 `FrameworkStat` objects per dojo — all 9 dojos covered
+- NS: sub-T%, easy HR, rep HR, long run. Hansons: volume/MP-tempo/long/sessions. Pfitzinger: volume/LT pace/long/medium-long count. Daniels: T-pace/I-pace/VDOT/volume. Lydiard: phase/aerobic vol/long/aerobic %. Higdon: long/volume/week type/sessions. Polarised: easy%/hard%/grey%/volume. Ultra: time-on-feet/vert gain/back-to-back/volume
+- `FrameworkStatRow` server component replaces the old hardcoded 4-stat block on Patrol
+- Extended `WeekStats` with `totalElevationGainM` and `backToBackKm` for Ultra framework
+- `resolveVo2()` feeds VO2max → VDOT approximation for Daniels framework
+
+**Key files**:
+- `lib/plans/norwegian-singles.ts` — full engine rewrite
+- `lib/analysis/framework-stats.ts` — new, dojo dispatch module
+- `lib/analysis/framework-stats.test.ts` — new, 35 tests
+- `components/patrol/framework-stat-row.tsx` — new, stat grid component
+
+**Test count**: 588 (35 new)  
+**Status**: Complete.
+
+---
+
+### Phase 21 — Weekly compliance report
+**What**: Automated weekly training summary generated server-side and surfaced as a hero card on Patrol. Persistently cached so it survives page reloads.
+
+**Key files**:
+- `lib/analysis/weekly-report-pure.ts` — pure report builder: `buildWeeklyReport()`, UTC-safe week bounds
+- `lib/analysis/weekly-report-pure.test.ts` — UTC boundary tests (NZ Monday-local/Sunday-UTC)
+- `lib/analysis/weekly-report-display-pure.ts` — display helpers: `formatWeekRange`, `complianceTextClass`, `dayStatusSymbol`, etc.
+- `lib/analysis/weekly-report-display-pure.test.ts` — 53 tests
+- `lib/actions/weekly-report.ts` — `generateWeeklyReportIfDue()`, `getPersistedWeeklyReport()` — idempotent, generates once per week
+- `components/patrol/weekly-report-hero.tsx` — hero card with day-by-day breakdown; prompt state when no report yet
+- `components/settings/weekly-report-toggle.tsx` — enable/disable + delivery-day picker in Settings
+- `lib/store/settings.ts` — 4 new keys: `weeklyReportEnabled`, `weeklyReportDay`, `weeklyReportWatermark`, `weeklyReportPayload`
+
+**Key decisions**:
+- Report persists as JSON in settings store — survives page reloads without re-generating
+- Gated on `weeklyReportEnabled` — disabled users pay zero overhead on Patrol
+- `WeeklyReportHero` always renders something (prompt card) when report is null — never crashes
+
+**Test count**: 553 (pre-framework-stats baseline)  
+**Status**: Complete.
+
+---
+
+### Phase 22 — Mid-program entry detection
+**What**: Detects when a user activates a plan mid-block (week > 2 and period created ≤7 days ago), compares 6-week chronic load to week target, and surfaces a one-time dismissable verdict banner on Patrol.
+
+**Detection logic** (`lib/plans/mid-entry-pure.ts`):
+- `isNewMidEntry`: `weekNumber > 2 && daysSincePeriodCreated <= 7`
+- Verdict: `ok` (chronic ≥ 90% of target) / `caution` (70–89%) / `warning` (< 70%)
+- `fitnessDelta` = chronicKm − weekKmTarget; `weeksSkipped` = weekNumber − 1
+- Dismissal is period-scoped (`plan_periods.id`) so re-activating a plan re-triggers the banner
+
+**Key files**:
+- `lib/plans/mid-entry-pure.ts` — new, `assessMidProgramEntry()`
+- `lib/plans/mid-entry-pure.test.ts` — new, 21 tests (detection, thresholds, edge cases)
+- `lib/analysis/week-queries.ts` — added `getTrailingChronicKm(weeks)`: 6-week trailing avg run km
+- `lib/store/settings.ts` — `MID_ENTRY_DISMISSED_PERIOD` key + 2 accessors
+- `lib/actions/mid-entry.ts` — new, `dismissMidEntryBanner(periodId)` server action
+- `components/patrol/mid-entry-banner.tsx` — new, verdict-styled banner with stats strip + dismiss form
+
+**Key decisions**:
+- Warn-only — no auto-shifting of plan start date; matches "recommend first" working rule
+- 6-week ACWR trailing average for chronic load
+- Race-date-derived week number always honoured — no compression of missed transition weeks
+
+**Test count**: 609 (21 new)  
+**Status**: Complete.
+
+---
+
+### Phase 23 — Patrol UX hardening
+**What**: Three targeted UX improvements to the Patrol daily-use screen — loading experience, matrix legibility, and friction-free incident logging.
+
+**Loading skeleton** (`app/(app)/patrol/loading.tsx`):
+- Next.js route-level Suspense wrapper — shows instantly on navigation while the async RSC waterfall resolves
+- Revised to be clearly visible: `animate-pulse` (opacity 0.5 rhythm) + `bg-ink-line-bold` (#3A3A3A) fills + `bg-ink-shadow` cell backgrounds
+- Covers all five sections in correct layout order: header strip, quick-log strip, compliance block, program matrix (with 220px legend sidebar), tonight's mission card, framework stat row
+
+**Matrix date label** (`components/patrol/matrix-cells.tsx`):
+- Dropped week number (`W5`) as the primary identifier — date (`28 Jun`) is now the sole label
+- Current week: date in accent bold + tiny `now` subtext; orange left-border accent already marks the row unambiguously
+- Base maintenance rows retain their `(base)` italic annotation
+
+**Quick-log strip** (`components/patrol/quick-log-strip.tsx`):
+- Compact `Log: [+ injury] [+ sick] [+ away]` chip row on Patrol, between header and compliance block
+- Click a chip to open a one-line inline form directly below the strip — no navigation required
+  - Injury: body-region select + niggle/moderate/severe radios → `logInterruption()`
+  - Sick: severity radios only → `logInterruption(type=illness)`
+  - Away: from/to date pickers + impact select → `createCalendarEvent(eventType=holiday)`
+- Error surfaces inline; success closes the panel; `revalidatePath('/patrol')` in existing server actions fires automatically
+
+**Status**: Complete.
+
+---
+
 ## Next phase candidates
 
 | Item | Priority | Description |
@@ -412,7 +515,9 @@ Plus: `/setup` (7-step first-run wizard) · `/api/*` (Strava OAuth + sync endpoi
 | Garmin active sync | P1 | Build the sync engine that uses the stored session tokens |
 | Server action `{ok,error}` returns | P2 | Structured error propagation from all server actions to UI |
 | FK constraints | P2 | `PRAGMA foreign_keys=ON` + FK annotations in schema |
+| Pre-existing TS errors | P2 | Fix `lib/ai/client.ts` citations type, `lib/sources/strava-api.ts` index signature, `lib/ai/fueling.ts` AiModel cast, `weekly-report-pure.test.ts` ComplianceFlag |
 | Action test coverage | P3 | Integration tests for `lib/actions/` and sync pipeline |
+| Quick-log strip — sick as calendar event | P3 | Option to log sickness as a `calendarEvents` row with impact, not just an interruption |
 | Shoe photo import | Backlog | Photo rotation view; performance correlation by shoe type |
 | PDF training summary | Backlog | Exportable weekly/block summary |
 | iCal export | Backlog | Race dates as iCal for calendar apps |
