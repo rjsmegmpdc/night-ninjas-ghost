@@ -69,6 +69,7 @@ import { FrameworkStatRow } from '@/components/patrol/framework-stat-row';
 import { getFrameworkStats } from '@/lib/analysis/framework-stats';
 import { resolveVo2, type Vo2Source } from '@/lib/analysis/vo2max-pure';
 import { MidEntryBanner } from '@/components/patrol/mid-entry-banner';
+import { QuickLogStrip } from '@/components/patrol/quick-log-strip';
 import { assessMidProgramEntry } from '@/lib/plans/mid-entry-pure';
 import { getTrailingChronicKm } from '@/lib/analysis/week-queries';
 import { getMidEntryDismissedPeriod } from '@/lib/store/settings';
@@ -407,6 +408,9 @@ async function PatrolDashboard() {
       {showMidEntryBanner && midEntryAssessment && activePeriod?.id != null && (
         <MidEntryBanner assessment={midEntryAssessment} periodId={activePeriod.id} />
       )}
+
+      {/* Quick-log strip — compact one-line bar for injury / sick / away */}
+      <QuickLogStrip />
 
       {/* Promoted compliance status block */}
       <WeekComplianceBlock compliance={compliance} />
