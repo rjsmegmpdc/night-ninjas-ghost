@@ -1,4 +1,44 @@
 ## Branch
+feat/framework-metrics
+
+## Session: 2026-06-28
+
+### Completed
+- `lib/analysis/framework-stats.ts` — pure dispatch module for all 9 dojos. `getFrameworkStats()` returns 4 `FrameworkStat` objects per dojo: NS (sub-T%, easy HR, rep HR, long run), Hansons (volume, MP-tempo, long run, sessions), Pfitzinger (volume, LT pace, long run, medium-long count), Daniels (T-pace, I-pace, VDOT, volume), Lydiard (phase, aerobic volume, long run, aerobic %), Higdon (long run, volume, week type, sessions), Polarised (easy%, hard%, grey%, volume), Ultra (time-on-feet, vertical gain, back-to-back, volume), Custom/fallback (existing 4 generic stats). HR missing: graceful `— no HR` with `neutral` status.
+- `lib/analysis/framework-stats.test.ts` — 35 new tests across 8 describe blocks; all pass.
+- `lib/analysis/week-queries.ts` — extended `WeekStats` with `totalElevationGainM` (sum of elevationGainM across runs) and `backToBackKm` (Sat+Sun km combined) for Ultra framework. Added `dowOf()` helper (same component-based UTC-safe pattern as compliance.ts).
+- `components/patrol/framework-stat-row.tsx` — server component rendering the 4-stat grid with status colour dispatch (ok=signal-ok, warn=signal-warn, miss=signal-miss, neutral=bone). Same `grid grid-cols-2 md:grid-cols-4 gap-px` layout as the old hardcoded block.
+- `app/(app)/patrol/page.tsx` — replaced hardcoded 4-stat block with `<FrameworkStatRow stats={frameworkStats} />`. Added `vo2Rows` to the parallel `Promise.all` fetch; resolves VO2max observations → VDOT approximation for Daniels. Imports: `FrameworkStatRow`, `getFrameworkStats`, `resolveVo2`, `Vo2Source`.
+- Tests: 588/588 passing (35 new + 553 pre-existing). Evaluator: PASS.
+
+### In progress
+- Nothing
+
+### Blocked
+- Pre-existing TS errors in lib/ai/client.ts, lib/sources/strava-api.ts, lib/ai/fueling.ts — not from this branch.
+
+### Next session should
+- ICS/Brief as baseline for calendar matrix — Matt's decision pending on import approach (ICS direct import vs NS engine update)
+- Audio for other two Night Ninjas ads (Shadow in the Data, The Gap)
+- Backlog: update test count in PHASES.md from 472 → 588; add E2E/integration test coverage backlog item
+
+## Key decisions made
+- Custom framework: unchanged (uses generic 4 stats)
+- Daniels VDOT: read from vo2maxObservations table, pass as nullable — VO2max ≈ VDOT approximation
+- HR missing: graceful per-metric fallback, never crashes, shows neutral status
+- All frameworks built in one pass (no incremental rollout)
+
+## Files changed this session
+- lib/analysis/framework-stats.ts (new)
+- lib/analysis/framework-stats.test.ts (new)
+- lib/analysis/week-queries.ts (extended WeekStats + aggregateWeekStats)
+- components/patrol/framework-stat-row.tsx (new)
+- app/(app)/patrol/page.tsx (4-stat block replaced, imports added)
+- PROGRESS.md (this file)
+
+---
+
+## Branch
 feat/weekly-report-patrol-hero
 
 ## Session: 2026-06-26 (code-review fixes)

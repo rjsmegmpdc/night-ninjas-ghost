@@ -65,6 +65,9 @@ import { OrientationBanner } from '@/components/patrol/orientation-banner';
 import { getPatrolOrientationDismissed, getWeeklyReportEnabled } from '@/lib/store/settings';
 import { WeeklyReportHero } from '@/components/patrol/weekly-report-hero';
 import { WeekComplianceBlock } from '@/components/patrol/week-compliance-block';
+import { FrameworkStatRow } from '@/components/patrol/framework-stat-row';
+import { getFrameworkStats } from '@/lib/analysis/framework-stats';
+import { resolveVo2, type Vo2Source } from '@/lib/analysis/vo2max-pure';
 import {
   generateWeeklyReportIfDue,
   getPersistedWeeklyReport,
@@ -225,7 +228,7 @@ async function PatrolDashboard() {
 
   // Phase 2 athlete state surfaces + Phase 3a phase + ramp.
   // All run in parallel.
-  const [athleteState, intensityDist, mileageProg, longRunCheck, programPhase, interruptions, allShoesRaw, anthropicKey, aiModel] = await Promise.all([
+  const [athleteState, intensityDist, mileageProg, longRunCheck, programPhase, interruptions, allShoesRaw, anthropicKey, aiModel, vo2Rows] = await Promise.all([
     getAthleteState({}),
     getIntensityDistribution(startIso, endIso, {}),
     checkMileageProgression(startIso),
@@ -235,8 +238,26 @@ async function PatrolDashboard() {
     getAllShoesWithStats(),
     getAnthropicApiKey(),
     getAiModel(),
+    getDb().select().from(schema.vo2maxObservations).all(),
   ]);
   const hasAiKey = anthropicKey != null;
+
+  // Framework-specific stat row — dispatch on active dojo.
+  // VO2max ≈ VDOT for recreational runners; used as Daniels VDOT approximation.
+  const resolvedVo2 = resolveVo2(
+    vo2Rows.map((r) => ({ dateIso: r.date, source: r.source as Vo2Source, value: r.value }))
+  );
+  const frameworkStats = getFrameworkStats({
+    dojo: engine.dojo,
+    stats,
+    template,
+    activities,
+    compliance,
+    intensityDist,
+    programPhase,
+    nsReport,
+    vdot: resolvedVo2.current,
+  });
   // Ramp depends on programPhase, so it sequences after - but only triggers
   // a real fetch when phase is pre-program.
   const rampPlan = await getRampPlanForActivePeriod(programPhase);
@@ -408,25 +429,8 @@ async function PatrolDashboard() {
         )}
       </Card>
 
-      {/* ── WEEK STATS ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-ink-line border border-ink-line">
-        <div className="bg-ink p-6">
-          <Stat label="this week" value={stats.totalKm > 0 ? stats.totalKm.toFixed(1) : '0.0'} unit="km" size="lg" accent={stats.totalKm > 0} />
-          <div className="font-mono text-xs text-bone-mute mt-2">target {template.totalKmTarget} · {volumePct}%</div>
-        </div>
-        <div className="bg-ink p-6">
-          <Stat label="long run" value={stats.longRunKm > 0 ? stats.longRunKm.toFixed(1) : '0.0'} unit="km" size="lg" />
-          <div className="font-mono text-xs text-bone-mute mt-2">target {template.longRunKmTarget} · {longLabel(stats.longRunKm, template.longRunKmTarget, longPct)}</div>
-        </div>
-        <div className="bg-ink p-6">
-          <Stat label="avg pace" value={stats.avgPaceSpk ? formatSpk(stats.avgPaceSpk) : '—:—'} unit="/km" size="lg" />
-          <div className="font-mono text-xs text-bone-mute mt-2">{stats.totalSessions} session{stats.totalSessions === 1 ? '' : 's'} this week</div>
-        </div>
-        <div className="bg-ink p-6">
-          <Stat label="avg HR" value={stats.avgHr ? Math.round(stats.avgHr).toString() : '—'} unit="bpm" size="lg" />
-          <div className="font-mono text-xs text-bone-mute mt-2">{stats.avgHr ? 'weighted by time' : 'no HR data'}</div>
-        </div>
-      </div>
+      {/* ── FRAMEWORK STATS ────────────────────────────────────────────── */}
+      <FrameworkStatRow stats={frameworkStats} />
 
       {/* ── COACHING DETAIL (collapsed by default) ─────────────────────── */}
       <details className="group border-t border-ink-line pt-6 mt-2">
