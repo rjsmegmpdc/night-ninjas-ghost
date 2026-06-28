@@ -62,6 +62,28 @@ function dowOf(isoLocal: string): number {
   return (js + 6) % 7; // Mon=0..Sun=6
 }
 
+/**
+ * Average weekly run km over the past `weeks` weeks (default 6).
+ * Used by the mid-program entry assessment to compare chronic load
+ * against the current week's prescribed target.
+ */
+export async function getTrailingChronicKm(weeks = 6): Promise<number> {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const startIso = addUtcDays(todayIso, -(weeks * 7));
+  const activities = await getActivitiesInRange(startIso, todayIso);
+  const runs = activities.filter(
+    (a) => a.type === 'Run' || a.type === 'VirtualRun' || a.type === 'TrailRun'
+  );
+  const totalKm = runs.reduce((sum, a) => sum + (a.distanceM ?? 0) / 1000, 0);
+  return totalKm / weeks;
+}
+
+function addUtcDays(isoDate: string, days: number): string {
+  const d = new Date(isoDate + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Return type alignment with how Patrol displays the metrics. */
 export function aggregateWeekStats(activities: Activity[]): WeekStats {
   const runs = activities.filter(

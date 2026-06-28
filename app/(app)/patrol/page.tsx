@@ -68,6 +68,10 @@ import { WeekComplianceBlock } from '@/components/patrol/week-compliance-block';
 import { FrameworkStatRow } from '@/components/patrol/framework-stat-row';
 import { getFrameworkStats } from '@/lib/analysis/framework-stats';
 import { resolveVo2, type Vo2Source } from '@/lib/analysis/vo2max-pure';
+import { MidEntryBanner } from '@/components/patrol/mid-entry-banner';
+import { assessMidProgramEntry } from '@/lib/plans/mid-entry-pure';
+import { getTrailingChronicKm } from '@/lib/analysis/week-queries';
+import { getMidEntryDismissedPeriod } from '@/lib/store/settings';
 import {
   generateWeeklyReportIfDue,
   getPersistedWeeklyReport,
@@ -201,7 +205,7 @@ async function PatrolDashboard() {
   const programWeeks = params.programWeeks ?? engine.defaultProgramWeeks;
 
   const [activePeriod, todayJournal] = await Promise.all([
-    (async () => getDb().select({ id: schema.planPeriods.id }).from(schema.planPeriods).where(isNull(schema.planPeriods.endDate)).get() ?? null)().catch(() => null),
+    (async () => getDb().select({ id: schema.planPeriods.id, createdAt: schema.planPeriods.createdAt }).from(schema.planPeriods).where(isNull(schema.planPeriods.endDate)).get() ?? null)().catch(() => null),
     (async () => getDb().select({
       reflectionFelt: schema.journal.reflectionFelt,
       reflectionWorked: schema.journal.reflectionWorked,
@@ -261,6 +265,28 @@ async function PatrolDashboard() {
   // Ramp depends on programPhase, so it sequences after - but only triggers
   // a real fetch when phase is pre-program.
   const rampPlan = await getRampPlanForActivePeriod(programPhase);
+
+  // Mid-program entry assessment — shown once when a user activates a plan
+  // mid-block (weekNumber > 2 and period created ≤7 days ago).
+  const [chronicKm, midEntryDismissedPeriod] = await Promise.all([
+    getTrailingChronicKm(6),
+    getMidEntryDismissedPeriod(),
+  ]);
+  const midEntryAssessment = activePeriod
+    ? assessMidProgramEntry({
+        weekNumber,
+        programWeeks,
+        chronicKm,
+        entryLoadKm: engine.entryWeeklyLoadKm(params.level),
+        weekKmTarget: template.totalKmTarget,
+        periodCreatedIso: (activePeriod.createdAt ?? todayIso).slice(0, 10),
+        todayIso,
+      })
+    : null;
+  const showMidEntryBanner =
+    midEntryAssessment?.isNewMidEntry === true &&
+    activePeriod?.id != null &&
+    String(activePeriod.id) !== midEntryDismissedPeriod;
 
   const today = new Date();
   const todayDow = (today.getDay() + 6) % 7; // Mon=0..Sun=6
@@ -376,6 +402,11 @@ async function PatrolDashboard() {
           </div>
         )}
       </header>
+
+      {/* Mid-program entry banner — shown once when joining mid-block */}
+      {showMidEntryBanner && midEntryAssessment && activePeriod?.id != null && (
+        <MidEntryBanner assessment={midEntryAssessment} periodId={activePeriod.id} />
+      )}
 
       {/* Promoted compliance status block */}
       <WeekComplianceBlock compliance={compliance} />

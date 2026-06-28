@@ -1,4 +1,43 @@
 ## Branch
+feat/mid-program-entry
+
+## Session: 2026-06-28 (mid-program entry)
+
+### Completed
+- `lib/plans/mid-entry-pure.ts` (new) — `assessMidProgramEntry()`: detects mid-block activation (weekNumber > 2, period created ≤7 days), compares 6-week chronic km to week target, returns verdict (ok/caution/warning), headline, body, suggestedAction
+- `lib/plans/mid-entry-pure.test.ts` (new) — 21 tests: detection logic, verdict thresholds, fitnessDelta, output shape, edge cases
+- `lib/analysis/week-queries.ts` — `getTrailingChronicKm(weeks)`: queries past N×7 days of runs, returns avg weekly km
+- `lib/store/settings.ts` — `MID_ENTRY_DISMISSED_PERIOD` key + `getMidEntryDismissedPeriod()` / `setMidEntryDismissedPeriod(id)` accessors (dismissal is period-scoped, not global)
+- `lib/actions/mid-entry.ts` (new) — `dismissMidEntryBanner(periodId)` server action + revalidatePath
+- `components/patrol/mid-entry-banner.tsx` (new) — verdict-styled banner (ok=green, caution=amber, warning=red), stats strip, suggested action block, dismiss form
+- `app/(app)/patrol/page.tsx` — extended `activePeriod` select (+createdAt), added chronic km + dismissed period reads, `assessMidProgramEntry` call, `showMidEntryBanner` flag, `<MidEntryBanner>` render after header
+- 609/609 tests pass (21 new). Evaluator: PASS.
+
+### Next session should
+- Dev server smoke test: confirm banner shows on Patrol when mid-program conditions met
+- Update PHASES.md test count: 588 → 609
+- Answer Hanzo's 4 open questions if Matt wants to refine any default behaviour
+
+## Key decisions made
+- Auto-detect from period createdAt recency (≤7 days, weekNumber > 2) — no explicit wizard toggle
+- Warn-only — no auto-shift of startDate; matches "recommend first" working rule
+- 6-week ACWR trailing average for chronic load
+- Always honour race-date-derived week; no compression of missed transition weeks
+- Dismissal is period-scoped (plan_periods.id) so new plan activations re-trigger the banner
+
+## Files changed this session
+- lib/plans/mid-entry-pure.ts (new)
+- lib/plans/mid-entry-pure.test.ts (new)
+- lib/analysis/week-queries.ts (+getTrailingChronicKm)
+- lib/store/settings.ts (+MID_ENTRY_DISMISSED_PERIOD key + 2 accessors)
+- lib/actions/mid-entry.ts (new)
+- components/patrol/mid-entry-banner.tsx (new)
+- app/(app)/patrol/page.tsx (imports + data + render)
+- PROGRESS.md
+
+---
+
+## Branch
 feat/ns-engine-ics-alignment
 
 ## Session: 2026-06-28 (NS engine ICS alignment)

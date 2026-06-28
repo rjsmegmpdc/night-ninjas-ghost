@@ -56,6 +56,9 @@ const KEY = {
   WEEKLY_REPORT_DAY: 'weekly_report.day',
   WEEKLY_REPORT_LAST_GENERATED_WEEK: 'weekly_report.last_generated_week',
   WEEKLY_REPORT_PAYLOAD: 'weekly_report.payload',
+  // Mid-program entry banner — stores the plan_periods.id at dismissal time
+  // so the banner is suppressed for that specific plan activation only.
+  MID_ENTRY_DISMISSED_PERIOD: 'prefs.mid_entry_dismissed_period',
 } as const;
 
 async function get(key: string): Promise<string | null> {
@@ -503,6 +506,25 @@ export async function getWeeklyReportPayload(): Promise<string | null> {
 
 export async function setWeeklyReportPayload(json: string): Promise<void> {
   await set(KEY.WEEKLY_REPORT_PAYLOAD, json);
+}
+
+/* ============================================================================
+ * Mid-program entry banner (feat/mid-program-entry).
+ *
+ * Shows once when a user activates a plan mid-program (weekNumber > 2 and
+ * period created ≤7 days ago). Dismissed per plan period so it re-appears
+ * if the user starts a new plan that is also mid-program.
+ * ========================================================================== */
+
+/** Returns the plan_periods.id string for which the banner was dismissed, or null. */
+export async function getMidEntryDismissedPeriod(): Promise<string | null> {
+  const v = await get(KEY.MID_ENTRY_DISMISSED_PERIOD);
+  return v === '' || v === null ? null : v;
+}
+
+/** Dismiss the mid-entry banner for a specific plan period id. */
+export async function setMidEntryDismissedPeriod(periodId: number): Promise<void> {
+  await set(KEY.MID_ENTRY_DISMISSED_PERIOD, String(periodId));
 }
 
 /**
