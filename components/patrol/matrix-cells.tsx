@@ -163,34 +163,24 @@ export function MatrixRow({
           : 'border-l-2 border-transparent')
       }
     >
-      {/* Week marker */}
+      {/* Week marker — date is primary; week number removed */}
       <div className="px-2 py-2 flex flex-col justify-center">
         <span className={
           'font-mono tabular-nums ' +
           (isCurrentWeek
-            ? 'text-accent text-sm font-semibold'
+            ? 'text-sm font-semibold text-accent'
             : 'text-xs text-bone-dim')
         }>
-          {row.isBaseMaintenance
-            ? '—'
-            : row.programWeekNumber !== null
-              ? `W${row.programWeekNumber}`
-              : '—'}
+          {row.isBaseMaintenance ? '—' : formatShortDate(row.weekStartIso)}
         </span>
-        <span className={
-          'font-mono text-[9px] tabular-nums ' +
-          (isCurrentWeek
-            ? 'text-accent/80'
-            : row.isBaseMaintenance
-              ? 'text-bone-mute italic'
-              : 'text-bone-mute')
-        }>
-          {isCurrentWeek
-            ? 'THIS WEEK'
-            : row.isBaseMaintenance
-              ? '(base)'
-              : formatShortDate(row.weekStartIso)}
-        </span>
+        {isCurrentWeek && !row.isBaseMaintenance && (
+          <span className="font-mono text-[9px] uppercase tracking-widest text-accent/70 leading-tight">
+            now
+          </span>
+        )}
+        {row.isBaseMaintenance && (
+          <span className="font-mono text-[9px] text-bone-mute italic leading-tight">(base)</span>
+        )}
         {row.matchSummary && (row.matchSummary.shifted.length > 0 || row.matchSummary.extras.length > 0) && (
           <span
             className="font-mono text-[9px] leading-none text-bone-mute mt-0.5 cursor-default"
