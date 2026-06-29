@@ -1,80 +1,141 @@
-# CLAUDE.md — VELOCITY Project Contract
+# CLAUDE.md — GHOST Project Contract
 
 ## Startup ritual (read this first, every session)
 
-1. Read `PROGRESS.md` — if it doesn't exist, create it from the template at the bottom of this file
-2. Read `PHASES.md` current state section to understand where the project stands
-3. Check `git status` and `git log --oneline -5` to anchor to current branch and recent commits
-4. If `AGENT_STOP` exists in the project root, stop immediately and report it
-5. Proceed with the session's task
+1. Read `PROGRESS.md` — if it doesn't exist, create it from the template below
+2. Read `PHASES.md` current state section
+3. `git status` + `git log --oneline -5`
+4. If `AGENT_STOP` exists in the project root, stop immediately
+5. Proceed
 
-## Stop ritual (before ending every session)
+## Stop ritual
 
-1. Update `PROGRESS.md` — what was completed, what is blocked, what is next
-2. Any uncommitted work is checkpointed by the `commit-on-stop` hook automatically
-3. If a `feat/` branch has work, push it
+1. Update `PROGRESS.md`
+2. Push any `feat/` branch with uncommitted work
 
-## Project at a glance
+## What GHOST is
 
-**Stack**: Next.js 15, React 19 RC, Drizzle ORM + better-sqlite3 (SQLite), keytar, Tailwind CSS, Vitest  
-**DB**: 20 tables — `activities`, `sync_jobs`, `plans`, `shoes`, `journal` (and 15 more; see `lib/db/schema.ts`)  
-**Routes**: 14 authenticated screens (`/patrol` is the daily-use screen), `/setup` wizard, `/api/*`  
-**Tests**: 29 test files, 472 tests — all pure functions, no DB, no network  
-**DB path**: `%APPDATA%\NightNinjas\shadow-tracker.db`
+A fork of VELOCITY (night-ninjas-shadow-trackerv2). Same training-science brain, completely different shell.
+
+**Goal**: One React bundle that runs as a web PWA, iPhone home-screen app, Android app, and native Windows/macOS desktop — with zero backend except one Cloudflare Worker for the Strava OAuth token swap.
+
+**Stack**:
+- **Framework**: Vite 6 + React 19 + React Router 7
+- **Database**: wa-sqlite + IDBMirrorVFS (SQLite in browser via IndexedDB — no COOP/COEP headers needed)
+- **Styling**: Tailwind CSS 4 (Vite plugin)
+- **PWA**: vite-plugin-pwa + Workbox service worker
+- **Desktop**: Tauri 2 (~3–8 MB installer, unsigned)
+- **OAuth proxy**: Cloudflare Worker (30 lines — the only server code)
+- **AI**: Anthropic SDK direct from browser, BYOK, `dangerouslyAllowBrowser`
+- **Tests**: Vitest — pure `*-pure.ts` engine tests from VELOCITY, unchanged
+- **Hosting**: GitHub Pages (free) + GitHub Releases for desktop installers
+
+## Architecture
+
+```
+src/
+  main.tsx          Entry point — BrowserRouter + DbProvider + App
+  App.tsx           React Router routes (14 screens + /setup)
+  index.css         Tailwind 4 @theme tokens (VELOCITY design system)
+  db/
+    worker.ts       wa-sqlite Web Worker (IDBMirrorVFS, IndexedDB backend)
+    client.ts       Main-thread async bridge to the worker
+    DbContext.tsx   React context — ready state for DB init
+    migrations.ts   Ordered SQL migrations (same schema as VELOCITY)
+  routes/           One folder per screen — port from VELOCITY app/(app)/
+  components/       Shared UI (TopNav, PageSkeleton, …)
+  lib/              Pure analysis engines copied from VELOCITY (unchanged)
+    analysis/       *-pure.ts: compliance, monotony, trends, …
+    plans/          *-pure.ts: 9 plan engines (Base, Norwegian, etc.)
+    coach/          *-pure.ts: coach voice
+    race/           *-pure.ts: fueling, taper, execution, debrief
+    ai/             *-pure.ts: context builder
+    weather/        *-pure.ts: heat adjust
+    garmin/         mapper
+
+oauth-worker/       Cloudflare Worker — Strava /oauth/token proxy
+  wrangler.toml
+  src/index.ts
+
+src-tauri/          Tauri 2 desktop wrapper (Rust shell, minimal)
+  tauri.conf.json
+  Cargo.toml
+  src/main.rs
+  src/lib.rs
+```
 
 ## Critical rules
 
 - **Never commit to `main` directly** — always `git checkout -b feat/<name>` first
-- **No PR required** — this is `github.com/rjsmegmpdc` (Matt's personal account); branch discipline applies but Matt merges directly
-- **Pure functions only in `*-pure.ts`** — no DB imports, no Next.js context; safe to test with Vitest
-- **UTC date arithmetic** — all date comparisons: `new Date(isoStr + 'T00:00:00Z')` + `.getUTCFullYear()`/`.getUTCMonth()`/`.getUTCDate()`
-- **Local day-of-week parsing** — `dowOf()` in compliance uses explicit component parsing, never `new Date(isoStr).getDay()`
+- **No PR required** — this is `github.com/rjsmegmpdc`; branch discipline applies, Matt merges directly
+- **Pure functions only in `*-pure.ts`** — no browser APIs, no worker imports; safe to test with Vitest node env
+- **UTC date arithmetic** — `new Date(isoStr + 'T00:00:00Z')` + `.getUTC*()` everywhere
+- **Worker is async** — all DB reads/writes are `await query(sql, params)` — no synchronous DB calls exist
 
-## Key files to orient fast
+## DB access pattern
 
-| Area | File |
-|---|---|
-| Development ledger | `PHASES.md` |
-| Architecture | `ARCHITECTURE.md` |
-| Test guide | `TESTING.md` |
-| DB schema | `lib/db/schema.ts` |
-| Sync runner | `lib/sources/sync-runner.ts` |
-| Plan engines | `lib/plans/` |
-| Analysis | `lib/analysis/` |
-| Server actions | `lib/actions/` |
+```typescript
+// ✅ Correct — async query via worker bridge
+import { query } from '@/db/client';
+const rows = await query('SELECT * FROM activities WHERE start_date >= ?', [startIso]);
 
-## Operator controls
+// ❌ Never — better-sqlite3 / server-only imports don't exist here
+import { getDb } from '@/db'; // this file does not exist in GHOST
+```
 
-- **Emergency stop**: `touch AGENT_STOP` in project root — all tool calls halt immediately via kill-switch hook
-- **Mid-run steering**: write instruction to `STEER.md` — agent reads it once then clears it
-- **Checkpoint commit**: happens automatically on session stop via commit-on-stop hook
-- **Quality gate**: run `.claude/agents/evaluator.md` as a subagent after significant changes
+## Strava OAuth flow
+
+```
+Browser → strava.com/oauth/authorize (redirect)
+       ← strava.com redirects back with ?code=xxx
+Browser → POST https://ghost-strava-oauth.<account>.workers.dev/exchange { code }
+Worker  → POST strava.com/oauth/token (with client_secret)
+       ← { access_token, refresh_token, athlete }
+Browser stores tokens encrypted in IndexedDB
+```
+
+## GitHub Actions
+
+| Workflow | Trigger | Output |
+|---|---|---|
+| `deploy.yml` | push to main | GitHub Pages PWA |
+| `worker.yml` | push to main (oauth-worker/**) | Cloudflare Worker |
+| `desktop.yml` | push v* tag | Draft GitHub Release (.exe + .dmg) |
+
+## GitHub Pages setup (one-time, manual)
+
+1. Repo Settings → Pages → Source: GitHub Actions
+2. Add secret `STRAVA_OAUTH_WORKER_URL` = your deployed Worker URL
+3. Add Cloudflare secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+
+## Tauri icons (before first desktop release)
+
+Add to `src-tauri/icons/`: 32x32.png, 128x128.png, 128x128@2x.png, icon.icns, icon.ico.
+Use `npx @tauri-apps/cli icon src/assets/icon.png` to generate all sizes from one source.
 
 ## PROGRESS.md template
 
 ```markdown
-# PROGRESS.md
-
 ## Branch
 feat/<name>
 
 ## Session: <YYYY-MM-DD>
 
 ### Completed
-- 
+-
 
 ### In progress
-- 
+-
 
 ### Blocked
-- 
+-
 
 ### Next session should
-- 
+-
 
-## Key decisions made
-- 
+## Key decisions
+-
 
-## Files changed this session
-- 
+## Files changed
+-
 ```

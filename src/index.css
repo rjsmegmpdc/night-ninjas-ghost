@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+ * GHOST — Night Ninjas design tokens (ported from VELOCITY)
+ * Tailwind 4 uses @theme instead of tailwind.config.js
+ * ------------------------------------------------------------------------- */
+
+@theme {
+  /* Ink surfaces */
+  --color-ink:           #0A0A0A;
+  --color-ink-shadow:    #141414;
+  --color-ink-panel:     #1C1C1C;
+  --color-ink-line:      #2A2A2A;
+  --color-ink-line-bold: #3A3A3A;
+
+  /* Bone text */
+  --color-bone:     #F5F5F0;
+  --color-bone-dim: #A5A5A0;
+  --color-bone-mute:#6E6E6A;
+
+  /* Accent — VELOCITY orange */
+  --color-accent:       #FF5F00;
+  --color-accent-hover: #FF7A2B;
+
+  /* Signal */
+  --color-signal-ok:   #26D0AE;
+  --color-signal-warn: #EAB308;
+  --color-signal-miss: #DC2626;
+
+  /* Fonts */
+  --font-display: 'Bebas Neue', 'Impact', sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+}
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    color-scheme: dark;
+    background-color: #0A0A0A;
+    color: #F5F5F0;
+  }
+
+  body {
+    font-family: var(--font-mono), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: #FF5F00;
+    color: #F5F5F0;
+  }
+}
