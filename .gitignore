@@ -35,6 +35,11 @@ dist/
 .env.local
 .env.*.local
 
+# Electron desktop build output
+dist-electron/
+electron/*.js
+electron/*.js.map
+
 # Misc
 .DS_Store
 Thumbs.db

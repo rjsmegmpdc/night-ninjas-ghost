@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "private": true,
   "description": "VELOCITY — local-first running training analysis for the Night Ninjas community club",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,7 +13,12 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "electron:compile": "tsc --project electron/tsconfig.json",
+    "electron:dev": "npm run build && npm run electron:compile && electron .",
+    "electron:dist:win": "npm run build && npm run electron:compile && electron-builder --win",
+    "electron:dist:mac": "npm run build && npm run electron:compile && electron-builder --mac",
+    "electron:dist": "npm run build && npm run electron:compile && electron-builder"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
@@ -33,12 +39,15 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@electron/rebuild": "^3.7.1",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^22.9.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.28.1",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.14.0",
     "eslint-config-next": "15.0.3",
     "postcss": "^8.4.49",
