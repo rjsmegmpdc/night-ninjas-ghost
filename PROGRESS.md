@@ -1,13 +1,13 @@
 ## Branch
-feat/ghost-scaffold
+main
 
 ## Session: 2026-06-29
 
 ### Completed
 
-**Phase 1 — GHOST Scaffold (commit 6708cd8)**
+**Phase 1 — GHOST Scaffold — merged to main**
 
-Full zero-cost PWA + desktop architecture scaffolded. Forked from VELOCITY at commit `7b67daa`.
+Full zero-cost PWA + desktop architecture scaffolded and merged. Forked from VELOCITY at commit `7b67daa`.
 
 - Vite 6 + React 19 + React Router 7 replaces Next.js 15 + Electron
 - wa-sqlite + IDBMirrorVFS Web Worker (SQLite in browser, no COOP/COEP, GitHub Pages compatible)
@@ -17,20 +17,16 @@ Full zero-cost PWA + desktop architecture scaffolded. Forked from VELOCITY at co
 - Tauri 2 Rust scaffold for 3-8 MB desktop installers
 - GitHub Actions: Pages deploy + Worker deploy + Tauri cross-build
 - CLAUDE.md, PHASES.md, PROGRESS.md
-- Committed on `feat/ghost-scaffold`
+- Merged `feat/ghost-scaffold` → `main`, pushed to `github.com/rjsmegmpdc/night-ninjas-ghost`
 
 ### In progress
 - Nothing
 
 ### Blocked
-- GitHub repo must be created manually — PAT lacks repo creation scope.
-  Run: `gh repo create rjsmegmpdc/night-ninjas-ghost --public`
-  Then: `git push origin feat/ghost-scaffold`
-  Then merge to main (Matt's call per workflow)
+- Nothing
 
 ### Next session should
-1. Create GitHub repo + push branch (if not yet done)
-2. `npm install` and fix wa-sqlite WASM import paths in `src/db/worker.ts`
+1. `npm install` and fix wa-sqlite WASM import paths in `src/db/worker.ts`
 3. Strip `server-only` from copied `src/lib/` files; fix import aliases (`lib/` → `src/lib/`)
 4. `npm run build` green (Vite)
 5. `npm test` green (pure function tests)
