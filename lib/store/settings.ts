@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { eq } from 'drizzle-orm';
 import { getDb, schema } from '@/lib/db';
 
@@ -61,14 +62,14 @@ const KEY = {
   MID_ENTRY_DISMISSED_PERIOD: 'prefs.mid_entry_dismissed_period',
 } as const;
 
-async function get(key: string): Promise<string | null> {
+const get = cache(async (key: string): Promise<string | null> => {
   const row = await getDb()
     .select()
     .from(schema.settings)
     .where(eq(schema.settings.key, key))
     .get();
   return row?.value ?? null;
-}
+});
 
 async function set(key: string, value: string): Promise<void> {
   await getDb()
