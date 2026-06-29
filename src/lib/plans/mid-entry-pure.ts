@@ -60,7 +60,7 @@ export interface MidEntryAssessment {
 export function assessMidProgramEntry(input: MidEntryInput): MidEntryAssessment {
   const {
     weekNumber,
-    programWeeks,
+    programWeeks: _programWeeks,
     chronicKm,
     entryLoadKm,
     weekKmTarget,
