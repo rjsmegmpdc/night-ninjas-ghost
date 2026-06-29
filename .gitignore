@@ -6,39 +6,31 @@ node_modules/
 # Testing
 coverage/
 
-# Next.js
-.next/
-out/
-next-env.d.ts
+# Vite / build output
+dist/
+dist-ssr/
+*.local
 
 # TypeScript incremental build cache
 *.tsbuildinfo
 
-# Production
-build/
-dist/
+# Tauri build output
+src-tauri/target/
+
+# Cloudflare Worker
+oauth-worker/node_modules/
+oauth-worker/.wrangler/
 
 # Local data — never commit user data
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
-# Root-anchored (/data/*) so it does NOT also catch lib/data/ (source code).
-# Ignore the top-level data/ dir's contents, but keep the two seed CSVs tracked
-# (they're reference data the app + check.ps1 require).
-/data/*
-!/data/shoe-retailers.csv
-!/data/shoes-database.csv
 
 # Env
 .env
 .env.local
 .env.*.local
-
-# Electron desktop build output
-dist-electron/
-electron/*.js
-electron/*.js.map
 
 # Misc
 .DS_Store
@@ -47,12 +39,5 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Drizzle migrations — generated, regeneratable from schema
-# (Comment out the next line if you want to commit migrations)
-# lib/db/migrations/
-
-# Guard against re-nesting a full project copy inside itself.
-# A stale night-ninjas-shadow-tracker/ duplicate (bundle 75c6de2) was once
-# committed when a bundle extraction landed on top of the root tree. This
-# stops a re-nested copy from ever being tracked again.
-/night-ninjas-shadow-tracker/
+# Tauri icons placeholder — add real icons before first release
+src-tauri/icons/

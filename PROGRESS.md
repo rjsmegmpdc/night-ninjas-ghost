@@ -1,71 +1,48 @@
 ## Branch
-main (clean — feat/electron-desktop merged)
+feat/ghost-scaffold
 
 ## Session: 2026-06-29
 
 ### Completed
 
-**Phase 28 — Electron Desktop Packaging**
+**Phase 1 — GHOST Scaffold (commit 6708cd8)**
 
-- **`electron/main.ts`** — Electron main process. Runs Next.js 15 programmatically on port 3579. Opens BrowserWindow once ready. Single-instance lock, macOS dock support, OS-browser link routing.
-- **`electron/preload.ts`** — minimal preload (contextIsolation: true, no Node bridge).
-- **`electron/tsconfig.json`** — CommonJS output for Electron main process.
-- **`electron-builder.config.js`** — Windows NSIS installer (x64) + macOS DMG (x64 + arm64, unsigned). Asar packs the app; better-sqlite3 and keytar are asarUnpack'd.
-- **`.github/workflows/build.yml`** — matrix CI: `windows-latest` builds `.exe`, `macos-latest` builds `.dmg`. Draft GitHub Release created automatically on `v*` tag push.
-- **`package.json`** — added `"main": "electron/main.js"`, `electron:compile/dist` scripts, `electron@^33`, `electron-builder@^25.1.8`, `@electron/rebuild@^3.7.1` to devDependencies.
-- **`.gitignore`** — added `dist-electron/`, `electron/*.js`, `electron/*.js.map`.
+Full zero-cost PWA + desktop architecture scaffolded. Forked from VELOCITY at commit `7b67daa`.
 
-Tests: 609/609. TypeScript: 0 errors.
-
-**To trigger a release build:**
-```
-git tag v0.2.1 && git push origin v0.2.1
-```
-GitHub Actions builds Windows + macOS installers and attaches them to a draft release.
-
-**Phase 27 — Loading Performance** (also this session)
-
-- `lib/store/settings.ts` — React cache() on get()
-- `app/(app)/patrol/page.tsx` — parallel fetches (activities + context, chronicKm + midEntry merged into 12-item Promise.all)
-- 14 × `loading.tsx` — instant animated skeleton on every route
+- Vite 6 + React 19 + React Router 7 replaces Next.js 15 + Electron
+- wa-sqlite + IDBMirrorVFS Web Worker (SQLite in browser, no COOP/COEP, GitHub Pages compatible)
+- 14 route stubs + TopNav + PageSkeleton
+- 56 pure-function files + tests copied from VELOCITY (unchanged logic)
+- Cloudflare Worker for Strava OAuth token swap (the only server code)
+- Tauri 2 Rust scaffold for 3-8 MB desktop installers
+- GitHub Actions: Pages deploy + Worker deploy + Tauri cross-build
+- CLAUDE.md, PHASES.md, PROGRESS.md
+- Committed on `feat/ghost-scaffold`
 
 ### In progress
 - Nothing
 
 ### Blocked
-- Nothing
+- GitHub repo must be created manually — PAT lacks repo creation scope.
+  Run: `gh repo create rjsmegmpdc/night-ninjas-ghost --public`
+  Then: `git push origin feat/ghost-scaffold`
+  Then merge to main (Matt's call per workflow)
 
 ### Next session should
-- Push a version tag to trigger the first real release build and download the installers
-- Add app icons: `electron-assets/icon.ico` (256x256) + `electron-assets/icon.icns` — then uncomment icon lines in `electron-builder.config.js`
-- Manual smoke test: navigate between routes — loading skeletons should flash then resolve
-- Manual smoke test: compliance bar scroll, quick-log strip, mid-entry banner
-- "Shoes Scienve" DB entry: fix in Calendar page (rename the group run)
+1. Create GitHub repo + push branch (if not yet done)
+2. `npm install` and fix wa-sqlite WASM import paths in `src/db/worker.ts`
+3. Strip `server-only` from copied `src/lib/` files; fix import aliases (`lib/` → `src/lib/`)
+4. `npm run build` green (Vite)
+5. `npm test` green (pure function tests)
+6. Enable GitHub Pages (repo Settings → Pages → GitHub Actions source)
+7. Add secrets: `STRAVA_OAUTH_WORKER_URL`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+8. Port `/patrol` page — highest daily-use priority
 
-## Key decisions made (Phase 28)
-- Programmatic Next.js server over child-process spawn — no second Node.js binary needed
-- Port 3579 fixed to avoid collision with dev ports 3000/3001
-- Unsigned macOS (no Apple Developer cert) — right-click → Open on first launch
-- DB path already cross-platform via data-dir.ts — no changes needed
+## Key decisions
+- IDBMirrorVFS: no COOP/COEP needed — GitHub Pages works natively
+- One Cloudflare Worker: unavoidable — Strava blocks browser CORS on /oauth/token (confirmed by research)
+- Tauri 2 unsigned: acceptable for club-internal distribution
+- Pure engines: 56 files copied unchanged — same tests, zero logic changes
 
-## Files changed this session
-- electron/main.ts (new)
-- electron/preload.ts (new)
-- electron/tsconfig.json (new)
-- electron-builder.config.js (new)
-- .github/workflows/build.yml (new)
-- electron-assets/.gitkeep (new)
-- package.json (electron deps + scripts)
-- package-lock.json (updated)
-- .gitignore (dist-electron/ + electron/*.js)
-- PHASES.md (Phase 28 entry, version 0.2.28)
-- PROGRESS.md (this file)
-
----
-
-## Previous session: Phase 27 — Loading Performance
-
-- lib/store/settings.ts (cache wrapper)
-- app/(app)/patrol/page.tsx (parallel fetches)
-- 14 × loading.tsx across all routes
-- PHASES.md + PROGRESS.md
+## Files changed
+- Initial scaffold — see PHASES.md Phase 1 for full list

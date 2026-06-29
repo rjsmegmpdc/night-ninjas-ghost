@@ -1,0 +1,11 @@
+name = "ghost-strava-oauth"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ALLOWED_ORIGIN = "https://rjsmegmpdc.github.io"
+
+# Secrets (set via `wrangler secret put`, never committed):
+#   STRAVA_CLIENT_ID
+#   STRAVA_CLIENT_SECRET

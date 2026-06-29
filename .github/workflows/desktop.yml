@@ -1,0 +1,62 @@
+name: Build Desktop Apps (Tauri)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: ghost-windows
+            glob: src-tauri/target/release/bundle/nsis/*.exe
+          - os: macos-latest
+            artifact: ghost-macos
+            glob: src-tauri/target/release/bundle/dmg/*.dmg
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build PWA (Vite)
+        run: npm run build
+        env:
+          VITE_STRAVA_OAUTH_WORKER: ${{ secrets.STRAVA_OAUTH_WORKER_URL }}
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'GHOST ${{ github.ref_name }}'
+          releaseDraft: true
+          prerelease: false
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.glob }}
+          if-no-files-found: warn
