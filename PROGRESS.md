@@ -1,11 +1,11 @@
 ## Branch
-main (Phase 1 scaffold)
+feat/ghost-scaffold
 
 ## Session: 2026-06-29
 
 ### Completed
 
-**Phase 1 — GHOST Scaffold**
+**Phase 1 — GHOST Scaffold (commit 6708cd8)**
 
 Full zero-cost PWA + desktop architecture scaffolded. Forked from VELOCITY at commit `7b67daa`.
 
@@ -17,6 +17,7 @@ Full zero-cost PWA + desktop architecture scaffolded. Forked from VELOCITY at co
 - Tauri 2 Rust scaffold for 3-8 MB desktop installers
 - GitHub Actions: Pages deploy + Worker deploy + Tauri cross-build
 - CLAUDE.md, PHASES.md, PROGRESS.md
+- Committed on `feat/ghost-scaffold`
 
 ### In progress
 - Nothing
@@ -24,16 +25,18 @@ Full zero-cost PWA + desktop architecture scaffolded. Forked from VELOCITY at co
 ### Blocked
 - GitHub repo must be created manually — PAT lacks repo creation scope.
   Run: `gh repo create rjsmegmpdc/night-ninjas-ghost --public`
-  Then: `git push origin main`
+  Then: `git push origin feat/ghost-scaffold`
+  Then merge to main (Matt's call per workflow)
 
 ### Next session should
-1. `npm install` and fix wa-sqlite WASM import paths
-2. Strip `server-only` from copied `src/lib/` files; fix import aliases
-3. `npm run build` green
-4. `npm test` green
-5. Enable GitHub Pages (repo Settings → Pages → GitHub Actions source)
-6. Add secrets: `STRAVA_OAUTH_WORKER_URL`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
-7. Port `/patrol` page — highest daily-use priority
+1. Create GitHub repo + push branch (if not yet done)
+2. `npm install` and fix wa-sqlite WASM import paths in `src/db/worker.ts`
+3. Strip `server-only` from copied `src/lib/` files; fix import aliases (`lib/` → `src/lib/`)
+4. `npm run build` green (Vite)
+5. `npm test` green (pure function tests)
+6. Enable GitHub Pages (repo Settings → Pages → GitHub Actions source)
+7. Add secrets: `STRAVA_OAUTH_WORKER_URL`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+8. Port `/patrol` page — highest daily-use priority
 
 ## Key decisions
 - IDBMirrorVFS: no COOP/COEP needed — GitHub Pages works natively
