@@ -183,7 +183,11 @@ async function PatrolDashboard() {
   const { engine, params } = activePlan;
   const weekNumber = currentWeekNumber(params) ?? 1;
   const { startIso, endIso } = currentWeekRange();
-  const context = await resolveWeekContext({ weekStartIso: startIso, weekEndIso: endIso });
+  // resolveWeekContext and getActivitiesInRange only need date strings — run in parallel.
+  const [context, activities] = await Promise.all([
+    resolveWeekContext({ weekStartIso: startIso, weekEndIso: endIso }),
+    getActivitiesInRange(startIso, endIso),
+  ]);
   const rawTemplate = engine.renderWeek(params, weekNumber, context);
 
   // Phase 3b - state-aware pipeline. In automatic mode (or once a proposal
@@ -227,13 +231,12 @@ async function PatrolDashboard() {
   // Show block-end debrief in the final 2 weeks or post-race.
   const showBlockDebrief = activePeriod?.id != null && weekNumber >= programWeeks - 1;
 
-  const activities = await getActivitiesInRange(startIso, endIso);
   const stats = aggregateWeekStats(activities);
   const compliance = evaluateWeek(template, activities);
 
-  // Phase 2 athlete state surfaces + Phase 3a phase + ramp.
+  // Phase 2 athlete state surfaces + Phase 3a phase + ramp + chronic load.
   // All run in parallel.
-  const [athleteState, intensityDist, mileageProg, longRunCheck, programPhase, interruptions, allShoesRaw, anthropicKey, aiModel, vo2Rows] = await Promise.all([
+  const [athleteState, intensityDist, mileageProg, longRunCheck, programPhase, interruptions, allShoesRaw, anthropicKey, aiModel, vo2Rows, chronicKm, midEntryDismissedPeriod] = await Promise.all([
     getAthleteState({}),
     getIntensityDistribution(startIso, endIso, {}),
     checkMileageProgression(startIso),
@@ -244,6 +247,8 @@ async function PatrolDashboard() {
     getAnthropicApiKey(),
     getAiModel(),
     getDb().select().from(schema.vo2maxObservations).all(),
+    getTrailingChronicKm(6),
+    getMidEntryDismissedPeriod(),
   ]);
   const hasAiKey = anthropicKey != null;
 
@@ -269,10 +274,6 @@ async function PatrolDashboard() {
 
   // Mid-program entry assessment — shown once when a user activates a plan
   // mid-block (weekNumber > 2 and period created ≤7 days ago).
-  const [chronicKm, midEntryDismissedPeriod] = await Promise.all([
-    getTrailingChronicKm(6),
-    getMidEntryDismissedPeriod(),
-  ]);
   const midEntryAssessment = activePeriod
     ? assessMidProgramEntry({
         weekNumber,
