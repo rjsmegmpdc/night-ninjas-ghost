@@ -1,19 +1,33 @@
 ## Branch
-main (clean — feat/loading-perf merged)
+main (clean — feat/electron-desktop merged)
 
 ## Session: 2026-06-29
 
 ### Completed
 
-**Phase 27 — Loading Performance**
+**Phase 28 — Electron Desktop Packaging**
 
-- **`lib/store/settings.ts`** — `get()` wrapped in React `cache()`. Deduplicates per-request SQLite reads; multiple server components reading the same setting key share one DB hit per render.
-- **`app/(app)/patrol/page.tsx`** — Two waterfall eliminations:
-  1. `getActivitiesInRange` now runs in parallel with `resolveWeekContext` (both only need pure date strings).
-  2. `getTrailingChronicKm(6)` and `getMidEntryDismissedPeriod()` merged into the existing 12-item `Promise.all` block, removing a standalone sequential pair.
-- **14 × `loading.tsx`** — Instant `animate-pulse` skeleton on every app route. Next.js streams the skeleton immediately while the async page component resolves data. Routes covered: calendar, club, coach-log, profile, strike, vo2max, journal, shoes, race, dojo, test-lab, help, recon, settings.
+- **`electron/main.ts`** — Electron main process. Runs Next.js 15 programmatically on port 3579. Opens BrowserWindow once ready. Single-instance lock, macOS dock support, OS-browser link routing.
+- **`electron/preload.ts`** — minimal preload (contextIsolation: true, no Node bridge).
+- **`electron/tsconfig.json`** — CommonJS output for Electron main process.
+- **`electron-builder.config.js`** — Windows NSIS installer (x64) + macOS DMG (x64 + arm64, unsigned). Asar packs the app; better-sqlite3 and keytar are asarUnpack'd.
+- **`.github/workflows/build.yml`** — matrix CI: `windows-latest` builds `.exe`, `macos-latest` builds `.dmg`. Draft GitHub Release created automatically on `v*` tag push.
+- **`package.json`** — added `"main": "electron/main.js"`, `electron:compile/dist` scripts, `electron@^33`, `electron-builder@^25.1.8`, `@electron/rebuild@^3.7.1` to devDependencies.
+- **`.gitignore`** — added `dist-electron/`, `electron/*.js`, `electron/*.js.map`.
 
-TypeScript: 0 errors. Tests: 609/609 passed.
+Tests: 609/609. TypeScript: 0 errors.
+
+**To trigger a release build:**
+```
+git tag v0.2.1 && git push origin v0.2.1
+```
+GitHub Actions builds Windows + macOS installers and attaches them to a draft release.
+
+**Phase 27 — Loading Performance** (also this session)
+
+- `lib/store/settings.ts` — React cache() on get()
+- `app/(app)/patrol/page.tsx` — parallel fetches (activities + context, chronicKm + midEntry merged into 12-item Promise.all)
+- 14 × `loading.tsx` — instant animated skeleton on every route
 
 ### In progress
 - Nothing
@@ -22,66 +36,36 @@ TypeScript: 0 errors. Tests: 609/609 passed.
 - Nothing
 
 ### Next session should
-- Manual smoke test: navigate between several routes — skeleton should flash instantly then resolve
-- Manual smoke test: compliance bar scroll behaviour — expanded → traffic lights → popover → "session detail" link
-- Manual smoke test: quick-log strip, mid-entry banner, setup wizard full flow
-- "Shoes Scienve" DB entry: user must fix in Calendar page (rename the group run — it's a DB value, not source code)
+- Push a version tag to trigger the first real release build and download the installers
+- Add app icons: `electron-assets/icon.ico` (256x256) + `electron-assets/icon.icns` — then uncomment icon lines in `electron-builder.config.js`
+- Manual smoke test: navigate between routes — loading skeletons should flash then resolve
+- Manual smoke test: compliance bar scroll, quick-log strip, mid-entry banner
+- "Shoes Scienve" DB entry: fix in Calendar page (rename the group run)
 
-## Key decisions made (Phase 27)
-- `cache()` on `get()` only (not `set()`) — writes go directly per server action, never deduplicated
-- `loading.tsx` skeleton is intentionally generic (3 stacked cards) — fast to render, universally applicable, no per-route branching
+## Key decisions made (Phase 28)
+- Programmatic Next.js server over child-process spawn — no second Node.js binary needed
+- Port 3579 fixed to avoid collision with dev ports 3000/3001
+- Unsigned macOS (no Apple Developer cert) — right-click → Open on first launch
+- DB path already cross-platform via data-dir.ts — no changes needed
 
 ## Files changed this session
-- lib/store/settings.ts (cache wrapper)
-- app/(app)/patrol/page.tsx (parallel fetches)
-- app/(app)/calendar/loading.tsx (new)
-- app/(app)/club/loading.tsx (new)
-- app/(app)/coach-log/loading.tsx (new)
-- app/(app)/profile/loading.tsx (new)
-- app/(app)/strike/loading.tsx (new)
-- app/(app)/vo2max/loading.tsx (new)
-- app/(app)/journal/loading.tsx (new)
-- app/(app)/shoes/loading.tsx (new)
-- app/(app)/race/loading.tsx (new)
-- app/(app)/dojo/loading.tsx (new)
-- app/(app)/test-lab/loading.tsx (new)
-- app/(app)/help/loading.tsx (new)
-- app/(app)/recon/loading.tsx (new)
-- app/(app)/settings/loading.tsx (new)
-- PHASES.md (Phase 27 entry, version 0.2.27)
+- electron/main.ts (new)
+- electron/preload.ts (new)
+- electron/tsconfig.json (new)
+- electron-builder.config.js (new)
+- .github/workflows/build.yml (new)
+- electron-assets/.gitkeep (new)
+- package.json (electron deps + scripts)
+- package-lock.json (updated)
+- .gitignore (dist-electron/ + electron/*.js)
+- PHASES.md (Phase 28 entry, version 0.2.28)
 - PROGRESS.md (this file)
 
 ---
 
-## Previous session (2026-06-29, feat/tonight-mission-top → main)
+## Previous session: Phase 27 — Loading Performance
 
-### Completed
-
-**Phase 26 — Patrol Dashboard Reorder + Sticky Compliance Bar**
-
-- **`components/patrol/compliance-bar.tsx`** — new sticky client component replacing WeekComplianceBlock. Expanded state: slim bar with % + status + 3 coloured dots. Scrolled state (>30px): traffic-light dots only, sticks under nav, clicking opens explanation popover with link to session detail in coaching drawer.
-- **`app/(app)/patrol/page.tsx`** — Tonight's Mission moved to top (before header); Program Matrix moved directly under Tonight's Mission; ComplianceBar placed first (above header); WeekComplianceBlock removed; `id` attrs added to coaching-detail and session-compliance elements.
-- **`components/nav/topnav.tsx`** — Active nav bucket now shows filled `bg-accent/10` pill + inner glow (depressed state) on top of existing underline.
-
-### In progress
-- Nothing
-
-### Blocked
-- Nothing
-
-### Next session should
-- Manual smoke test: compliance bar scroll behaviour — expanded → traffic lights → popover → "session detail" link
-- Manual smoke test: quick-log strip, mid-entry banner, setup wizard full flow
-- Loading performance: static shell caching / prefetch improvements (deferred from this session)
-
-## Key decisions made (Phase 26)
-- Scroll position listener (`window.scrollY > 30`) used over IntersectionObserver — simpler, more predictable cross-browser
-- WeekComplianceBlock component kept on disk; only patrol page import swapped (safe, no breaking change)
-- Rightmost popover (miss) aligns `right-0` to prevent off-screen overflow
-
-## Files changed this session
-- components/patrol/compliance-bar.tsx (new)
-- app/(app)/patrol/page.tsx (reorder + compliance swap)
-- components/nav/topnav.tsx (active state)
-- PHASES.md (Phase 26 entry, version 0.2.26)
-- PROGRESS.md (this file)
+- lib/store/settings.ts (cache wrapper)
+- app/(app)/patrol/page.tsx (parallel fetches)
+- 14 × loading.tsx across all routes
+- PHASES.md + PROGRESS.md

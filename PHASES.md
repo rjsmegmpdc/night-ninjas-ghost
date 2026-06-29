@@ -2,10 +2,10 @@
 
 ## Current state
 
-**Version**: 0.2.27  
+**Version**: 0.2.28  
 **Branch**: main (clean)  
 **Test coverage**: 33 test files · 609 tests · all passing  
-**Status**: Phase 27 complete. Loading performance: parallel data fetching on patrol page, React cache() for settings reads, loading skeletons on all 14 routes.
+**Status**: Phase 28 complete. Electron desktop packaging: Windows NSIS installer + macOS unsigned DMG, GitHub Actions CI builds on tag push.
 
 ---
 
@@ -619,6 +619,38 @@ Plus: `/setup` (7-step first-run wizard: Welcome → Strava → Connect → Sync
 
 **Test count**: 609 (no new tests — infrastructure/perf changes only)  
 **Status**: Complete.
+
+---
+
+### Phase 28 — Electron Desktop Packaging
+**What**: Wrapped the Next.js app in Electron 33 so it ships as a native installable desktop application. Windows gets an NSIS setup wizard (.exe); macOS gets a drag-to-Applications DMG. GitHub Actions builds both automatically when a version tag is pushed.
+
+**Architecture**:
+- `electron/main.ts` — main process. Runs Next.js 15 programmatically on port 3579 inside the same process (no separate Node.js binary). Opens `BrowserWindow` once the server is ready. Single-instance lock, macOS dock reactivation, external-link routing to OS browser.
+- `electron/preload.ts` — minimal (contextIsolation: true, nodeIntegration: false; all data access is server-side).
+- `electron/tsconfig.json` — CommonJS target, compiles `electron/*.ts` → `electron/*.js` in-place (gitignored).
+- `electron-builder.config.js` — packages `.next/`, `public/`, `electron/main.js`, `node_modules/` (production only) into an asar. `better-sqlite3` and `keytar` are asar-unpacked so native `.node` binaries load from filesystem.
+
+**Release flow**:
+1. `git tag v0.x.y && git push origin v0.x.y`
+2. GitHub Actions triggers on `windows-latest` (produces `VELOCITY Setup.exe`) and `macos-latest` (produces `VELOCITY.dmg`, arm64 + x64 universal)
+3. Both artifacts are attached to a draft GitHub Release — review and publish manually
+
+**Local builds**:
+- Windows only: `npm run electron:dist:win`
+- macOS only (requires Mac): `npm run electron:dist:mac`
+
+**Icons**: Add `electron-assets/icon.ico` (Windows) and `electron-assets/icon.icns` (macOS) then uncomment the icon lines in `electron-builder.config.js`.
+
+**macOS signing**: Unsigned — users right-click → Open on first launch (Gatekeeper bypass). Add `CSC_LINK` + `CSC_KEY_PASSWORD` secrets to GitHub Actions to enable signing when an Apple Developer certificate is available.
+
+**Key decisions**:
+- Programmatic Next.js server (not `next start` child process) — avoids bundling a separate Node.js binary, keeps the package smaller
+- DB path unchanged — `data-dir.ts` already returns the correct OS-native path on both platforms
+- Port 3579 fixed — avoids conflicts with dev ports (3000/3001)
+
+**Test count**: 609 (no new tests — packaging infrastructure only)  
+**Status**: Complete. Push a `v*` tag to trigger a release build.
 
 ---
 
