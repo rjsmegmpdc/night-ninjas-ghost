@@ -52,6 +52,10 @@ export default defineConfig({
     exclude: ['wa-sqlite'],
   },
 
+  worker: {
+    format: 'es',
+  },
+
   build: {
     target: 'es2020',
     rollupOptions: {
@@ -62,10 +66,5 @@ export default defineConfig({
         },
       },
     },
-  },
-
-  test: {
-    environment: 'node',
-    include: ['src/**/*.test.ts'],
   },
 });
