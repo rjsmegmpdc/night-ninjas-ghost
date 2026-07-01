@@ -11,12 +11,15 @@ import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite.mjs';
 // @ts-ignore — wa-sqlite examples are plain JS with no type declarations
 import { IDBBatchAtomicVFS } from 'wa-sqlite/src/examples/IDBBatchAtomicVFS.js';
 import * as SQLite from 'wa-sqlite';
+// Vite hashes asset filenames in production; import the WASM as an asset URL
+// so Rollup tracks it and the factory can find it regardless of the hash.
+import wasmUrl from 'wa-sqlite/dist/wa-sqlite.wasm?url';
 
 let db: number | null = null;
 let sqlite3: SQLiteAPI | null = null;
 
 async function init() {
-  const module = await SQLiteESMFactory();
+  const module = await SQLiteESMFactory({ locateFile: () => wasmUrl });
   sqlite3 = SQLite.Factory(module);
 
   // IDBBatchAtomicVFS is a class — no module param needed
