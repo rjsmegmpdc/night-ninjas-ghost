@@ -29,6 +29,7 @@ jobs:
         run: npm run build
         env:
           VITE_STRAVA_OAUTH_WORKER: ${{ secrets.STRAVA_OAUTH_WORKER_URL }}
+          VITE_STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
