@@ -7,13 +7,15 @@
  * All DB queries flow through this worker via postMessage so the main
  * thread is never blocked by I/O.
  */
-import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite.mjs';
+// wa-sqlite-async uses Asyncify to properly await IDB operations in the VFS.
+// The sync build (wa-sqlite.mjs) returns VFS Promises without awaiting them,
+// leaving file.block0 null when xFileSize fires. Asyncify solves this without
+// requiring SharedArrayBuffer, COOP, or COEP headers.
+import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
 // @ts-ignore — wa-sqlite examples are plain JS with no type declarations
 import { IDBBatchAtomicVFS } from 'wa-sqlite/src/examples/IDBBatchAtomicVFS.js';
 import * as SQLite from 'wa-sqlite';
-// Vite hashes asset filenames in production; import the WASM as an asset URL
-// so Rollup tracks it and the factory can find it regardless of the hash.
-import wasmUrl from 'wa-sqlite/dist/wa-sqlite.wasm?url';
+import wasmUrl from 'wa-sqlite/dist/wa-sqlite-async.wasm?url';
 
 let db: number | null = null;
 let sqlite3: SQLiteAPI | null = null;
