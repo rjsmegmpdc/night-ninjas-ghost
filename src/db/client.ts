@@ -19,6 +19,13 @@ export function getWorker(): Worker {
       if (error) p.reject(new Error(error));
       else p.resolve(rows ?? []);
     };
+    worker.onerror = (e: ErrorEvent) => {
+      // Worker failed to load or threw an uncaught exception outside init().
+      // Re-dispatch as a message so DbContext can surface it.
+      worker?.dispatchEvent(new MessageEvent('message', {
+        data: { type: 'error', error: `Worker load error: ${e.message} (${e.filename}:${e.lineno})` },
+      }));
+    };
   }
   return worker;
 }
