@@ -76,7 +76,9 @@ export default function SetupPage() {
       return;
     }
 
-    void loadState();
+    loadState().catch((e: unknown) => {
+      setState({ status: 'error', message: `DB read failed: ${e instanceof Error ? e.message : String(e)}` });
+    });
   }, [ready, searchParams, loadState]);
 
   // Handle the token exchange when we enter 'exchanging' state
@@ -105,7 +107,9 @@ export default function SetupPage() {
       }
     }
 
-    void exchange();
+    exchange().catch((e: unknown) => {
+      setState({ status: 'error', message: `Exchange error: ${e instanceof Error ? e.message : String(e)}` });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status]);
 
