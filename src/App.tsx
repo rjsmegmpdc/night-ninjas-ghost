@@ -22,14 +22,18 @@ const Help      = lazy(() => import('./routes/help/HelpPage'));
 const Setup     = lazy(() => import('./routes/setup/SetupPage'));
 
 function AppShell() {
-  const { ready } = useDb();
+  const { ready, error: dbError } = useDb();
 
   if (!ready) {
     return (
       <div className="min-h-screen bg-ink flex items-center justify-center">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 max-w-lg px-6">
           <p className="font-display tracking-widest text-2xl text-accent uppercase">GHOST</p>
-          <p className="font-mono text-xs text-bone-dim animate-pulse">loading database…</p>
+          {dbError ? (
+            <p className="font-mono text-xs text-signal-miss leading-relaxed break-all">{dbError}</p>
+          ) : (
+            <p className="font-mono text-xs text-bone-dim animate-pulse">loading database…</p>
+          )}
         </div>
       </div>
     );
