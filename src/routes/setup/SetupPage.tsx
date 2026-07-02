@@ -229,19 +229,36 @@ function StravaSection({
 }
 
 function NotConnected() {
+  const redirectUri = `${window.location.origin}/setup`;
   const authUrl = CLIENT_ID ? buildStravaAuthUrl() : '#';
 
   return (
     <div className="space-y-4">
       <p className="font-mono text-sm text-bone-dim leading-relaxed">
         Connect your Strava account to pull your activity history into GHOST.
-        Your data stays in your browser — nothing is sent to any server except
-        the one-time OAuth token swap.
       </p>
-      <p className="font-mono text-xs text-bone-mute leading-relaxed">
-        Required: register <code>{window.location.origin}/setup</code> as an
-        authorised redirect URI in your Strava API application settings.
-      </p>
+
+      {/* Debug panel — shows exactly what will be sent to Strava */}
+      <div className="border border-ink-line p-4 space-y-2 bg-ink">
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-3">OAuth params</p>
+        <div className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-1.5 font-mono text-xs">
+          <span className="text-bone-mute">client_id</span>
+          <span className={CLIENT_ID ? 'text-accent' : 'text-signal-miss'}>
+            {CLIENT_ID ?? 'NOT SET — add VITE_STRAVA_CLIENT_ID secret'}
+          </span>
+          <span className="text-bone-mute">redirect_uri</span>
+          <span className="text-bone break-all">{redirectUri}</span>
+          <span className="text-bone-mute">scope</span>
+          <span className="text-bone">activity:read_all</span>
+          <span className="text-bone-mute">full url</span>
+          <span className="text-bone-dim break-all text-[10px] leading-relaxed">{authUrl}</span>
+        </div>
+        <p className="font-mono text-xs text-bone-mute mt-3 leading-relaxed">
+          Strava must have <strong className="text-bone">{window.location.hostname}</strong> set as the
+          Authorization Callback Domain (not the full path).
+        </p>
+      </div>
+
       <a
         href={authUrl}
         className={`inline-flex items-center gap-2 px-4 py-2.5 font-mono text-xs uppercase tracking-widest transition-colors ${
