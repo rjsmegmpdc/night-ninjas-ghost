@@ -10,7 +10,21 @@ let sqlite3: SQLiteAPI | null = null;
 type SQLiteAPI = Awaited<ReturnType<typeof SQLite.Factory>>;
 type BindParams = Parameters<SQLiteAPI['bind_collection']>[1];
 
-async function exec(sql: string, params: unknown[] = []): Promise<unknown[][]> {
+// Asyncify can only suspend one WASM call stack at a time. Concurrent queries
+// (e.g. Promise.all in getStoredTokens) corrupt each other's suspended stack
+// and surface as SQLITE_CANTOPEN. Every exec() goes through this serial queue.
+let _queue: Promise<void> = Promise.resolve();
+
+function enqueue<T>(fn: () => Promise<T>): Promise<T> {
+  const result = _queue.then(fn);
+  _queue = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
+
+async function _exec(sql: string, params: unknown[]): Promise<unknown[][]> {
   if (!sqlite3 || db === null) throw new Error('DB not initialised');
   const rows: unknown[][] = [];
   for await (const stmt of sqlite3.statements(db, sql)) {
@@ -22,24 +36,22 @@ async function exec(sql: string, params: unknown[] = []): Promise<unknown[][]> {
   return rows;
 }
 
+function exec(sql: string, params: unknown[] = []): Promise<unknown[][]> {
+  return enqueue(() => _exec(sql, params));
+}
+
 async function init() {
-  // 1. Load WASM
   const module = await SQLiteESMFactory({ locateFile: () => wasmUrl });
   sqlite3 = SQLite.Factory(module);
 
-  // 2. Register VFS — IDBMinimalVFS stores each SQLite page as an IDB entry.
-  //    Uses the async WASM build (Asyncify) so IDB awaits are handled correctly.
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
   const vfs = new (IDBMinimalVFS as new (name: string) => Parameters<SQLiteAPI['vfs_register']>[0])('ghost-db');
   sqlite3.vfs_register(vfs, true);
 
-  // 3. Open database
   db = await sqlite3.open_v2('ghost.db');
 
-  // 4. Sanity check — if open_v2 returned a bad handle this will throw here
-  //    rather than silently failing on the first real query.
+  // Verify handle is usable before reporting ready
   await exec('SELECT 1');
-
   await exec('PRAGMA foreign_keys = ON');
   await runMigrations();
 
@@ -65,18 +77,20 @@ async function runMigrations() {
   }
 }
 
-self.onmessage = async (e: MessageEvent) => {
+self.onmessage = (e: MessageEvent) => {
   const { id, sql, params } = e.data as {
     id: number;
     sql: string;
     params?: unknown[];
   };
-  try {
-    const rows = await exec(sql, params ?? []);
-    self.postMessage({ id, rows });
-  } catch (err) {
-    self.postMessage({ id, error: String(err) });
-  }
+  void enqueue(async () => {
+    try {
+      const rows = await _exec(sql, params ?? []);
+      self.postMessage({ id, rows });
+    } catch (err) {
+      self.postMessage({ id, error: String(err) });
+    }
+  });
 };
 
 init().catch((err: unknown) => {
