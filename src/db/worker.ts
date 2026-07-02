@@ -31,9 +31,10 @@ async function init() {
 
   db = await sqlite3.open_v2('ghost.db');
 
-  await exec('PRAGMA journal_mode = WAL');
+  // IDBBatchAtomicVFS handles write atomicity via IDB transactions — WAL mode
+  // is incompatible because SQLite tries to open the -wal file without
+  // SQLITE_OPEN_CREATE, causing SQLITE_CANTOPEN on the first read query.
   await exec('PRAGMA foreign_keys = ON');
-  await exec('PRAGMA synchronous = NORMAL');
 
   await runMigrations();
 
