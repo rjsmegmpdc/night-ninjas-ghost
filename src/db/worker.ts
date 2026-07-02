@@ -1,45 +1,11 @@
-/**
- * SQLite Web Worker — runs wa-sqlite with IDBBatchAtomicVFS.
- *
- * IDBBatchAtomicVFS uses IndexedDB as persistence; it does NOT require
- * SharedArrayBuffer, COOP, or COEP headers, so it works on GitHub Pages.
- *
- * All DB queries flow through this worker via postMessage so the main
- * thread is never blocked by I/O.
- */
-// wa-sqlite-async uses Asyncify to properly await IDB operations in the VFS.
-// The sync build (wa-sqlite.mjs) returns VFS Promises without awaiting them,
-// leaving file.block0 null when xFileSize fires. Asyncify solves this without
-// requiring SharedArrayBuffer, COOP, or COEP headers.
 import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
-// @ts-ignore — wa-sqlite examples are plain JS with no type declarations
-import { IDBBatchAtomicVFS } from 'wa-sqlite/src/examples/IDBBatchAtomicVFS.js';
+// @ts-ignore
+import { IDBMinimalVFS } from 'wa-sqlite/src/examples/IDBMinimalVFS.js';
 import * as SQLite from 'wa-sqlite';
 import wasmUrl from 'wa-sqlite/dist/wa-sqlite-async.wasm?url';
 
 let db: number | null = null;
 let sqlite3: SQLiteAPI | null = null;
-
-async function init() {
-  const module = await SQLiteESMFactory({ locateFile: () => wasmUrl });
-  sqlite3 = SQLite.Factory(module);
-
-  // IDBBatchAtomicVFS is a class — no module param needed
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-  const vfs = new (IDBBatchAtomicVFS as new (name: string) => Parameters<SQLiteAPI['vfs_register']>[0])('ghost-db');
-  sqlite3.vfs_register(vfs, true);
-
-  db = await sqlite3.open_v2('ghost.db');
-
-  // IDBBatchAtomicVFS handles write atomicity via IDB transactions — WAL mode
-  // is incompatible because SQLite tries to open the -wal file without
-  // SQLITE_OPEN_CREATE, causing SQLITE_CANTOPEN on the first read query.
-  await exec('PRAGMA foreign_keys = ON');
-
-  await runMigrations();
-
-  self.postMessage({ type: 'ready' });
-}
 
 type SQLiteAPI = Awaited<ReturnType<typeof SQLite.Factory>>;
 type BindParams = Parameters<SQLiteAPI['bind_collection']>[1];
@@ -56,11 +22,35 @@ async function exec(sql: string, params: unknown[] = []): Promise<unknown[][]> {
   return rows;
 }
 
+async function init() {
+  // 1. Load WASM
+  const module = await SQLiteESMFactory({ locateFile: () => wasmUrl });
+  sqlite3 = SQLite.Factory(module);
+
+  // 2. Register VFS — IDBMinimalVFS stores each SQLite page as an IDB entry.
+  //    Uses the async WASM build (Asyncify) so IDB awaits are handled correctly.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+  const vfs = new (IDBMinimalVFS as new (name: string) => Parameters<SQLiteAPI['vfs_register']>[0])('ghost-db');
+  sqlite3.vfs_register(vfs, true);
+
+  // 3. Open database
+  db = await sqlite3.open_v2('ghost.db');
+
+  // 4. Sanity check — if open_v2 returned a bad handle this will throw here
+  //    rather than silently failing on the first real query.
+  await exec('SELECT 1');
+
+  await exec('PRAGMA foreign_keys = ON');
+  await runMigrations();
+
+  self.postMessage({ type: 'ready' });
+}
+
 async function runMigrations() {
   await exec(`
     CREATE TABLE IF NOT EXISTS _migrations (
-      id    INTEGER PRIMARY KEY,
-      name  TEXT NOT NULL UNIQUE,
+      id     INTEGER PRIMARY KEY,
+      name   TEXT NOT NULL UNIQUE,
       ran_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
@@ -78,11 +68,9 @@ async function runMigrations() {
 self.onmessage = async (e: MessageEvent) => {
   const { id, sql, params } = e.data as {
     id: number;
-    type: 'exec' | 'query';
     sql: string;
     params?: unknown[];
   };
-
   try {
     const rows = await exec(sql, params ?? []);
     self.postMessage({ id, rows });
@@ -91,6 +79,6 @@ self.onmessage = async (e: MessageEvent) => {
   }
 };
 
-init().catch((err) => {
-  self.postMessage({ type: 'error', error: String(err) });
+init().catch((err: unknown) => {
+  self.postMessage({ type: 'error', error: `init failed: ${String(err)}` });
 });
