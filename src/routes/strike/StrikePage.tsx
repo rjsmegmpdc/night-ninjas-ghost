@@ -1,12 +1,910 @@
-// TODO: port from VELOCITY app/(app)/strike/page.tsx
+/**
+ * Strike — Athlete State screen.
+ * Shows CTL/ATL/TSB (Card 1), Intensity History (Card 2),
+ * Mileage Trajectory (Card 3), and Long Run this week (Card 4).
+ *
+ * No BiometricsCard: daily_health_metrics table does not exist in GHOST.
+ * Skip biometrics — add when that migration is in place.
+ */
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router';
+import { useDb } from '@/db/DbContext';
+import { query } from '@/db/client';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import {
+  computeEwma,
+  classifyForm,
+  rollupConfidence,
+  CTL_TIME_CONSTANT,
+  ATL_TIME_CONSTANT,
+  WINDOW_DAYS,
+  type FormClass,
+} from '@/lib/analysis/athlete-state-pure';
+import { computeActivityLoad, type LoadConfidence } from '@/lib/analysis/load';
+import { classifySport, isRunning } from '@/lib/analysis/sport-classifier';
+
+// ---------------------------------------------------------------------------
+// UTC date helpers — always build keys with UTC so they match computeEwma's
+// internal walk (which also anchors to UTC).
+// ---------------------------------------------------------------------------
+
+function utcIso(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function utcDaysAgo(n: number): string {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - n);
+  return utcIso(d);
+}
+
+function todayUtcIso(): string {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  return utcIso(d);
+}
+
+/**
+ * ISO week key — Mon is day 1. Returns 'YYYY-Www'.
+ * Uses UTC date components so keys don't shift by timezone.
+ */
+function isoWeekKey(dateIso: string): string {
+  const d = new Date(dateIso + 'T00:00:00Z');
+  // Move to nearest Thursday (ISO week belongs to the year of its Thursday)
+  const thursday = new Date(d);
+  const dow = d.getUTCDay(); // 0=Sun..6=Sat
+  const daysToThursday = dow === 0 ? 3 : 4 - dow;
+  thursday.setUTCDate(d.getUTCDate() + daysToThursday);
+  const year = thursday.getUTCFullYear();
+  // Week number: Jan 4 is always in week 1
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const jan4Dow = jan4.getUTCDay() || 7;
+  const weekStart = new Date(jan4);
+  weekStart.setUTCDate(jan4.getUTCDate() - (jan4Dow - 1));
+  const weekNum = Math.floor((thursday.getTime() - weekStart.getTime()) / (7 * 86400000)) + 1;
+  return `${year}-W${String(weekNum).padStart(2, '0')}`;
+}
+
+/** Monday of the current UTC week */
+function currentWeekMonday(): string {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  const dow = d.getUTCDay() || 7; // Mon=1..Sun=7
+  d.setUTCDate(d.getUTCDate() - (dow - 1));
+  return utcIso(d);
+}
+
+/** Monday of 2 weeks ago in UTC */
+function twoWeeksAgoMonday(): string {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  const dow = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() - (dow - 1) - 14);
+  return utcIso(d);
+}
+
+// ---------------------------------------------------------------------------
+// Row shape from the query (positions match the spec)
+// r[0]=start_date, r[1]=distance(m), r[2]=moving_time(s), r[3]=avg_hr,
+// r[4]=sport_type, r[5]=avg_speed(m/s), r[6]=name, r[7]=type
+// ---------------------------------------------------------------------------
+interface RawRow {
+  startDate: string;
+  distanceM: number;
+  movingTimeS: number;
+  avgHr: number | null;
+  sportType: string | null;
+  avgSpeedMs: number | null;
+  name: string | null;
+  type: string;
+}
+
+function parseRow(r: unknown[]): RawRow {
+  return {
+    startDate: r[0] as string,
+    distanceM: (r[1] as number) ?? 0,
+    movingTimeS: (r[2] as number) ?? 0,
+    avgHr: r[3] as number | null,
+    sportType: r[4] as string | null,
+    avgSpeedMs: r[5] as number | null,
+    name: r[6] as string | null,
+    type: r[7] as string,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Data shapes
+// ---------------------------------------------------------------------------
+
+interface AthleteStateData {
+  ctl: number;
+  atl: number;
+  tsb: number;
+  formClass: FormClass;
+  activityCount: number;
+  confidence: 'calibrated' | 'pace-only' | 'estimated';
+  hrCount: number;
+}
+
+interface WeekIntensity {
+  weekKey: string;
+  startIso: string;
+  endIso: string;
+  easyS: number;
+  greyS: number;
+  hardS: number;
+  totalS: number;
+}
+
+interface WeekMileage {
+  weekKey: string;
+  startIso: string;
+  endIso: string;
+  runKm: number;
+}
+
+interface LongRunData {
+  longRunKm: number;
+  weekTotalKm: number;
+  twoWeeksAgoLongKm: number;
+}
+
+interface StrikeData {
+  athleteState: AthleteStateData;
+  intensityWeeks: WeekIntensity[];
+  mileageWeeks: WeekMileage[];
+  longRun: LongRunData | null;
+}
+
+// ---------------------------------------------------------------------------
+// Query helpers
+// ---------------------------------------------------------------------------
+
+async function fetchAthleteState(cutoffIso: string, todayIso: string): Promise<AthleteStateData> {
+  const rows = await query(
+    `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed, name, type
+     FROM activities
+     WHERE start_date >= ? AND start_date <= ?
+     ORDER BY start_date`,
+    [cutoffIso, todayIso + 'T99:99:99'],
+  );
+
+  const dailyLoads = new Map<string, number>();
+  let activityCount = 0;
+  const confCounts = { calibrated: 0, 'pace-only': 0, estimated: 0 };
+  let hrCount = 0;
+
+  for (const r of rows) {
+    const row = parseRow(r);
+    const dayKey = row.startDate.slice(0, 10);
+
+    const result = computeActivityLoad(
+      {
+        sportType: row.sportType,
+        type: row.type,
+        name: row.name ?? null,
+        movingTimeS: row.movingTimeS,
+        avgHr: row.avgHr,
+        avgSpeedMs: row.avgSpeedMs,
+      },
+      {},
+    );
+
+    if (!result) continue;
+
+    activityCount++;
+    const existing = dailyLoads.get(dayKey) ?? 0;
+    dailyLoads.set(dayKey, existing + result.points);
+
+    const conf = result.confidence as LoadConfidence;
+    if (conf === 'calibrated') confCounts.calibrated++;
+    else if (conf === 'pace-only') confCounts['pace-only']++;
+    else confCounts.estimated++;
+
+    if (row.avgHr != null) hrCount++;
+  }
+
+  const ctl = computeEwma(dailyLoads, todayIso, WINDOW_DAYS, CTL_TIME_CONSTANT);
+  const atl = computeEwma(dailyLoads, todayIso, WINDOW_DAYS, ATL_TIME_CONSTANT);
+  const tsb = ctl - atl;
+  const formClass = classifyForm(tsb);
+  const confidence = rollupConfidence(confCounts, activityCount);
+
+  return {
+    ctl: Math.round(ctl * 10) / 10,
+    atl: Math.round(atl * 10) / 10,
+    tsb: Math.round(tsb * 10) / 10,
+    formClass,
+    activityCount,
+    confidence,
+    hrCount,
+  };
+}
+
+async function fetchIntensityWeeks(cutoffIso: string, todayIso: string): Promise<WeekIntensity[]> {
+  const rows = await query(
+    `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed, name, type
+     FROM activities
+     WHERE start_date >= ? AND start_date <= ?
+     ORDER BY start_date`,
+    [cutoffIso, todayIso + 'T99:99:99'],
+  );
+
+  const weekMap = new Map<string, WeekIntensity>();
+
+  for (const r of rows) {
+    const row = parseRow(r);
+    const key = isoWeekKey(row.startDate.slice(0, 10));
+
+    if (!weekMap.has(key)) {
+      // Derive Mon/Sun of the week from the activity date
+      const d = new Date(row.startDate.slice(0, 10) + 'T00:00:00Z');
+      const dow = d.getUTCDay() || 7;
+      const mon = new Date(d);
+      mon.setUTCDate(d.getUTCDate() - (dow - 1));
+      const sun = new Date(mon);
+      sun.setUTCDate(mon.getUTCDate() + 6);
+      weekMap.set(key, {
+        weekKey: key,
+        startIso: utcIso(mon),
+        endIso: utcIso(sun),
+        easyS: 0,
+        greyS: 0,
+        hardS: 0,
+        totalS: 0,
+      });
+    }
+
+    const wk = weekMap.get(key)!;
+    const result = computeActivityLoad(
+      {
+        sportType: row.sportType,
+        type: row.type,
+        name: row.name ?? null,
+        movingTimeS: row.movingTimeS,
+        avgHr: row.avgHr,
+        avgSpeedMs: row.avgSpeedMs,
+      },
+      {},
+    );
+
+    if (!result) continue;
+
+    const s = row.movingTimeS;
+    wk.totalS += s;
+    const zone = result.zone;
+    if (zone === 'easy') {
+      wk.easyS += s;
+    } else if (zone === 'marathon' || zone === 'threshold') {
+      wk.greyS += s;
+    } else {
+      // 'interval' | 'repetition' | 'quality'
+      wk.hardS += s;
+    }
+  }
+
+  // Build ordered 8-week list (oldest first)
+  const allKeys = Array.from(weekMap.keys()).sort();
+  return allKeys.map((k) => weekMap.get(k)!);
+}
+
+async function fetchMileageWeeks(cutoffIso: string, todayIso: string): Promise<WeekMileage[]> {
+  const rows = await query(
+    `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed, name, type
+     FROM activities
+     WHERE start_date >= ? AND start_date <= ?
+     ORDER BY start_date`,
+    [cutoffIso, todayIso + 'T99:99:99'],
+  );
+
+  const weekMap = new Map<string, WeekMileage>();
+
+  for (const r of rows) {
+    const row = parseRow(r);
+    const dayIso = row.startDate.slice(0, 10);
+    const key = isoWeekKey(dayIso);
+
+    if (!weekMap.has(key)) {
+      const d = new Date(dayIso + 'T00:00:00Z');
+      const dow = d.getUTCDay() || 7;
+      const mon = new Date(d);
+      mon.setUTCDate(d.getUTCDate() - (dow - 1));
+      const sun = new Date(mon);
+      sun.setUTCDate(mon.getUTCDate() + 6);
+      weekMap.set(key, {
+        weekKey: key,
+        startIso: utcIso(mon),
+        endIso: utcIso(sun),
+        runKm: 0,
+      });
+    }
+
+    const cat = classifySport(row.sportType, row.name ?? undefined);
+    if (isRunning(cat)) {
+      weekMap.get(key)!.runKm += row.distanceM / 1000;
+    }
+  }
+
+  const allKeys = Array.from(weekMap.keys()).sort();
+  return allKeys.map((k) => weekMap.get(k)!);
+}
+
+async function fetchLongRun(
+  weekMondayIso: string,
+  twoWeeksAgoIso: string,
+  weekSundayIso: string,
+): Promise<LongRunData | null> {
+  // This week's runs
+  const thisWeekRows = await query(
+    `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed, name, type
+     FROM activities
+     WHERE start_date >= ? AND start_date <= ?
+     ORDER BY start_date`,
+    [weekMondayIso, weekSundayIso + 'T99:99:99'],
+  );
+
+  let longRunKm = 0;
+  let weekTotalKm = 0;
+
+  for (const r of thisWeekRows) {
+    const row = parseRow(r);
+    const cat = classifySport(row.sportType, row.name ?? undefined);
+    if (isRunning(cat)) {
+      const km = row.distanceM / 1000;
+      weekTotalKm += km;
+      if (km > longRunKm) longRunKm = km;
+    }
+  }
+
+  if (longRunKm < 10) return null;
+
+  // Two weeks ago's runs — use same week window offset by 14 days
+  const twoWeeksAgoSundayIso = (() => {
+    const d = new Date(twoWeeksAgoIso + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 6);
+    return utcIso(d);
+  })();
+
+  const twoWeeksRows = await query(
+    `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed, name, type
+     FROM activities
+     WHERE start_date >= ? AND start_date <= ?
+     ORDER BY start_date`,
+    [twoWeeksAgoIso, twoWeeksAgoSundayIso + 'T99:99:99'],
+  );
+
+  let twoWeeksAgoLongKm = 0;
+  for (const r of twoWeeksRows) {
+    const row = parseRow(r);
+    const cat = classifySport(row.sportType, row.name ?? undefined);
+    if (isRunning(cat)) {
+      const km = row.distanceM / 1000;
+      if (km > twoWeeksAgoLongKm) twoWeeksAgoLongKm = km;
+    }
+  }
+
+  return { longRunKm, weekTotalKm, twoWeeksAgoLongKm };
+}
+
+// ---------------------------------------------------------------------------
+// Form class display maps
+// ---------------------------------------------------------------------------
+
+const FORM_LABEL: Record<FormClass, string> = {
+  fresh: 'Fresh',
+  'on-form': 'On Form',
+  maintained: 'Maintained',
+  loaded: 'Loaded',
+  overreached: 'Overreached',
+};
+
+const FORM_COLOR: Record<FormClass, string> = {
+  fresh: 'text-accent',
+  'on-form': 'text-signal-ok',
+  maintained: 'text-bone',
+  loaded: 'text-signal-warn',
+  overreached: 'text-signal-miss',
+};
+
+// ---------------------------------------------------------------------------
+// Utility
+// ---------------------------------------------------------------------------
+
+function shortDate(iso: string): string {
+  const d = new Date(iso + 'T00:00:00Z');
+  return d.toLocaleDateString('en-NZ', { day: '2-digit', month: 'short', timeZone: 'UTC' });
+}
+
+function signedStr(n: number): string {
+  return n >= 0 ? `+${n.toFixed(1)}` : n.toFixed(1);
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function StrikePage() {
+  const { ready, error: dbError } = useDb();
+  const [data, setData] = useState<StrikeData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const todayIso = todayUtcIso();
+  const cutoffIso = utcDaysAgo(WINDOW_DAYS);
+  const weekMonday = currentWeekMonday();
+  const twoWeeksAgo = twoWeeksAgoMonday();
+  const weekSunday = (() => {
+    const d = new Date(weekMonday + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 6);
+    return utcIso(d);
+  })();
+
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      fetchAthleteState(cutoffIso, todayIso),
+      fetchIntensityWeeks(cutoffIso, todayIso),
+      fetchMileageWeeks(cutoffIso, todayIso),
+      fetchLongRun(weekMonday, twoWeeksAgo, weekSunday),
+    ])
+      .then(([athleteState, intensityWeeks, mileageWeeks, longRun]) => {
+        if (cancelled) return;
+        setData({ athleteState, intensityWeeks, mileageWeeks, longRun });
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [ready, cutoffIso, todayIso, weekMonday, twoWeeksAgo, weekSunday]);
+
+  if (dbError) {
+    return (
+      <div className="px-4 py-8 max-w-7xl mx-auto">
+        <p className="font-mono text-xs text-signal-miss">DB error: {dbError}</p>
+      </div>
+    );
+  }
+
+  if (!ready || loading || !data) return <PageSkeleton />;
+
+  if (error) {
+    return (
+      <div className="px-4 py-8 max-w-7xl mx-auto">
+        <p className="font-mono text-xs text-signal-miss">Error loading data: {error}</p>
+      </div>
+    );
+  }
+
+  const { athleteState, intensityWeeks, mileageWeeks, longRun } = data;
+  const tooFewActivities = athleteState.activityCount < 7;
+
   return (
-    <div className="px-4 sm:px-8 lg:px-12 py-8 max-w-7xl mx-auto">
-      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-2">Ghost</p>
-      <h1 className="font-display text-4xl tracking-widest uppercase text-bone mb-8">Strike</h1>
-      <p className="font-mono text-sm text-bone-dim">
-        Porting in progress — pure analysis engines are live, UI coming soon.
-      </p>
+    <div className="px-4 sm:px-8 lg:px-12 py-8 max-w-7xl mx-auto space-y-8">
+      {/* Header */}
+      <header className="space-y-1 border-b border-ink-line pb-6">
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">strike</p>
+        <h1 className="font-display tracking-widest text-4xl uppercase leading-none text-bone">
+          Strike
+        </h1>
+        <p className="font-mono text-xs text-bone-dim">
+          Athlete State — 8-week window
+        </p>
+      </header>
+
+      {tooFewActivities ? (
+        <EmptyState />
+      ) : (
+        <>
+          {/* Card 1: Athlete State */}
+          <AthleteStateCard state={athleteState} />
+
+          {/* Cards 2 + 3: two-col on large */}
+          <div className="grid lg:grid-cols-2 gap-8">
+            <IntensityHistoryCard weeks={intensityWeeks} />
+            <MileageTrajectoryCard weeks={mileageWeeks} />
+          </div>
+
+          {/* Card 4: Long Run — only if > 10km exists this week */}
+          {longRun && <LongRunCard data={longRun} />}
+        </>
+      )}
+
+      {/* Static footer */}
+      <footer className="border-t border-ink-line pt-4">
+        <Link to="/vo2max" className="font-mono text-xs text-bone-mute hover:text-accent transition-colors">
+          VO2max analysis →
+        </Link>
+      </footer>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Empty state
+// ---------------------------------------------------------------------------
+
+function EmptyState() {
+  return (
+    <div className="border border-ink-line p-8 space-y-3">
+      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+        strike · insufficient data
+      </p>
+      <h2 className="font-display tracking-widest text-3xl uppercase text-bone">
+        Not enough history
+      </h2>
+      <p className="font-mono text-sm text-bone-dim max-w-xl leading-relaxed">
+        Sync more activities in Setup. Strike needs at least 7 activities in the last 8 weeks to
+        compute meaningful athlete state.
+      </p>
+      <Link
+        to="/setup"
+        className="inline-flex items-center gap-2 mt-2 font-mono text-xs uppercase tracking-widest text-accent hover:text-accent-hover transition-colors"
+      >
+        Go to setup →
+      </Link>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Card 1: Athlete State (CTL / ATL / TSB)
+// ---------------------------------------------------------------------------
+
+function AthleteStateCard({ state }: { state: AthleteStateData }) {
+  const { ctl, atl, tsb, formClass, activityCount, confidence, hrCount } = state;
+  const paceOnlyCount = activityCount - hrCount;
+
+  return (
+    <section className="border border-ink-line" aria-label="Athlete State">
+      {/* Card header */}
+      <div className="px-6 py-4 border-b border-ink-line flex items-center justify-between">
+        <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          athlete state · CTL / ATL / TSB
+        </span>
+        <span className={`font-mono text-xs uppercase tracking-widest ${FORM_COLOR[formClass]}`}>
+          {FORM_LABEL[formClass]}
+        </span>
+      </div>
+
+      {/* Metric grid */}
+      <div className="grid grid-cols-3 gap-px bg-ink-line">
+        {/* CTL */}
+        <div className="bg-ink p-6 space-y-1">
+          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">CTL</p>
+          <p className="font-display tracking-widest text-4xl leading-none text-bone">
+            {ctl.toFixed(1)}
+          </p>
+          <p className="font-mono text-xs text-bone-mute">chronic · fitness</p>
+        </div>
+
+        {/* ATL */}
+        <div className="bg-ink p-6 space-y-1">
+          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">ATL</p>
+          <p className="font-display tracking-widest text-4xl leading-none text-bone">
+            {atl.toFixed(1)}
+          </p>
+          <p className="font-mono text-xs text-bone-mute">acute · fatigue</p>
+        </div>
+
+        {/* TSB */}
+        <div className="bg-ink p-6 space-y-1">
+          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">TSB</p>
+          <p className={`font-display tracking-widest text-4xl leading-none ${FORM_COLOR[formClass]}`}>
+            {signedStr(tsb)}
+          </p>
+          <p className={`font-mono text-xs ${FORM_COLOR[formClass]}`}>
+            {FORM_LABEL[formClass]}
+          </p>
+        </div>
+      </div>
+
+      {/* Footer: activity count + confidence */}
+      <div className="px-6 py-3 border-t border-ink-line flex flex-wrap items-center gap-4">
+        <span className="font-mono text-xs text-bone-mute">
+          {activityCount} {activityCount === 1 ? 'activity' : 'activities'} in window
+        </span>
+        <span className="font-mono text-xs text-bone-mute">
+          {hrCount} with HR · {paceOnlyCount} pace-only
+        </span>
+        <span className="font-mono text-xs text-bone-dim uppercase tracking-widest">
+          {confidence}
+        </span>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Card 2: Intensity History (8 weeks)
+// ---------------------------------------------------------------------------
+
+const BAR_HEIGHT_PX = 80;
+
+function IntensityHistoryCard({ weeks }: { weeks: WeekIntensity[] }) {
+  // Pad to exactly 8 weeks
+  const padded = padWeeks(weeks, 8);
+
+  return (
+    <section className="border border-ink-line" aria-label="Intensity History">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-ink-line flex items-center justify-between flex-wrap gap-3">
+        <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          intensity · 8 weeks
+        </span>
+        <div className="flex items-center gap-4">
+          <LegendSwatch color="bg-signal-ok" label="Easy" />
+          <LegendSwatch color="bg-signal-warn" label="Grey" />
+          <LegendSwatch color="bg-signal-miss" label="Hard" />
+        </div>
+      </div>
+
+      {/* Bar chart */}
+      <div className="px-6 py-5">
+        <div className="flex items-end gap-1 justify-between">
+          {padded.map((week, i) => (
+            <IntensityBar key={week?.weekKey ?? `empty-${i}`} week={week} />
+          ))}
+        </div>
+        {/* Date labels */}
+        <div className="flex justify-between mt-2">
+          <span className="font-mono text-xs text-bone-mute">
+            {padded[0] ? shortDate(padded[0].startIso) : ''}
+          </span>
+          <span className="font-mono text-xs text-bone-mute">
+            {padded[padded.length - 1] ? shortDate(padded[padded.length - 1]!.endIso) : ''}
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function IntensityBar({ week }: { week: WeekIntensity | null }) {
+  if (!week || week.totalS === 0) {
+    return (
+      <div
+        className="flex-1 border border-dashed border-ink-line-bold rounded-sm opacity-40"
+        style={{ height: BAR_HEIGHT_PX }}
+        aria-label="No activity"
+      />
+    );
+  }
+
+  const total = week.easyS + week.greyS + week.hardS || 1;
+  const easyPct = (week.easyS / total) * 100;
+  const greyPct = (week.greyS / total) * 100;
+  const hardPct = (week.hardS / total) * 100;
+
+  return (
+    <div
+      className="flex-1 flex flex-col-reverse rounded-sm overflow-hidden"
+      style={{ height: BAR_HEIGHT_PX }}
+      aria-label={`Week ${week.weekKey}`}
+    >
+      {/* Bottom = easy (green) */}
+      {easyPct > 0 && (
+        <div
+          className="bg-signal-ok"
+          style={{ height: `${easyPct}%` }}
+          title={`Easy ${easyPct.toFixed(0)}%`}
+        />
+      )}
+      {/* Middle = grey (amber) */}
+      {greyPct > 0 && (
+        <div
+          className="bg-signal-warn"
+          style={{ height: `${greyPct}%` }}
+          title={`Grey ${greyPct.toFixed(0)}%`}
+        />
+      )}
+      {/* Top = hard (red) */}
+      {hardPct > 0 && (
+        <div
+          className="bg-signal-miss"
+          style={{ height: `${hardPct}%` }}
+          title={`Hard ${hardPct.toFixed(0)}%`}
+        />
+      )}
+    </div>
+  );
+}
+
+function LegendSwatch({ color, label }: { color: string; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className={`w-2.5 h-2.5 rounded-sm ${color}`} aria-hidden="true" />
+      <span className="font-mono text-xs text-bone-mute">{label}</span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Card 3: Mileage Trajectory (8 weeks)
+// ---------------------------------------------------------------------------
+
+const MILEAGE_BAR_PX = 80;
+
+function MileageTrajectoryCard({ weeks }: { weeks: WeekMileage[] }) {
+  const padded = padMileageWeeks(weeks, 8);
+  const runningWeeks = padded.filter((w): w is WeekMileage => w !== null && w.runKm > 0);
+  const peakKm = runningWeeks.length > 0 ? Math.max(...runningWeeks.map((w) => w.runKm)) : 0;
+
+  return (
+    <section className="border border-ink-line" aria-label="Mileage Trajectory">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-ink-line flex items-center justify-between flex-wrap gap-2">
+        <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          mileage · 8 weeks
+        </span>
+        {peakKm > 0 && (
+          <span className="font-mono text-xs text-bone-dim">
+            peak {peakKm.toFixed(1)} km
+          </span>
+        )}
+      </div>
+
+      {/* Bar chart */}
+      <div className="px-6 py-5">
+        <div className="flex items-end gap-1 justify-between">
+          {padded.map((week, i) => (
+            <MileageBar
+              key={week?.weekKey ?? `empty-${i}`}
+              week={week}
+              peakKm={peakKm}
+              prevKm={i > 0 && padded[i - 1] ? (padded[i - 1]!.runKm) : 0}
+            />
+          ))}
+        </div>
+        {/* Date labels */}
+        <div className="flex justify-between mt-2">
+          <span className="font-mono text-xs text-bone-mute">
+            {padded[0] ? shortDate(padded[0].startIso) : ''}
+          </span>
+          <span className="font-mono text-xs text-bone-mute">
+            {padded[padded.length - 1] ? shortDate(padded[padded.length - 1]!.endIso) : ''}
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MileageBar({
+  week, peakKm, prevKm,
+}: {
+  week: WeekMileage | null;
+  peakKm: number;
+  prevKm: number;
+}) {
+  if (!week || week.runKm === 0) {
+    return (
+      <div
+        className="flex-1 border border-dashed border-ink-line-bold rounded-sm opacity-40"
+        style={{ height: MILEAGE_BAR_PX }}
+        aria-label="No runs this week"
+      />
+    );
+  }
+
+  const heightPx = peakKm > 0 ? Math.max(4, (week.runKm / peakKm) * MILEAGE_BAR_PX) : 4;
+
+  let barColor = 'bg-bone-dim';
+  if (prevKm > 0) {
+    const ratio = week.runKm / prevKm;
+    if (ratio > 1.15) barColor = 'bg-signal-miss';
+    else if (ratio > 1.1) barColor = 'bg-signal-warn';
+  }
+
+  return (
+    <div
+      className="flex-1 flex flex-col justify-end"
+      style={{ height: MILEAGE_BAR_PX }}
+      title={`${week.runKm.toFixed(1)} km`}
+    >
+      <div
+        className={`${barColor} rounded-sm`}
+        style={{ height: heightPx }}
+        aria-label={`${week.weekKey}: ${week.runKm.toFixed(1)} km`}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Card 4: Long Run (this week only)
+// ---------------------------------------------------------------------------
+
+function LongRunCard({ data }: { data: LongRunData }) {
+  const { longRunKm, weekTotalKm, twoWeeksAgoLongKm } = data;
+  const pctOfWeek = weekTotalKm > 0 ? (longRunKm / weekTotalKm) * 100 : 0;
+  const delta = twoWeeksAgoLongKm > 0 ? longRunKm - twoWeeksAgoLongKm : null;
+
+  return (
+    <section className="border border-ink-line" aria-label="Long Run">
+      <div className="px-6 py-4 border-b border-ink-line">
+        <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          long run · this week
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-px bg-ink-line">
+        <div className="bg-ink p-6 space-y-1">
+          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">Distance</p>
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-display tracking-widest text-4xl leading-none text-bone">
+              {longRunKm.toFixed(1)}
+            </span>
+            <span className="font-mono text-bone-mute text-sm">km</span>
+          </div>
+        </div>
+
+        <div className="bg-ink p-6 space-y-1">
+          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">% of week</p>
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-display tracking-widest text-4xl leading-none text-bone">
+              {pctOfWeek.toFixed(0)}
+            </span>
+            <span className="font-mono text-bone-mute text-sm">%</span>
+          </div>
+          <p className="font-mono text-xs text-bone-mute">of {weekTotalKm.toFixed(1)} km total</p>
+        </div>
+
+        <div className="bg-ink p-6 space-y-1">
+          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vs 2 weeks ago</p>
+          {delta !== null ? (
+            <>
+              <div className="flex items-baseline gap-1.5">
+                <span
+                  className={`font-display tracking-widest text-4xl leading-none ${
+                    delta > 0 ? 'text-signal-warn' : delta < 0 ? 'text-signal-ok' : 'text-bone'
+                  }`}
+                >
+                  {signedStr(delta)}
+                </span>
+                <span className="font-mono text-bone-mute text-sm">km</span>
+              </div>
+              <p className="font-mono text-xs text-bone-mute">
+                was {twoWeeksAgoLongKm.toFixed(1)} km
+              </p>
+            </>
+          ) : (
+            <p className="font-display tracking-widest text-4xl leading-none text-bone-mute">—</p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pad week arrays to a fixed length (oldest → newest)
+// ---------------------------------------------------------------------------
+
+function padWeeks(weeks: WeekIntensity[], count: number): (WeekIntensity | null)[] {
+  const result: (WeekIntensity | null)[] = Array(count).fill(null);
+  // Place actual weeks at the end of the array
+  const start = Math.max(0, count - weeks.length);
+  for (let i = 0; i < weeks.length && start + i < count; i++) {
+    result[start + i] = weeks[i];
+  }
+  return result;
+}
+
+function padMileageWeeks(weeks: WeekMileage[], count: number): (WeekMileage | null)[] {
+  const result: (WeekMileage | null)[] = Array(count).fill(null);
+  const start = Math.max(0, count - weeks.length);
+  for (let i = 0; i < weeks.length && start + i < count; i++) {
+    result[start + i] = weeks[i];
+  }
+  return result;
 }

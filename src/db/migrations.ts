@@ -113,4 +113,26 @@ export const MIGRATIONS: { name: string; sql: string }[] = [
       CREATE INDEX IF NOT EXISTS idx_journal_date          ON journal(date);
     `,
   },
+  {
+    name: '0002_races_goal_level',
+    sql: `
+      ALTER TABLE races ADD COLUMN is_goal  INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE races ADD COLUMN level    TEXT    NOT NULL DEFAULT 'intermediate';
+      ALTER TABLE races ADD COLUMN distance_label TEXT;
+
+      CREATE TABLE IF NOT EXISTS recurring_sessions (
+        id                    INTEGER PRIMARY KEY,
+        name                  TEXT NOT NULL,
+        dow                   INTEGER NOT NULL,
+        session_type          TEXT NOT NULL DEFAULT 'easy',
+        typical_distance_min  REAL,
+        typical_distance_max  REAL,
+        pace_label            TEXT,
+        venue                 TEXT,
+        notes                 TEXT,
+        is_active             INTEGER NOT NULL DEFAULT 1,
+        created_at            TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `,
+  },
 ];
