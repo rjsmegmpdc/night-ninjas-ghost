@@ -135,4 +135,29 @@ export const MIGRATIONS: { name: string; sql: string }[] = [
       );
     `,
   },
+  {
+    name: '0003_race_results_vo2max',
+    sql: `
+      CREATE TABLE IF NOT EXISTS race_results (
+        id            INTEGER PRIMARY KEY,
+        race_id       INTEGER NOT NULL,
+        finish_time_s INTEGER,
+        conditions    TEXT,
+        rpe           INTEGER,
+        lessons       TEXT,
+        created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS vo2max_observations (
+        id         INTEGER PRIMARY KEY,
+        date       TEXT NOT NULL,
+        source     TEXT NOT NULL,
+        value      REAL NOT NULL,
+        inputs     TEXT,
+        note       TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `,
+  },
 ];

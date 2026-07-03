@@ -1,12 +1,883 @@
-// TODO: port from VELOCITY app/(app)/coach-log/page.tsx
-export default function CoachLogPage() {
+import { useState, useEffect, useCallback } from 'react';
+import { useDb } from '@/db/DbContext';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { query, exec } from '@/db/client';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface JournalEntry {
+  id: number;
+  date: string;
+  sleepQuality: number | null;
+  energyLevel: number | null;
+  stressLevel: number | null;
+  restingHr: number | null;
+  hrv: number | null;
+  weightKg: number | null;
+  notes: string | null;
+}
+
+interface ActivitySummary {
+  cnt: number;
+  km: number;
+}
+
+// ---------------------------------------------------------------------------
+// Date helpers — UTC to avoid timezone drift on ISO date strings
+// ---------------------------------------------------------------------------
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function cutoffIso(daysBack: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - daysBack);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatDateHeader(iso: string): string {
+  const d = new Date(iso + 'T00:00:00Z');
+  return d.toLocaleDateString('en-NZ', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+}
+
+/** Last N ISO date strings (today first) */
+function last14Dates(): string[] {
+  const dates: string[] = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - i);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  return dates; // newest first
+}
+
+// ---------------------------------------------------------------------------
+// Data fetching
+// ---------------------------------------------------------------------------
+
+async function loadData(cutoff42: string): Promise<{
+  journal: JournalEntry[];
+  actMap: Map<string, ActivitySummary>;
+}> {
+  const [journalRows, actRows] = await Promise.all([
+    query(
+      'SELECT id, date, sleep_quality, energy_level, stress_level, resting_hr, hrv, weight_kg, notes FROM journal WHERE date >= ? ORDER BY date DESC',
+      [cutoff42]
+    ),
+    query(
+      "SELECT date(start_date) as d, COUNT(*) as cnt, ROUND(SUM(distance)/1000,1) as km FROM activities WHERE start_date >= ? GROUP BY date(start_date)",
+      [cutoff42]
+    ),
+  ]);
+
+  const journal: JournalEntry[] = journalRows.map((r) => ({
+    id: r[0] as number,
+    date: r[1] as string,
+    sleepQuality: r[2] as number | null,
+    energyLevel: r[3] as number | null,
+    stressLevel: r[4] as number | null,
+    restingHr: r[5] as number | null,
+    hrv: r[6] as number | null,
+    weightKg: r[7] as number | null,
+    notes: r[8] as string | null,
+  }));
+
+  const actMap = new Map<string, ActivitySummary>();
+  for (const r of actRows) {
+    actMap.set(r[0] as string, { cnt: r[1] as number, km: r[2] as number });
+  }
+
+  return { journal, actMap };
+}
+
+// ---------------------------------------------------------------------------
+// Emoji pickers
+// ---------------------------------------------------------------------------
+
+const SLEEP_OPTIONS = [
+  { v: 1, label: '😴 1' },
+  { v: 2, label: '😪 2' },
+  { v: 3, label: '😐 3' },
+  { v: 4, label: '😊 4' },
+  { v: 5, label: '😄 5' },
+];
+
+const ENERGY_OPTIONS = [
+  { v: 1, label: '😩 1' },
+  { v: 2, label: '😔 2' },
+  { v: 3, label: '😐 3' },
+  { v: 4, label: '🙂 4' },
+  { v: 5, label: '😄 5' },
+];
+
+const STRESS_OPTIONS = [
+  { v: 1, label: '😌 1' },
+  { v: 2, label: '🙂 2' },
+  { v: 3, label: '😐 3' },
+  { v: 4, label: '😟 4' },
+  { v: 5, label: '😤 5' },
+];
+
+// ---------------------------------------------------------------------------
+// EmojiPicker sub-component
+// ---------------------------------------------------------------------------
+
+function EmojiPicker({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { v: number; label: string }[];
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
   return (
-    <div className="px-4 sm:px-8 lg:px-12 py-8 max-w-7xl mx-auto">
-      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-2">Ghost</p>
-      <h1 className="font-display text-4xl tracking-widest uppercase text-bone mb-8">CoachLog</h1>
-      <p className="font-mono text-sm text-bone-dim">
-        Porting in progress — pure analysis engines are live, UI coming soon.
+    <div className="space-y-1.5">
+      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">{label}</p>
+      <div className="flex gap-1.5 flex-wrap">
+        {options.map((o) => (
+          <button
+            key={o.v}
+            type="button"
+            onClick={() => onChange(value === o.v ? null : o.v)}
+            className={[
+              'px-2.5 py-1.5 font-mono text-sm border transition-colors',
+              value === o.v
+                ? 'ring-2 ring-accent border-accent text-bone bg-accent/10'
+                : 'border-ink-line text-bone-dim hover:border-ink-line-bold hover:text-bone',
+            ].join(' ')}
+            aria-pressed={value === o.v}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sparkline
+// ---------------------------------------------------------------------------
+
+interface SparklineProps {
+  title: string;
+  dates: string[];                        // 14 dates, newest first
+  getValue: (entry: JournalEntry) => number | null;
+  entries: JournalEntry[];
+  yMin: number;
+  yMax: number;
+  color: string;                          // Tailwind stroke colour class alternative: SVG colour string
+  invert?: boolean;                       // if true, low is good display (stress)
+}
+
+function Sparkline({ title, dates, getValue, entries, yMin, yMax, color, invert }: SparklineProps) {
+  const entryByDate = new Map(entries.map((e) => [e.date, e]));
+
+  // Oldest to newest for left-to-right display
+  const orderedDates = [...dates].reverse();
+
+  const points: { x: number; y: number }[] = [];
+  orderedDates.forEach((iso, i) => {
+    const entry = entryByDate.get(iso);
+    const val = entry ? getValue(entry) : null;
+    if (val !== null) {
+      const xPct = i / (orderedDates.length - 1);
+      const rawY = (val - yMin) / (yMax - yMin);
+      const clamped = Math.max(0, Math.min(1, rawY));
+      // SVG: 0 = top, so invert
+      const y = (1 - clamped) * 46 + 2; // 2px padding top/bottom, 50px tall
+      points.push({ x: xPct * 100, y });
+    }
+  });
+
+  // Latest value (first in dates array = newest)
+  const latestEntry = entryByDate.get(dates[0]);
+  const latestVal = latestEntry ? getValue(latestEntry) : null;
+
+  // Build polyline points string — skip gaps
+  const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
+
+  return (
+    <div className="space-y-1">
+      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">{title}</p>
+      <div className="flex items-center gap-3">
+        <span className="font-mono tabular-nums text-bone text-sm w-5">
+          {latestVal !== null ? latestVal : '--'}
+        </span>
+        {invert && latestVal !== null && (
+          <span className="font-mono text-xs text-bone-mute">(lower=better)</span>
+        )}
+      </div>
+      <svg
+        viewBox="0 0 100 50"
+        preserveAspectRatio="none"
+        className="w-full h-12"
+        aria-hidden="true"
+      >
+        {points.length > 1 && (
+          <polyline
+            points={polylinePoints}
+            fill="none"
+            stroke={color}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+        {/* Dot for latest value */}
+        {points.length > 0 && (
+          <circle
+            cx={points[points.length - 1].x}
+            cy={points[points.length - 1].y}
+            r="2.5"
+            fill={color}
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+      </svg>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section 1: Wellness sparklines
+// ---------------------------------------------------------------------------
+
+function WellnessSparklines({
+  entries,
+  dates14,
+}: {
+  entries: JournalEntry[];
+  dates14: string[];
+}) {
+  const cutoff14 = dates14[dates14.length - 1]; // oldest date in window
+  const recentEntries = entries.filter((e) => e.date >= cutoff14);
+
+  if (recentEntries.length < 3) {
+    return (
+      <section className="border border-ink-line p-6 space-y-3">
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          wellness · 14-day trends
+        </p>
+        <p className="font-mono text-sm text-bone-dim">
+          Log a few entries to see trends.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="border border-ink-line p-6 space-y-4">
+      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+        wellness · 14-day trends
       </p>
+      <div className="grid grid-cols-2 gap-6">
+        <Sparkline
+          title="sleep quality"
+          dates={dates14}
+          entries={recentEntries}
+          getValue={(e) => e.sleepQuality}
+          yMin={1}
+          yMax={5}
+          color="#26D0AE"
+        />
+        <Sparkline
+          title="energy"
+          dates={dates14}
+          entries={recentEntries}
+          getValue={(e) => e.energyLevel}
+          yMin={1}
+          yMax={5}
+          color="#26D0AE"
+        />
+        <Sparkline
+          title="stress"
+          dates={dates14}
+          entries={recentEntries}
+          getValue={(e) => e.stressLevel}
+          yMin={1}
+          yMax={5}
+          color="#EAB308"
+          invert
+        />
+        <Sparkline
+          title="resting HR"
+          dates={dates14}
+          entries={recentEntries}
+          getValue={(e) => e.restingHr}
+          yMin={40}
+          yMax={100}
+          color="#A5A5A0"
+        />
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section 2: Quick log form
+// ---------------------------------------------------------------------------
+
+interface LogFormState {
+  sleepQ: number | null;
+  energyL: number | null;
+  stressL: number | null;
+  restingHr: string;
+  notes: string;
+}
+
+function TodayLogForm({
+  todayEntry,
+  onSaved,
+}: {
+  todayEntry: JournalEntry | undefined;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState<LogFormState>({
+    sleepQ: todayEntry?.sleepQuality ?? null,
+    energyL: todayEntry?.energyLevel ?? null,
+    stressL: todayEntry?.stressLevel ?? null,
+    restingHr: todayEntry?.restingHr != null ? String(todayEntry.restingHr) : '',
+    notes: todayEntry?.notes ?? '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState(false);
+
+  // Sync if todayEntry changes (after re-query)
+  useEffect(() => {
+    setForm({
+      sleepQ: todayEntry?.sleepQuality ?? null,
+      energyL: todayEntry?.energyLevel ?? null,
+      stressL: todayEntry?.stressLevel ?? null,
+      restingHr: todayEntry?.restingHr != null ? String(todayEntry.restingHr) : '',
+      notes: todayEntry?.notes ?? '',
+    });
+  }, [todayEntry]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const today = todayIso();
+      const hr = form.restingHr !== '' ? parseInt(form.restingHr, 10) : null;
+      await exec(
+        `INSERT INTO journal (date, sleep_quality, energy_level, stress_level, resting_hr, notes)
+         VALUES (?,?,?,?,?,?)
+         ON CONFLICT(date) DO UPDATE SET
+           sleep_quality=excluded.sleep_quality,
+           energy_level=excluded.energy_level,
+           stress_level=excluded.stress_level,
+           resting_hr=excluded.resting_hr,
+           notes=excluded.notes`,
+        [today, form.sleepQ ?? null, form.energyL ?? null, form.stressL ?? null, hr ?? null, form.notes || null]
+      );
+      onSaved();
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 2000);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="border border-ink-line p-6 space-y-5">
+      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+        today's check-in · {formatDateHeader(todayIso())}
+      </p>
+
+      <EmojiPicker
+        label="Sleep Quality"
+        options={SLEEP_OPTIONS}
+        value={form.sleepQ}
+        onChange={(v) => setForm((f) => ({ ...f, sleepQ: v }))}
+      />
+      <EmojiPicker
+        label="Energy"
+        options={ENERGY_OPTIONS}
+        value={form.energyL}
+        onChange={(v) => setForm((f) => ({ ...f, energyL: v }))}
+      />
+      <EmojiPicker
+        label="Stress (1=calm, 5=high)"
+        options={STRESS_OPTIONS}
+        value={form.stressL}
+        onChange={(v) => setForm((f) => ({ ...f, stressL: v }))}
+      />
+
+      <div className="space-y-1.5">
+        <label htmlFor="resting-hr" className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          Resting HR
+        </label>
+        <input
+          id="resting-hr"
+          type="number"
+          inputMode="numeric"
+          min={30}
+          max={200}
+          placeholder="bpm"
+          value={form.restingHr}
+          onChange={(e) => setForm((f) => ({ ...f, restingHr: e.target.value }))}
+          className="w-32 bg-ink-shadow border border-ink-line px-3 py-1.5 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="notes" className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          Notes
+        </label>
+        <textarea
+          id="notes"
+          rows={2}
+          placeholder="How's the body feeling?"
+          value={form.notes}
+          onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+          className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent resize-none"
+        />
+      </div>
+
+      <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="px-5 py-2 bg-accent hover:bg-accent-hover text-bone font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        {savedMsg && (
+          <span className="font-mono text-xs text-signal-ok" role="status" aria-live="polite">
+            Saved.
+          </span>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Rating dots pill
+// ---------------------------------------------------------------------------
+
+function RatingDots({ value, color }: { value: number; color: string }) {
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-label={`${value} out of 5`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span
+          key={i}
+          className="inline-block w-1.5 h-1.5 rounded-full"
+          style={{ backgroundColor: i <= value ? color : '#2A2A2A' }}
+        />
+      ))}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Inline edit form for history entries
+// ---------------------------------------------------------------------------
+
+function InlineEditForm({
+  entry,
+  onSaved,
+  onCancel,
+}: {
+  entry: JournalEntry;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState<LogFormState>({
+    sleepQ: entry.sleepQuality,
+    energyL: entry.energyLevel,
+    stressL: entry.stressLevel,
+    restingHr: entry.restingHr != null ? String(entry.restingHr) : '',
+    notes: entry.notes ?? '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const hr = form.restingHr !== '' ? parseInt(form.restingHr, 10) : null;
+      await exec(
+        `UPDATE journal SET
+           sleep_quality=?, energy_level=?, stress_level=?, resting_hr=?, notes=?
+         WHERE id=?`,
+        [form.sleepQ ?? null, form.energyL ?? null, form.stressL ?? null, hr ?? null, form.notes || null, entry.id]
+      );
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-ink-line space-y-4">
+      <EmojiPicker label="Sleep" options={SLEEP_OPTIONS} value={form.sleepQ} onChange={(v) => setForm((f) => ({ ...f, sleepQ: v }))} />
+      <EmojiPicker label="Energy" options={ENERGY_OPTIONS} value={form.energyL} onChange={(v) => setForm((f) => ({ ...f, energyL: v }))} />
+      <EmojiPicker label="Stress" options={STRESS_OPTIONS} value={form.stressL} onChange={(v) => setForm((f) => ({ ...f, stressL: v }))} />
+      <div className="space-y-1">
+        <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Resting HR</label>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={30}
+          max={200}
+          placeholder="bpm"
+          value={form.restingHr}
+          onChange={(e) => setForm((f) => ({ ...f, restingHr: e.target.value }))}
+          className="w-32 bg-ink border border-ink-line px-3 py-1.5 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent"
+        />
+      </div>
+      <div className="space-y-1">
+        <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Notes</label>
+        <textarea
+          rows={2}
+          value={form.notes}
+          onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+          className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent resize-none"
+        />
+      </div>
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="px-4 py-1.5 bg-accent hover:bg-accent-hover text-bone font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : 'Update'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-1.5 border border-ink-line text-bone-mute hover:text-bone font-mono text-xs uppercase tracking-widest transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// History entry row
+// ---------------------------------------------------------------------------
+
+function HistoryRow({
+  entry,
+  actSummary,
+  onReload,
+}: {
+  entry: JournalEntry;
+  actSummary: ActivitySummary | undefined;
+  onReload: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  async function handleDelete() {
+    await exec('DELETE FROM journal WHERE id=?', [entry.id]);
+    onReload();
+  }
+
+  const notesPreview =
+    entry.notes && entry.notes.length > 80
+      ? entry.notes.slice(0, 80) + '…'
+      : entry.notes;
+
+  return (
+    <div className="py-4 border-b border-ink-line last:border-b-0 space-y-2">
+      {/* Date + activity pill */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="font-mono text-xs text-bone-dim">{formatDateHeader(entry.date)}</span>
+        {actSummary && (
+          <span className="px-2 py-0.5 font-mono text-xs rounded-sm"
+            style={{ backgroundColor: 'rgba(255,95,0,0.2)', color: '#FF5F00' }}>
+            {actSummary.cnt} {actSummary.cnt === 1 ? 'run' : 'runs'} · {actSummary.km}km
+          </span>
+        )}
+      </div>
+
+      {/* Ratings row */}
+      <div className="flex items-center gap-4 flex-wrap">
+        {entry.sleepQuality !== null && (
+          <span className="flex items-center gap-1.5 font-mono text-xs text-bone-mute">
+            sleep <RatingDots value={entry.sleepQuality} color="#26D0AE" />
+          </span>
+        )}
+        {entry.energyLevel !== null && (
+          <span className="flex items-center gap-1.5 font-mono text-xs text-bone-mute">
+            energy <RatingDots value={entry.energyLevel} color="#26D0AE" />
+          </span>
+        )}
+        {entry.stressLevel !== null && (
+          <span className="flex items-center gap-1.5 font-mono text-xs text-bone-mute">
+            stress <RatingDots value={entry.stressLevel} color="#EAB308" />
+          </span>
+        )}
+        {entry.restingHr !== null && (
+          <span className="font-mono text-xs text-bone-mute">
+            &#9829; {entry.restingHr}bpm
+          </span>
+        )}
+      </div>
+
+      {/* Notes */}
+      {entry.notes && (
+        <div>
+          <p className="font-mono text-xs text-bone-dim leading-relaxed">
+            {expanded ? entry.notes : notesPreview}
+          </p>
+          {entry.notes.length > 80 && (
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              className="font-mono text-xs text-bone-mute hover:text-bone transition-colors mt-0.5"
+            >
+              {expanded ? 'less' : 'more'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex items-center gap-3 pt-0.5">
+        <button
+          type="button"
+          onClick={() => { setEditing(!editing); setConfirmDelete(false); }}
+          className="font-mono text-xs text-bone-mute hover:text-accent transition-colors uppercase tracking-widest"
+        >
+          {editing ? 'Cancel edit' : 'Edit'}
+        </button>
+        {!confirmDelete ? (
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className="font-mono text-xs text-bone-mute hover:text-signal-miss transition-colors uppercase tracking-widest"
+          >
+            Delete
+          </button>
+        ) : (
+          <span className="flex items-center gap-2">
+            <span className="font-mono text-xs text-signal-miss">Sure?</span>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="font-mono text-xs text-signal-miss hover:text-bone transition-colors uppercase tracking-widest"
+            >
+              Yes, delete
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              className="font-mono text-xs text-bone-mute hover:text-bone transition-colors uppercase tracking-widest"
+            >
+              Cancel
+            </button>
+          </span>
+        )}
+      </div>
+
+      {/* Inline edit form */}
+      {editing && (
+        <InlineEditForm
+          entry={entry}
+          onSaved={() => { setEditing(false); onReload(); }}
+          onCancel={() => setEditing(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section 3: Journal history list
+// ---------------------------------------------------------------------------
+
+function HistoryList({
+  entries,
+  actMap,
+  onReload,
+}: {
+  entries: JournalEntry[];
+  actMap: Map<string, ActivitySummary>;
+  onReload: () => void;
+}) {
+  return (
+    <section className="border border-ink-line p-6">
+      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-4">
+        journal history · last 42 days
+      </p>
+      {entries.length === 0 ? (
+        <p className="font-mono text-sm text-bone-dim">
+          No entries yet. Log your first check-in above.
+        </p>
+      ) : (
+        <div>
+          {entries.map((entry) => (
+            <HistoryRow
+              key={entry.id}
+              entry={entry}
+              actSummary={actMap.get(entry.date)}
+              onReload={onReload}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section 4: 14-day activity bars
+// ---------------------------------------------------------------------------
+
+function ActivityBars({
+  dates14,
+  actMap,
+}: {
+  dates14: string[];           // newest first
+  actMap: Map<string, ActivitySummary>;
+}) {
+  // oldest first for left-to-right
+  const orderedDates = [...dates14].reverse();
+
+  const kms = orderedDates.map((d) => actMap.get(d)?.km ?? 0);
+  const maxKm = Math.max(...kms, 0.1); // prevent div-by-zero
+
+  function barColor(km: number): string {
+    if (km === 0) return 'bg-ink-line';
+    if (km < 5) return 'bg-bone-mute/40';
+    if (km < 10) return 'bg-bone-dim';
+    return 'bg-accent';
+  }
+
+  function dayLabel(iso: string, idx: number): string {
+    const d = new Date(iso + 'T00:00:00Z');
+    const dow = d.getUTCDay(); // 0=Sun
+    // Show Mon/Wed/Fri labels
+    if (dow === 1 || dow === 3 || dow === 5) {
+      return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dow];
+    }
+    // Otherwise show date number every 7 days
+    if (idx % 7 === 0) return String(d.getUTCDate());
+    return '';
+  }
+
+  return (
+    <section className="border border-ink-line p-6">
+      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-3">
+        activity · last 14 days
+      </p>
+      <div className="flex items-end gap-1" style={{ height: '40px' }}>
+        {orderedDates.map((iso, idx) => {
+          const km = kms[idx];
+          const heightPct = maxKm > 0 ? (km / maxKm) * 100 : 0;
+          return (
+            <div
+              key={iso}
+              className="flex-1 flex flex-col justify-end"
+              style={{ height: '40px' }}
+              title={km > 0 ? `${iso}: ${km}km` : iso}
+            >
+              <div
+                className={`w-full transition-all ${barColor(km)}`}
+                style={{ height: `${Math.max(heightPct, km > 0 ? 4 : 2)}%` }}
+                role="img"
+                aria-label={`${iso}: ${km}km`}
+              />
+            </div>
+          );
+        })}
+      </div>
+      {/* Day labels row */}
+      <div className="flex gap-1 mt-1">
+        {orderedDates.map((iso, idx) => (
+          <div key={iso} className="flex-1">
+            <span className="font-mono text-[9px] text-bone-mute block text-center leading-none">
+              {dayLabel(iso, idx)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page root
+// ---------------------------------------------------------------------------
+
+export default function CoachLogPage() {
+  const { ready, error: dbError } = useDb();
+  const [journal, setJournal] = useState<JournalEntry[]>([]);
+  const [actMap, setActMap] = useState<Map<string, ActivitySummary>>(new Map());
+  const [loading, setLoading] = useState(true);
+
+  const dates14 = last14Dates(); // newest first
+  const today = todayIso();
+
+  const reload = useCallback(async () => {
+    const cutoff = cutoffIso(42);
+    const { journal: j, actMap: a } = await loadData(cutoff);
+    setJournal(j);
+    setActMap(a);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    setLoading(true);
+    reload();
+  }, [ready, reload]);
+
+  if (dbError) {
+    return (
+      <div className="px-4 py-8 max-w-7xl mx-auto">
+        <p className="font-mono text-xs text-signal-miss">DB error: {dbError}</p>
+      </div>
+    );
+  }
+
+  if (!ready || loading) return <PageSkeleton />;
+
+  const todayEntry = journal.find((e) => e.date === today);
+
+  return (
+    <div className="px-4 sm:px-8 lg:px-12 py-8 sm:py-10 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <header className="space-y-1 border-b border-ink-line pb-6">
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          ghost · wellness
+        </p>
+        <h1 className="font-display tracking-widest text-4xl uppercase leading-none text-bone">
+          Coach Log
+        </h1>
+        <p className="font-mono text-xs text-bone-mute">Training wellness — last 42 days</p>
+      </header>
+
+      {/* Section 4: Activity bars — narrow strip, always visible */}
+      <ActivityBars dates14={dates14} actMap={actMap} />
+
+      {/* Section 1: Wellness sparklines */}
+      <WellnessSparklines entries={journal} dates14={dates14} />
+
+      {/* Section 2: Today's log form */}
+      <TodayLogForm todayEntry={todayEntry} onSaved={reload} />
+
+      {/* Section 3: History list */}
+      <HistoryList entries={journal} actMap={actMap} onReload={reload} />
     </div>
   );
 }
