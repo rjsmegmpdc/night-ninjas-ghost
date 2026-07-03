@@ -1,9 +1,8 @@
-// AccessHandlePoolVFS uses OPFS SyncAccessHandle — all I/O is synchronous,
-// so this uses the regular (non-Asyncify) WASM build. No concurrency issues,
-// no SharedArrayBuffer, no COOP/COEP headers. Persistent across reloads.
 import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite.mjs';
 // @ts-ignore
 import { AccessHandlePoolVFS } from 'wa-sqlite/src/examples/AccessHandlePoolVFS.js';
+// @ts-ignore
+import { MemoryVFS } from 'wa-sqlite/src/examples/MemoryVFS.js';
 import * as SQLite from 'wa-sqlite';
 import wasmUrl from 'wa-sqlite/dist/wa-sqlite.wasm?url';
 
@@ -12,6 +11,8 @@ let sqlite3: SQLiteAPI | null = null;
 
 type SQLiteAPI = Awaited<ReturnType<typeof SQLite.Factory>>;
 type BindParams = Parameters<SQLiteAPI['bind_collection']>[1];
+
+type OPFSVfs = { isReady: Promise<void>; getCapacity(): number } & Parameters<SQLiteAPI['vfs_register']>[0];
 
 async function exec(sql: string, params: unknown[] = []): Promise<unknown[][]> {
   if (!sqlite3 || db === null) throw new Error('DB not initialised');
@@ -25,13 +26,29 @@ async function exec(sql: string, params: unknown[] = []): Promise<unknown[][]> {
   return rows;
 }
 
+async function buildVFS(): Promise<{ vfs: Parameters<SQLiteAPI['vfs_register']>[0]; label: string }> {
+  // Try OPFS first (persistent across reloads). Falls back to MemoryVFS if
+  // OPFS is unavailable (older Safari, private browsing, blocked storage).
+  try {
+    // @ts-ignore
+    const vfs = new (AccessHandlePoolVFS as new (dir: string) => OPFSVfs)('ghost-db');
+    await vfs.isReady;
+    const cap = vfs.getCapacity();
+    if (cap === 0) throw new Error(`OPFS isReady resolved but capacity=0`);
+    return { vfs, label: `OPFS(capacity=${cap})` };
+  } catch (opfsErr) {
+    self.postMessage({ type: 'warn', message: `OPFS unavailable (${String(opfsErr)}), using MemoryVFS — data will not persist` });
+    // @ts-ignore
+    const vfs = new (MemoryVFS as new () => Parameters<SQLiteAPI['vfs_register']>[0])();
+    return { vfs, label: 'MemoryVFS' };
+  }
+}
+
 async function init() {
   const module = await SQLiteESMFactory({ locateFile: () => wasmUrl });
   sqlite3 = SQLite.Factory(module);
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-  const vfs = new (AccessHandlePoolVFS as new (dir: string) => { isReady: Promise<void> } & Parameters<SQLiteAPI['vfs_register']>[0])('ghost-db');
-  await vfs.isReady;
+  const { vfs, label } = await buildVFS();
   sqlite3.vfs_register(vfs, true);
 
   db = await sqlite3.open_v2('ghost.db');
@@ -39,7 +56,7 @@ async function init() {
   await exec('PRAGMA foreign_keys = ON');
   await runMigrations();
 
-  self.postMessage({ type: 'ready' });
+  self.postMessage({ type: 'ready', storage: label });
 }
 
 async function runMigrations() {
