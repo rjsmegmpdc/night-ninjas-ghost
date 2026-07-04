@@ -2,10 +2,10 @@
 
 ## Current state
 
-**Version**: 0.3.0  
+**Version**: 0.6.0  
 **Branch**: main  
-**Tests**: 474/474 passing (29 test files — all pure-engine tests green)
-**Status**: All 14 screens implemented and deployed on Cloudflare Pages. OPFS persistent storage confirmed working. Strava OAuth + full activity sync live.
+**Tests**: 574/574 passing (32 test files)
+**Status**: All 14 screens implemented. Plan engines (9 dojos), plan-aware Patrol dashboard, AI coach (BYOK Anthropic), biometrics check-in and Strike card all shipped.
 
 ---
 
@@ -14,33 +14,31 @@
 | Route | Name | Status | Batch |
 |---|---|---|---|
 | `/setup/*` | Setup wizard | ✅ Implemented | Initial |
-| `/patrol` | Patrol | ✅ Implemented | Initial |
+| `/patrol` | Patrol | ✅ Plan-aware (7-day grid, tonight's mission, dojo stats) | Initial |
 | `/profile` | Profile | ✅ Implemented | 1 |
 | `/shoes` | Shoes | ✅ Implemented | 1 |
 | `/recon` | Recon | ✅ Implemented | 1 |
 | `/dojo` | Dojo | ✅ Implemented | 2 |
-| `/strike` | Strike | ✅ Implemented | 2 |
+| `/strike` | Strike | ✅ + BiometricsCard (HRV/RHR/sleep/body battery) | 2 |
 | `/calendar` | Calendar | ✅ Implemented | 2 |
 | `/race` | Race | ✅ Implemented | 3 |
 | `/vo2max` | VO2max | ✅ Implemented | 3 |
-| `/coach-log` | Coach Log | ✅ Implemented | 3 |
-| `/settings` | Settings | ✅ Implemented | 4 |
+| `/coach-log` | Coach Log | ✅ + AI coach panel + HRV/body battery check-in | 3 |
+| `/settings` | Settings | ✅ + BYOK Anthropic key | 4 |
 | `/help` | Help | ✅ Implemented | 4 |
 | `/club` | Club | ✅ Implemented | 4 |
 | `/journal` | Journal | ✅ Implemented | 4 |
 
 ---
 
-## Not yet ported (future phases)
+## Remaining opportunities
 
 | Feature | Dependency | Notes |
 |---|---|---|
-| Plan engines (hansons, pfitzinger, etc.) | `src/lib/plans/index.ts` + 9 engine files | Pure support files exist; renderers not ported |
-| Patrol compliance matrix | Plan engines | Recon shows trends-only; compliance heatmap deferred |
-| `engine-snapshot.test.ts` | Plan engines | Blocked until engines ported |
-| `framework-stats.test.ts` | `intensity-distribution.ts`, `program-phase.ts` | Blocked |
-| AI coach | Anthropic BYOK wiring | Architecture ready, not implemented |
-| Garmin Connect sync | `daily_health_metrics` table | Schema exists in VELOCITY; not ported to GHOST |
+| `compliance.ts evaluateWeek()` in PatrolPage | PatrolPage uses minimal shim | Wire real evaluator for accurate compliance matrix |
+| Garmin Connect OAuth sync | `daily_health_metrics` schema ✅ | Automated Garmin ingest (needs Cloudflare Worker + OAuth) |
+| Ultra plan stub | `src/lib/plans/ultra.ts` | `status: 'stub'` — lowest priority |
+| CTL/ATL/TSB in AI snapshot | `snapshot-builder.ts state: null` | Connect athlete-state-pure to snapshot |
 
 ---
 

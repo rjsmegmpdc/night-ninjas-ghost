@@ -1,89 +1,85 @@
 ## Branch
-feat/patrol-plan-aware
+feat/biometrics-card
 
-## Session: 2026-07-04
+## Session: 2026-07-05
 
 ### Completed
 
-**Plan Engines + Patrol Plan-Aware — feat/patrol-plan-aware (in progress)**
+**BiometricsCard on Strike — feat/biometrics-card (in progress)**
 
-- Ported all 9 plan engines: hansons (full), lydiard, daniels, pfitzinger, higdon, polarised, norwegian-singles, ultra, custom
-- `src/lib/plans/calendar-blocks.ts` — pure TypeScript composer used by all engines
-- `src/lib/plans/index.ts` — ENGINES registry, getEngine(), ALL_ENGINES
-- `src/lib/plans/program-phase.ts` — ProgramPhase type
-- `src/lib/analysis/intensity-distribution.ts` — IntensityDistribution interface
-- `src/lib/analysis/framework-stats.ts` — per-dojo 4-stat dispatch (getFrameworkStats)
-- `src/lib/analysis/week-queries.ts` — backToBackKm, totalElevationGainM, getActivePlanPeriod()
-- `vitest.config.ts` — removed engine-snapshot + framework-stats from exclude list
-- Engine snapshot test suite: 54 tests now passing (was excluded/deferred)
-- PatrolPage: plan-aware rewrite — 7-day compliance matrix, "tonight's mission" card,
-  dojo-specific FrameworkStatsRow; falls back to generic when no plan configured
+- `StrikePage.tsx`: added `BiometricsCard` component (Card 5)
+  - Queries last 28 days from `daily_health_metrics` + `journal` (HRV/RHR fallback)
+  - Uses `resolveDayRows()` + `trendFor()` from `biometrics-pure.ts` for source-priority resolution
+  - 4 metric tiles: HRV (ms), Resting HR (bpm), Sleep Score, Body Battery — each with latest value, 28-day avg, and ↑/↓/→ trend arrow
+  - HRV 28-day SVG sparkline at card bottom
+  - Hidden when no biometrics data logged; `hasAny` guard prevents ghost card
+- `StrikePage.tsx`: added `fetchBiometrics(fromIso, toIso)` query helper
+- `StrikePage.tsx`: added `biometrics-pure.ts` import (resolveDayRows, trendFor, ResolvedDayMetrics)
+- PHASES.md: updated to v0.6.0, 574/574 tests, replaced stale "not yet ported" table with remaining opportunities
 
-**Batch 4 — Settings, Help, Club, Journal — merged to main**
+**feat/biometrics — merged to main (2026-07-05)**
 
-- SettingsPage: Strava status, sync history, data stats, JSON export (Blob download), three-step wipe-with-CLEAR confirm
-- HelpPage: fully static reference — glossary (14 screens), 7 common tasks, storage guide, troubleshooting, privacy
-- ClubPage: identity inputs (athlete name + parkrun ID → settings), 4-week run summary with CSS bar chart, clipboard share text, recent runs list
-- JournalPage: 35-day Mon-anchored calendar grid (activity dots + energy bar), click-to-expand day detail with notes upsert, 5-week summary table
-- Documentation updated: README, CLAUDE.md, PHASES.md, PROGRESS.md
+- Migration 0005: `daily_health_metrics` table (rhr_bpm, hrv_ms, sleep_duration_s, sleep_score, stress_score, body_battery, vo2max_device, weight_kg; UNIQUE(date, source))
+- `week-queries.ts`: getTodayBiometrics(), upsertBiometrics(), getRecentBiometrics() helpers
+- `CoachLogPage.tsx`: TodayLogForm extended with HRV (ms) + Body Battery (0–100) fields; HRV → journal.hrv, body battery → daily_health_metrics source=manual
+- `snapshot-builder.ts`: merges journal.hrv/resting_hr + daily_health_metrics into AI coach context
+- `context-pure.ts`: BiometricsSnapshot in AthleteSnapshot; snapshotToText emits biometrics line
+- 2 new biometrics tests in context-pure.test.ts
 
-**Batch 3 — Race, Vo2max, Coach Log — merged to main**
+**feat/ai-coach — merged to main (2026-07-04)**
 
-- RacePage: pace plans (even/negative/progressive), fueling grid, carb-load 3-day plan, taper checklist, post-race recovery + debrief form (race_results table), Auckland weather via Open-Meteo, macrocycle block counter
-- Vo2maxPage: trend card with SVG sparkline + ACSM fitness band, 3-tier insights, Cooper/Rockport/Lab capture tabs, observation history, profile quick-form
-- CoachLogPage: 14-day activity bar strip, 4-metric wellness sparklines, emoji-picker daily log with upsert, 42-day history with inline edit + two-step delete
-- Migration 0003: race_results + vo2max_observations tables
+- `SettingsPage.tsx`: BYOK Anthropic key entry (masked, stored as settings.ai.anthropic_key, remove button)
+- `CoachLogPage.tsx`: AI Coach Panel — reads key from settings, builds snapshot via buildAthleteSnapshot(), calls claude-haiku-4-5-20251001 direct API
+- `snapshot-builder.ts`: created — queries plan/goal/week/activities/biometrics → AthleteSnapshot
+- `context-pure.ts`: snapshotToText() serialises to prompt text
 
-**Batch 2 — Dojo, Strike, Calendar — merged to main**
+**feat/patrol-plan-aware — merged to main (2026-07-04)**
 
-- DojoPage: 9-methodology picker (5 primary + 4 collapsible), level toggle, macrocycle bar (base/build/peak/taper phases), start-date editor, plan writes to plans + plan_periods
-- StrikePage: CTL/ATL/TSB, 8-week intensity history (stacked bars), mileage trajectory, long-run block — wired to load.ts + athlete-state-pure.ts
-- CalendarPage: goal race management, tune-up races, capacity caps, commitments CRUD
-- Migration 0002: is_goal + level on races; recurring_sessions table
+- PatrolPage: plan-aware rewrite — 7-day compliance matrix, "tonight's mission" card, dojo-specific FrameworkStatsRow
+- `week-queries.ts`: getActivePlanPeriod() — joins plan_periods+plans, parses params_json, queries races WHERE is_goal=1
 
-**Batch 1 — Profile, Shoes, Recon — merged to main**
+**Plan engines — merged to main (2026-07-04)**
 
-- ProfilePage: athlete profile (age/weight/sex/HR zones), NS HR calibration, strength preferences, morning check-in with journal upsert
-- ShoesPage: LEFT JOIN distance aggregate, progress bars (green/amber/red), add/retire/unretire actions
-- ReconPage: monthly volume bar chart, zone distribution stacked bars, CTL/ATL line chart — trends-only (no plan engine needed)
-
-**Phase 2 — Green build + 474/474 tests — merged to main (2026-06-30)**
-
-- wa-sqlite OPFS VFS (AccessHandlePoolVFS) replacing IDBMirrorVFS
-- MemoryVFS fallback for Safari + private browsing
-- IDB version conflict root-cause found + resolved (service worker caching old builds)
-- Strava OAuth working: `night-ninjas-ghost.pages.dev` live
-- Full activity sync confirmed
-
-**Phase 1 — GHOST Scaffold — merged to main (2026-06-29)**
-
-- Vite 6 + React 19 + React Router 7 replaces Next.js 15 + Electron
-- wa-sqlite Web Worker, Cloudflare Worker OAuth proxy, Tauri 2 scaffold
-- 14 route stubs, 56 pure engine files copied from VELOCITY
-- GitHub Actions: Cloudflare Pages + Worker deploy + Tauri cross-build
+- 9 engines: hansons, lydiard, daniels, pfitzinger, higdon, polarised, norwegian-singles, ultra (stub), custom
+- calendar-blocks.ts, plans/index.ts, program-phase.ts, intensity-distribution.ts, framework-stats.ts
+- Engine snapshot tests (54) + framework-stats tests unblocked; 574 total passing
 
 ### In progress
-- `feat/patrol-plan-aware` — plan engines + plan-aware PatrolPage (not yet merged)
+- `feat/biometrics-card` — BiometricsCard on StrikePage (not yet merged)
 
 ### Blocked
-- Nothing (plan engines unblocked engine-snapshot + framework-stats test suites)
+- Nothing
 
 ### Next session should
-1. Merge `feat/patrol-plan-aware` to main (Matt's call)
-2. Wire up AI coach (Anthropic BYOK) — architecture is ready, BYOK key entry needed
-3. Consider Garmin Connect biometrics sync (`daily_health_metrics` table not ported)
+1. Merge `feat/biometrics-card` to main (Matt's call)
+2. Wire `compliance.ts evaluateWeek()` into PatrolPage (replace minimal shim)
+3. Connect CTL/ATL/TSB to AI snapshot (`state: null` in snapshot-builder.ts)
 
 ## Key decisions
 
 - **OPFS over IDBMirrorVFS**: wa-sqlite v1.0.0 renamed VFS; OPFS gives true file persistence without COOP/COEP headers
 - **MemoryVFS fallback**: non-fatal OPFS failure (Safari, private browsing) — data survives the session, not the tab close
 - **4-batch deploy cadence**: kept CI usage to ~4 builds / ~12 GH Actions minutes against 500 builds/month Cloudflare limit
-- **Worktree isolation per agent**: parallel developer agents each got an isolated git worktree; outputs copied back after verification
-- **No plan engines yet**: pure support files (capacity-pure, pace-compliance-pure, etc.) exist; individual engine renderers (hansons.ts etc.) not yet ported — Dojo shows static descriptions, Patrol shows trends-only
+- **Biometrics split storage**: HRV → journal table (was already there but never exposed); body battery → daily_health_metrics (device metric, not wellness rating)
+- **BYOK AI coach**: Anthropic key stored in settings table, never leaves device; direct API call from browser
 
-## Files changed (Batch 4)
+## Files changed (biometrics-card)
+- `src/routes/strike/StrikePage.tsx`
+- `PHASES.md`, `PROGRESS.md`
+
+## Files changed (biometrics)
+- `src/db/migrations.ts`
+- `src/lib/analysis/week-queries.ts`
+- `src/lib/ai/context-pure.ts`, `context-pure.test.ts`
+- `src/lib/ai/snapshot-builder.ts`
+- `src/routes/coach-log/CoachLogPage.tsx`
+
+## Files changed (ai-coach)
 - `src/routes/settings/SettingsPage.tsx`
-- `src/routes/help/HelpPage.tsx`
-- `src/routes/club/ClubPage.tsx`
-- `src/routes/journal/JournalPage.tsx`
-- `README.md`, `CLAUDE.md`, `PHASES.md`, `PROGRESS.md`
+- `src/routes/coach-log/CoachLogPage.tsx`
+- `src/lib/ai/snapshot-builder.ts`
+- `src/lib/ai/context-pure.ts`
+
+## Files changed (patrol-plan-aware)
+- `src/routes/patrol/PatrolPage.tsx`
+- `src/lib/analysis/week-queries.ts`

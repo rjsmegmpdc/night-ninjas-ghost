@@ -1,10 +1,7 @@
 /**
  * Strike — Athlete State screen.
  * Shows CTL/ATL/TSB (Card 1), Intensity History (Card 2),
- * Mileage Trajectory (Card 3), and Long Run this week (Card 4).
- *
- * No BiometricsCard: daily_health_metrics table does not exist in GHOST.
- * Skip biometrics — add when that migration is in place.
+ * Mileage Trajectory (Card 3), Long Run this week (Card 4), Biometrics (Card 5).
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
@@ -22,6 +19,11 @@ import {
 } from '@/lib/analysis/athlete-state-pure';
 import { computeActivityLoad, type LoadConfidence } from '@/lib/analysis/load';
 import { classifySport, isRunning } from '@/lib/analysis/sport-classifier';
+import {
+  resolveDayRows,
+  trendFor,
+  type ResolvedDayMetrics,
+} from '@/lib/analysis/biometrics-pure';
 
 // ---------------------------------------------------------------------------
 // UTC date helpers — always build keys with UTC so they match computeEwma's
@@ -155,6 +157,7 @@ interface StrikeData {
   intensityWeeks: WeekIntensity[];
   mileageWeeks: WeekMileage[];
   longRun: LongRunData | null;
+  biometrics: ResolvedDayMetrics[];
 }
 
 // ---------------------------------------------------------------------------
@@ -387,6 +390,54 @@ async function fetchLongRun(
   return { longRunKm, weekTotalKm, twoWeeksAgoLongKm };
 }
 
+async function fetchBiometrics(fromIso: string, toIso: string): Promise<ResolvedDayMetrics[]> {
+  const [healthRows, journalRows] = await Promise.all([
+    query(
+      `SELECT date, source, rhr_bpm, hrv_ms, sleep_duration_s, sleep_score,
+              stress_score, body_battery, vo2max_device, weight_kg
+       FROM daily_health_metrics WHERE date >= ? AND date <= ?
+       ORDER BY date ASC`,
+      [fromIso, toIso]
+    ).catch(() => [] as unknown[][]),
+    query(
+      `SELECT date, resting_hr, hrv FROM journal WHERE date >= ? AND date <= ?`,
+      [fromIso, toIso]
+    ).catch(() => [] as unknown[][]),
+  ]);
+
+  // Build a map of date → rows (for resolveDayRows)
+  const byDate = new Map<string, { source: string; rhrBpm?: number | null; hrvMs?: number | null; sleepDurationS?: number | null; sleepScore?: number | null; stressScore?: number | null; bodyBattery?: number | null; vo2maxDevice?: number | null; weightKg?: number | null }[]>();
+
+  for (const r of healthRows) {
+    const date = r[0] as string;
+    if (!byDate.has(date)) byDate.set(date, []);
+    byDate.get(date)!.push({
+      source:          r[1] as string,
+      rhrBpm:          r[2] as number | null,
+      hrvMs:           r[3] as number | null,
+      sleepDurationS:  r[4] as number | null,
+      sleepScore:      r[5] as number | null,
+      stressScore:     r[6] as number | null,
+      bodyBattery:     r[7] as number | null,
+      vo2maxDevice:    r[8] as number | null,
+      weightKg:        r[9] as number | null,
+    });
+  }
+
+  for (const r of journalRows) {
+    const date = r[0] as string;
+    const rhr = r[1] as number | null;
+    const hrv = r[2] as number | null;
+    if (rhr == null && hrv == null) continue;
+    if (!byDate.has(date)) byDate.set(date, []);
+    byDate.get(date)!.push({ source: 'manual', rhrBpm: rhr, hrvMs: hrv });
+  }
+
+  // Collect all dates in order and resolve each day
+  const dates = Array.from(byDate.keys()).sort();
+  return dates.map((date) => resolveDayRows(date, byDate.get(date)!));
+}
+
 // ---------------------------------------------------------------------------
 // Form class display maps
 // ---------------------------------------------------------------------------
@@ -446,15 +497,18 @@ export default function StrikePage() {
     setLoading(true);
     setError(null);
 
+    const bioFrom = utcDaysAgo(28);
+
     Promise.all([
       fetchAthleteState(cutoffIso, todayIso),
       fetchIntensityWeeks(cutoffIso, todayIso),
       fetchMileageWeeks(cutoffIso, todayIso),
       fetchLongRun(weekMonday, twoWeeksAgo, weekSunday),
+      fetchBiometrics(bioFrom, todayIso),
     ])
-      .then(([athleteState, intensityWeeks, mileageWeeks, longRun]) => {
+      .then(([athleteState, intensityWeeks, mileageWeeks, longRun, biometrics]) => {
         if (cancelled) return;
-        setData({ athleteState, intensityWeeks, mileageWeeks, longRun });
+        setData({ athleteState, intensityWeeks, mileageWeeks, longRun, biometrics });
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -485,7 +539,7 @@ export default function StrikePage() {
     );
   }
 
-  const { athleteState, intensityWeeks, mileageWeeks, longRun } = data;
+  const { athleteState, intensityWeeks, mileageWeeks, longRun, biometrics } = data;
   const tooFewActivities = athleteState.activityCount < 7;
 
   return (
@@ -516,6 +570,9 @@ export default function StrikePage() {
 
           {/* Card 4: Long Run — only if > 10km exists this week */}
           {longRun && <LongRunCard data={longRun} />}
+
+          {/* Card 5: Biometrics — only if any data logged */}
+          {biometrics.length > 0 && <BiometricsCard days={biometrics} />}
         </>
       )}
 
@@ -526,6 +583,138 @@ export default function StrikePage() {
         </Link>
       </footer>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Card 5: Biometrics (28-day window)
+// ---------------------------------------------------------------------------
+
+function trendArrow(
+  trend: { latest: number | null; priorMean: number | null },
+  lowerIsBetter = false,
+): { symbol: string; color: string } | null {
+  if (trend.latest == null || trend.priorMean == null) return null;
+  const improved = lowerIsBetter ? trend.latest < trend.priorMean : trend.latest > trend.priorMean;
+  const flat = Math.abs(trend.latest - trend.priorMean) / (Math.abs(trend.priorMean) || 1) < 0.02;
+  if (flat) return { symbol: '→', color: 'text-bone-mute' };
+  return improved
+    ? { symbol: '↑', color: 'text-signal-ok' }
+    : { symbol: '↓', color: 'text-signal-miss' };
+}
+
+const HRV_SPARK_H = 28;
+
+function HrvSparkline({ series }: { series: { date: string; value: number | null }[] }) {
+  const values = series.filter((s) => s.value != null) as { date: string; value: number }[];
+  if (values.length < 3) {
+    return <span className="font-mono text-xs text-bone-mute">not enough data</span>;
+  }
+  const min = Math.min(...values.map((v) => v.value));
+  const max = Math.max(...values.map((v) => v.value));
+  const range = max - min || 1;
+  const w = 120;
+  const step = w / (values.length - 1);
+  const pts = values
+    .map((v, i) => {
+      const x = i * step;
+      const y = HRV_SPARK_H - ((v.value - min) / range) * (HRV_SPARK_H - 4);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+
+  return (
+    <svg
+      width={w}
+      height={HRV_SPARK_H}
+      viewBox={`0 0 ${w} ${HRV_SPARK_H}`}
+      aria-label="HRV 28-day sparkline"
+    >
+      <polyline
+        points={pts}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        className="text-accent"
+      />
+    </svg>
+  );
+}
+
+function BiometricsCard({ days }: { days: ResolvedDayMetrics[] }) {
+  const hrv    = trendFor(days, 'hrvMs');
+  const rhr    = trendFor(days, 'rhrBpm');
+  const sleep  = trendFor(days, 'sleepScore');
+  const bb     = trendFor(days, 'bodyBattery');
+
+  const metrics: {
+    label: string;
+    unit: string;
+    value: number | null;
+    lowerIsBetter: boolean;
+    trend: { latest: number | null; priorMean: number | null };
+    decimals?: number;
+  }[] = [
+    { label: 'HRV', unit: 'ms', value: hrv.latest, lowerIsBetter: false, trend: hrv, decimals: 1 },
+    { label: 'Resting HR', unit: 'bpm', value: rhr.latest, lowerIsBetter: true, trend: rhr },
+    { label: 'Sleep Score', unit: '/100', value: sleep.latest, lowerIsBetter: false, trend: sleep },
+    { label: 'Body Battery', unit: '/100', value: bb.latest, lowerIsBetter: false, trend: bb },
+  ];
+
+  const hasAny = metrics.some((m) => m.value != null);
+  if (!hasAny) return null;
+
+  return (
+    <section className="border border-ink-line" aria-label="Biometrics">
+      <div className="px-6 py-4 border-b border-ink-line flex items-center justify-between">
+        <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          biometrics · 28-day window
+        </span>
+        <span className="font-mono text-xs text-bone-dim">manual + garmin</span>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-ink-line">
+        {metrics.map((m) => {
+          const arrow = trendArrow(m.trend, m.lowerIsBetter);
+          return (
+            <div key={m.label} className="bg-ink p-6 space-y-1">
+              <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">{m.label}</p>
+              {m.value != null ? (
+                <>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-display tracking-widest text-4xl leading-none text-bone">
+                      {m.decimals ? m.value.toFixed(m.decimals) : Math.round(m.value)}
+                    </span>
+                    <span className="font-mono text-bone-mute text-sm">{m.unit}</span>
+                    {arrow && (
+                      <span className={`font-mono text-lg leading-none ${arrow.color}`}>
+                        {arrow.symbol}
+                      </span>
+                    )}
+                  </div>
+                  {m.trend.mean != null && (
+                    <p className="font-mono text-xs text-bone-mute">
+                      28d avg {m.decimals ? m.trend.mean.toFixed(m.decimals) : Math.round(m.trend.mean)}{m.unit}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="font-mono text-sm text-bone-mute">—</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {hrv.series.some((s) => s.value != null) && (
+        <div className="px-6 py-4 border-t border-ink-line flex items-center gap-4">
+          <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">HRV trend</span>
+          <HrvSparkline series={hrv.series} />
+        </div>
+      )}
+    </section>
   );
 }
 
