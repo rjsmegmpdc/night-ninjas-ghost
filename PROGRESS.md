@@ -1,9 +1,23 @@
 ## Branch
-main
+feat/patrol-plan-aware
 
 ## Session: 2026-07-04
 
 ### Completed
+
+**Plan Engines + Patrol Plan-Aware — feat/patrol-plan-aware (in progress)**
+
+- Ported all 9 plan engines: hansons (full), lydiard, daniels, pfitzinger, higdon, polarised, norwegian-singles, ultra, custom
+- `src/lib/plans/calendar-blocks.ts` — pure TypeScript composer used by all engines
+- `src/lib/plans/index.ts` — ENGINES registry, getEngine(), ALL_ENGINES
+- `src/lib/plans/program-phase.ts` — ProgramPhase type
+- `src/lib/analysis/intensity-distribution.ts` — IntensityDistribution interface
+- `src/lib/analysis/framework-stats.ts` — per-dojo 4-stat dispatch (getFrameworkStats)
+- `src/lib/analysis/week-queries.ts` — backToBackKm, totalElevationGainM, getActivePlanPeriod()
+- `vitest.config.ts` — removed engine-snapshot + framework-stats from exclude list
+- Engine snapshot test suite: 54 tests now passing (was excluded/deferred)
+- PatrolPage: plan-aware rewrite — 7-day compliance matrix, "tonight's mission" card,
+  dojo-specific FrameworkStatsRow; falls back to generic when no plan configured
 
 **Batch 4 — Settings, Help, Club, Journal — merged to main**
 
@@ -49,16 +63,15 @@ main
 - GitHub Actions: Cloudflare Pages + Worker deploy + Tauri cross-build
 
 ### In progress
-- Nothing
+- `feat/patrol-plan-aware` — plan engines + plan-aware PatrolPage (not yet merged)
 
 ### Blocked
-- `engine-snapshot.test.ts` — needs 9 plan engines + `src/lib/plans/index.ts`
-- `framework-stats.test.ts` — needs `intensity-distribution.ts`, `program-phase.ts`
+- Nothing (plan engines unblocked engine-snapshot + framework-stats test suites)
 
 ### Next session should
-1. Consider porting plan engines (hansons, pfitzinger, daniels, etc.) to unlock Patrol compliance matrix and the two deferred test suites
-2. Wire up AI coach (Anthropic BYOK) — architecture is ready
-3. Consider Garmin Connect biometrics sync
+1. Merge `feat/patrol-plan-aware` to main (Matt's call)
+2. Wire up AI coach (Anthropic BYOK) — architecture is ready, BYOK key entry needed
+3. Consider Garmin Connect biometrics sync (`daily_health_metrics` table not ported)
 
 ## Key decisions
 
