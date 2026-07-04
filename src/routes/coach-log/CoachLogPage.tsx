@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useDb } from '@/db/DbContext';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { query, exec } from '@/db/client';
+import { buildAthleteSnapshot } from '@/lib/ai/snapshot-builder';
+import { snapshotToText } from '@/lib/ai/context-pure';
+import { getCoachMessages } from '@/lib/coach/coach-voice-pure';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -816,6 +819,195 @@ function ActivityBars({
 }
 
 // ---------------------------------------------------------------------------
+// AI Coach Panel
+// ---------------------------------------------------------------------------
+
+const COACH_SYSTEM = `You are an experienced running coach. Review the athlete's current training context and give specific, practical coaching advice. Be direct — 2-3 short paragraphs, no generic platitudes. Address today's session, weekly progress, and one thing to watch.`;
+
+async function callAnthropic(apiKey: string, contextText: string): Promise<string> {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      system: COACH_SYSTEM,
+      messages: [{ role: 'user', content: contextText }],
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(body.error?.message ?? `Anthropic error ${res.status}`);
+  }
+  const data = await res.json() as { content: Array<{ type: string; text: string }> };
+  return data.content.find((c) => c.type === 'text')?.text ?? '';
+}
+
+function AiCoachPanel() {
+  const { ready } = useDb();
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [planInfo, setPlanInfo] = useState<{ dojo: string; weekNumber: number; programWeeks: number } | null>(null);
+  const [response, setResponse] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+    Promise.all([
+      query("SELECT value FROM settings WHERE key = 'ai.anthropic_key'"),
+      query(
+        `SELECT p.dojo, p.params_json, pp.start_date
+         FROM plan_periods pp JOIN plans p ON p.id = pp.plan_id
+         WHERE pp.end_date IS NULL ORDER BY pp.start_date DESC LIMIT 1`,
+      ),
+    ]).then(([keyRows, planRows]) => {
+      const key = keyRows[0]?.[0] as string | null ?? null;
+      setApiKey(key && key.length > 0 ? key : null);
+      if (planRows.length) {
+        const dojo = planRows[0][0] as string;
+        const startDate = planRows[0][2] as string;
+        let programWeeks = 18;
+        try {
+          const params = JSON.parse(planRows[0][1] as string);
+          if (params.programWeeks) programWeeks = params.programWeeks;
+        } catch { /* ignore */ }
+        const days = Math.round(
+          (new Date().getTime() - new Date(startDate + 'T00:00:00').getTime()) / 86_400_000
+        );
+        const wk = Math.max(1, Math.floor(days / 7) + 1);
+        setPlanInfo({ dojo, weekNumber: wk, programWeeks });
+      }
+    });
+  }, [ready]);
+
+  async function handleAskCoach() {
+    if (!apiKey) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const snapshot = await buildAthleteSnapshot();
+      const contextText = snapshotToText(snapshot);
+      const text = await callAnthropic(apiKey, contextText);
+      setResponse(text);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Canned messages when no API key
+  const cannedMessages = planInfo
+    ? getCoachMessages({ dojo: planInfo.dojo, weekNumber: planInfo.weekNumber, programWeeks: planInfo.programWeeks })
+    : [];
+
+  return (
+    <section className="border border-accent/40 p-6 space-y-4">
+      <p className="font-mono text-xs text-accent uppercase tracking-widest">ai coach</p>
+
+      {/* No API key — show canned messages or key prompt */}
+      {!apiKey && (
+        <>
+          {cannedMessages.length > 0 ? (
+            <div className="space-y-4">
+              {cannedMessages.map((m, i) => (
+                <div key={i} className="space-y-1">
+                  <p className="font-display tracking-widest text-lg uppercase text-bone">{m.headline}</p>
+                  <p className="font-mono text-xs text-bone-dim leading-relaxed">{m.body}</p>
+                </div>
+              ))}
+              <p className="font-mono text-xs text-bone-mute pt-2 border-t border-ink-line">
+                Add an Anthropic API key in{' '}
+                <a href="/settings" className="text-accent hover:underline">Settings</a>
+                {' '}to get personalised AI coaching.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="font-display tracking-widest text-lg uppercase text-bone-dim">No plan active</p>
+              <p className="font-mono text-xs text-bone-mute leading-relaxed">
+                Set a training plan in{' '}
+                <a href="/dojo" className="text-accent hover:underline">Dojo</a>
+                {' '}and add an Anthropic API key in{' '}
+                <a href="/settings" className="text-accent hover:underline">Settings</a>
+                {' '}to activate the AI coach.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* API key set — show ask button and response */}
+      {apiKey && (
+        <>
+          {!response && !loading && (
+            <div className="space-y-2">
+              <p className="font-mono text-xs text-bone-dim leading-relaxed">
+                The coach will review your current week, today's session, and recent training to give you specific advice.
+              </p>
+              <button
+                type="button"
+                onClick={() => { void handleAskCoach(); }}
+                className="font-mono text-xs uppercase tracking-widest px-5 py-2 border border-accent text-accent hover:bg-accent/10 transition-colors"
+              >
+                Ask Coach
+              </button>
+            </div>
+          )}
+
+          {loading && (
+            <div className="flex items-center gap-3 py-2">
+              <span className="font-mono text-xs text-bone-mute animate-pulse">Thinking…</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="space-y-2">
+              <p className="font-mono text-xs text-signal-miss">{error}</p>
+              <button
+                type="button"
+                onClick={() => { setError(null); }}
+                className="font-mono text-xs text-bone-mute hover:text-bone transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {response && !loading && (
+            <div className="space-y-4">
+              <div className="font-mono text-sm text-bone-dim leading-relaxed whitespace-pre-wrap">
+                {response}
+              </div>
+              <div className="flex items-center gap-4 pt-2 border-t border-ink-line">
+                <button
+                  type="button"
+                  onClick={() => { void handleAskCoach(); }}
+                  className="font-mono text-xs text-bone-mute hover:text-accent transition-colors uppercase tracking-widest"
+                >
+                  Ask again
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResponse(null)}
+                  className="font-mono text-xs text-bone-mute hover:text-bone transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page root
 // ---------------------------------------------------------------------------
 
@@ -866,6 +1058,9 @@ export default function CoachLogPage() {
         </h1>
         <p className="font-mono text-xs text-bone-mute">Training wellness — last 42 days</p>
       </header>
+
+      {/* AI Coach panel — first thing after header */}
+      <AiCoachPanel />
 
       {/* Section 4: Activity bars — narrow strip, always visible */}
       <ActivityBars dates14={dates14} actMap={actMap} />

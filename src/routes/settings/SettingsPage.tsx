@@ -450,6 +450,136 @@ function DataManagementSection() {
 }
 
 // ---------------------------------------------------------------------------
+// Section 5: AI Coach — BYOK
+// ---------------------------------------------------------------------------
+
+function AiCoachSection() {
+  const [savedKey, setSavedKey] = useState<string>('');
+  const [inputKey, setInputKey] = useState('');
+  const [show, setShow] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'saved' | 'cleared'>('idle');
+  const { ready } = useDb();
+
+  useEffect(() => {
+    if (!ready) return;
+    query("SELECT value FROM settings WHERE key = 'ai.anthropic_key'").then((rows) => {
+      const k = rows[0]?.[0] as string | null ?? '';
+      setSavedKey(k);
+    });
+  }, [ready]);
+
+  async function handleSave() {
+    const key = inputKey.trim();
+    if (!key) return;
+    setSaving(true);
+    try {
+      await exec(
+        `INSERT INTO settings (key, value) VALUES ('ai.anthropic_key', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`,
+        [key]
+      );
+      setSavedKey(key);
+      setInputKey('');
+      setStatus('saved');
+      setTimeout(() => setStatus('idle'), 2500);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleClear() {
+    await exec("DELETE FROM settings WHERE key = 'ai.anthropic_key'");
+    setSavedKey('');
+    setInputKey('');
+    setStatus('cleared');
+    setTimeout(() => setStatus('idle'), 2500);
+  }
+
+  const maskedKey = savedKey ? `sk-ant-…${savedKey.slice(-4)}` : null;
+
+  return (
+    <section aria-labelledby="ai-coach-heading" className="border border-ink-line p-6 space-y-4">
+      <SectionLabel>ai coach</SectionLabel>
+      <h2 id="ai-coach-heading" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
+        Anthropic API Key
+      </h2>
+
+      <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-xl">
+        Enter your Anthropic API key to enable the AI coach in Coach Log. Your key is stored locally — it never leaves your device.
+      </p>
+
+      {maskedKey && (
+        <div className="flex items-center gap-3 py-2">
+          <span className="w-2 h-2 rounded-full bg-signal-ok flex-shrink-0" />
+          <span className="font-mono text-xs text-signal-ok">Key set: {maskedKey}</span>
+          <button
+            type="button"
+            onClick={() => { void handleClear(); }}
+            className="font-mono text-xs text-bone-mute hover:text-signal-miss transition-colors ml-2"
+          >
+            Remove
+          </button>
+        </div>
+      )}
+
+      {!maskedKey && (
+        <div className="flex flex-col sm:flex-row gap-2 max-w-xl">
+          <div className="relative flex-1">
+            <input
+              type={show ? 'text' : 'password'}
+              value={inputKey}
+              onChange={(e) => setInputKey(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') void handleSave(); }}
+              placeholder="sk-ant-api03-…"
+              className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-xs text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent pr-10"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <button
+              type="button"
+              onClick={() => setShow(!show)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] text-bone-mute hover:text-bone"
+              tabIndex={-1}
+            >
+              {show ? 'hide' : 'show'}
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => { void handleSave(); }}
+            disabled={saving || !inputKey.trim()}
+            className="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-ink-line text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          >
+            {saving ? 'Saving…' : 'Save key'}
+          </button>
+        </div>
+      )}
+
+      {status === 'saved' && (
+        <p className="font-mono text-xs text-signal-ok" role="status">Key saved.</p>
+      )}
+      {status === 'cleared' && (
+        <p className="font-mono text-xs text-bone-mute" role="status">Key removed.</p>
+      )}
+
+      <p className="font-mono text-xs text-bone-mute">
+        Get a key at{' '}
+        <a
+          href="https://console.anthropic.com/settings/keys"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-accent hover:underline"
+        >
+          console.anthropic.com
+        </a>
+        . BYOK — your usage costs, your control.
+      </p>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page root
 // ---------------------------------------------------------------------------
 
@@ -562,6 +692,9 @@ export default function SettingsPage() {
 
       {/* Section 4: Data management */}
       <DataManagementSection />
+
+      {/* Section 5: AI coach BYOK */}
+      <AiCoachSection />
     </div>
   );
 }
