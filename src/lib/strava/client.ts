@@ -1,6 +1,21 @@
 import type { StravaActivity, StravaTokenResponse, StravaRefreshResponse } from './types';
 
-const STRAVA_API = 'https://www.strava.com/api/v3';
+export const STRAVA_API = 'https://www.strava.com/api/v3';
+
+// ---------------------------------------------------------------------------
+// Typed errors
+// ---------------------------------------------------------------------------
+
+export class RateLimitError extends Error {
+  constructor() {
+    super('Strava rate limit reached — resumes automatically in 15 min');
+    this.name = 'RateLimitError';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// OAuth
+// ---------------------------------------------------------------------------
 
 export async function exchangeCode(
   code: string,
@@ -34,6 +49,23 @@ export async function refreshAccessToken(
   return res.json() as Promise<StravaRefreshResponse>;
 }
 
+/** Best-effort revoke — local wipe proceeds even if the network call fails. */
+export async function revokeToken(accessToken: string, workerUrl: string): Promise<void> {
+  try {
+    await fetch(`${workerUrl}/revoke`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: accessToken }),
+    });
+  } catch {
+    // intentionally swallowed — revoke is advisory
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Activity fetch
+// ---------------------------------------------------------------------------
+
 export async function fetchActivitiesPage(
   accessToken: string,
   page: number,
@@ -50,7 +82,7 @@ export async function fetchActivitiesPage(
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (res.status === 401) throw new Error('Strava token expired — reconnect');
-  if (res.status === 429) throw new Error('Strava rate limit — try again in 15 min');
+  if (res.status === 429) throw new RateLimitError();
   if (!res.ok) throw new Error(`Strava API error ${res.status}`);
   return res.json() as Promise<StravaActivity[]>;
 }

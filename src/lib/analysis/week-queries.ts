@@ -1,17 +1,19 @@
 import { query } from '@/db/client';
 
 // ---------------------------------------------------------------------------
-// Column indices for the main activity SELECT — order must match the query.
+// Column indices — order must match the SELECT below.
 // ---------------------------------------------------------------------------
-const C_TYPE = 0;
-const C_DISTANCE = 1;   // meters
-const C_MOVING = 2;     // seconds
-const C_AVG_HR = 3;     // bpm | null
-const C_AVG_SPD = 4;    // m/s | null
-const C_NAME = 5;
-const C_DATE = 6;
+const C_TYPE      = 0;
+const C_DISTANCE  = 1;   // meters
+const C_MOVING    = 2;   // seconds
+const C_AVG_HR    = 3;   // bpm | null
+const C_AVG_SPD   = 4;   // m/s | null
+const C_NAME      = 5;
+const C_DATE      = 6;
+const C_STRAVA_ID = 7;
 
 export interface GhostActivity {
+  stravaId: number;
   type: string;
   distanceM: number;
   movingTimeS: number;
@@ -23,20 +25,21 @@ export interface GhostActivity {
 
 export async function getActivitiesInRange(fromIso: string, toIso: string): Promise<GhostActivity[]> {
   const rows = await query(
-    `SELECT type, distance, moving_time, average_heartrate, average_speed, name, start_date
+    `SELECT type, distance, moving_time, average_heartrate, average_speed, name, start_date, strava_id
      FROM activities
      WHERE start_date >= ? AND start_date <= ?
      ORDER BY start_date ASC`,
     [fromIso, toIso + 'T99:99:99'],
   );
   return rows.map((r) => ({
-    type: r[C_TYPE] as string,
-    distanceM: (r[C_DISTANCE] as number) ?? 0,
+    stravaId:    (r[C_STRAVA_ID] as number) ?? 0,
+    type:        r[C_TYPE] as string,
+    distanceM:   (r[C_DISTANCE] as number) ?? 0,
     movingTimeS: (r[C_MOVING] as number) ?? 0,
-    avgHr: r[C_AVG_HR] as number | null,
-    avgSpeedMs: r[C_AVG_SPD] as number | null,
-    name: r[C_NAME] as string,
-    startDate: r[C_DATE] as string,
+    avgHr:       r[C_AVG_HR] as number | null,
+    avgSpeedMs:  r[C_AVG_SPD] as number | null,
+    name:        r[C_NAME] as string,
+    startDate:   r[C_DATE] as string,
   }));
 }
 
@@ -54,14 +57,14 @@ export async function getNextRace(todayIso: string): Promise<{
   );
   if (!rows.length) return null;
   return {
-    date: rows[0][0] as string,
-    name: rows[0][1] as string,
+    date:       rows[0][0] as string,
+    name:       rows[0][1] as string,
     distanceKm: rows[0][2] as number,
   };
 }
 
 // ---------------------------------------------------------------------------
-// Pure aggregation — works on any GhostActivity[]
+// Pure aggregation
 // ---------------------------------------------------------------------------
 
 export interface WeekStats {
@@ -78,8 +81,8 @@ const RUN_TYPES = new Set(['Run', 'VirtualRun', 'TrailRun']);
 export function aggregateWeekStats(activities: GhostActivity[]): WeekStats {
   const runs = activities.filter((a) => RUN_TYPES.has(a.type));
 
-  const totalKm = runs.reduce((s, a) => s + a.distanceM / 1000, 0);
-  const longRunKm = runs.length ? Math.max(...runs.map((a) => a.distanceM / 1000)) : 0;
+  const totalKm         = runs.reduce((s, a) => s + a.distanceM / 1000, 0);
+  const longRunKm       = runs.length ? Math.max(...runs.map((a) => a.distanceM / 1000)) : 0;
   const totalMovingTimeS = runs.reduce((s, a) => s + a.movingTimeS, 0);
 
   const avgPaceSpk = totalKm > 0 && totalMovingTimeS > 0
