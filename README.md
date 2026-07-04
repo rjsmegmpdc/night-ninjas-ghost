@@ -1,227 +1,179 @@
-# VELOCITY — Local-First Running Training Analysis
+# GHOST
 
-Welcome to VELOCITY, the official training companion for the Night Ninjas running club.
+A zero-cost PWA fork of VELOCITY (Night Ninjas training tracker). Same training-science brain, completely different shell.
 
-VELOCITY is a desktop app that tracks and analyzes your running training with precision. All your data stays on your machine—nothing is ever uploaded to the cloud.
-
-## What VELOCITY does
-
-VELOCITY pulls your training data from Strava and compares it against your chosen training plan (Hansons, Pfitzinger, Daniels, Lydiard, Higdon, Polarised, Ultra, Norwegian Singles, or Custom). It shows you what you were meant to do, what you actually did, and where the gaps are. No cloud, no subscription, no telemetry. Your data stays on your machine.
-
-For development and brand identity, see [`BRAND.md`](./BRAND.md) and [`PHASES.md`](./PHASES.md).
+**Goal**: One React bundle that runs as a web PWA, iPhone home-screen app, Android app, and native Windows/macOS desktop — with zero backend except one Cloudflare Worker for the Strava OAuth token swap.
 
 ---
 
-## System requirements
+## Quick start
 
-- **Node.js 20.11.0+** and npm 9.0.0+
-- **A Strava account** (for activity sync)
-- **macOS 11+**, Windows 10+, or recent Linux
-- **Native build dependencies** for `better-sqlite3` and `keytar`:
-  - Windows: Usually built-in with Node 20+. If needed, install Visual Studio Build Tools 2022 with "Desktop development with C++".
-  - macOS: Xcode Command Line Tools (`xcode-select --install`)
-  - Linux: `build-essential` + `libsecret-1-dev`
-
-## Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/night-ninjas/velocity.git
-   cd velocity
-   npm install
-   ```
-
-2. Start the dev server:
-   ```bash
-   npm run dev
-   ```
-
-3. Open your browser to `http://localhost:3000`.
-
-On first run, a setup wizard will guide you through Strava connection, training plan selection, and data sync.
-
-## Optional: Use the health checker
-
-A `check.ps1` script (Windows) or shell equivalent helps verify your setup:
-
-```powershell
-# First time: allow local script execution
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-
-# Then run:
-.\check.ps1
-npm run dev
+```bash
+npm install
+npm run dev          # dev server at localhost:5173
+npm run build        # production build → dist/
+npm test             # 474 pure-engine tests
 ```
 
-The checker verifies dependencies, applies pending migrations, and reports status.
+First run: navigate to `/setup`, connect Strava, and sync your activities.
+
+---
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Vite 6 + React 19 + React Router 7 |
+| Database | wa-sqlite (SQLite in browser via WASM) |
+| Storage | AccessHandlePoolVFS (OPFS) · MemoryVFS fallback |
+| Styling | Tailwind CSS 4 (Vite plugin) |
+| PWA | vite-plugin-pwa + Workbox |
+| Desktop | Tauri 2 (~5 MB installer, unsigned) |
+| OAuth proxy | Cloudflare Worker (the only server code) |
+| Tests | Vitest — 474 pure-engine tests |
+| Hosting | Cloudflare Pages (free) |
+
+---
+
+## Screens (14 routes)
+
+| Route | Screen | What it does |
+|---|---|---|
+| `/setup` | Setup | Strava OAuth, client ID entry, activity sync |
+| `/patrol` | Patrol | Dashboard — streak, weekly summary, compliance snapshot |
+| `/recon` | Recon | 6-month volume trends, zone distribution, CTL/ATL chart |
+| `/strike` | Strike | 8-week athlete state — CTL/ATL/TSB, intensity history, mileage |
+| `/dojo` | Dojo | Training methodology picker + macrocycle shape card |
+| `/calendar` | Calendar | Goal race, tune-ups, capacity caps, commitments |
+| `/race` | Race | Pace plans (3 strategies), fueling, carb-load, taper, post-race |
+| `/vo2max` | VO2 Max | Cooper/Rockport/Lab test capture, trend sparkline, insights |
+| `/coach-log` | Coach Log | Daily wellness — sleep/energy/stress emoji log, 42-day history |
+| `/journal` | Journal | 35-day training diary calendar — activity dots, day detail |
+| `/profile` | Profile | Athlete profile, HR zones, strength preferences |
+| `/shoes` | Shoes | Gear tracking with distance progress bars |
+| `/club` | Club | 4-week summary + clipboard share text generator |
+| `/settings` | Settings | Strava status, sync history, data export, wipe |
+| `/help` | Help | Static reference — glossary, tasks, troubleshooting, privacy |
+
+---
+
+## Architecture
+
+```
+src/
+  main.tsx          Entry — BrowserRouter + DbProvider + App
+  App.tsx           React Router routes (14 screens + /setup)
+  index.css         Tailwind 4 @theme tokens (ink/bone/accent/signal)
+  db/
+    worker.ts       wa-sqlite Web Worker — OPFS VFS, migrations runner
+    client.ts       postMessage async bridge (query / exec)
+    DbContext.tsx   React context — DB ready state
+    migrations.ts   Ordered SQL migrations (0001, 0002, 0003)
+  routes/           One folder per screen
+  components/       TopNav, PageSkeleton, shared UI
+  lib/              Pure analysis engines (copied from VELOCITY, unchanged)
+    analysis/       CTL/ATL, compliance, load, trends, VO2max, biometrics
+    plans/          Capacity, pace compliance, recovery prescription
+    coach/          Coach voice
+    race/           Fueling, taper, execution, debrief, macrocycle
+    ai/             Context builder
+    weather/        Heat adjust
+    garmin/         Activity mapper + types
+
+oauth-worker/       Cloudflare Worker — Strava /oauth/token proxy
+  wrangler.toml
+  src/index.ts      /exchange + /refresh endpoints (30 lines)
+
+src-tauri/          Tauri 2 desktop wrapper
+  tauri.conf.json
+  Cargo.toml
+  src/main.rs + lib.rs
+```
+
+---
+
+## Database
+
+SQLite in the browser via wa-sqlite + OPFS. All data stays local — nothing is sent to a server.
+
+**Migrations** (applied automatically on first load):
+
+| Migration | Tables |
+|---|---|
+| `0001_initial` | activities, settings, shoes, journal, plans, plan_periods, races, calendar_events, sync_jobs |
+| `0002_races_goal_level` | adds `is_goal` + `level` to races; creates `recurring_sessions` |
+| `0003_race_results_vo2max` | race_results, vo2max_observations |
+
+**Storage**: OPFS persists across page reloads (Chrome/Edge/Firefox). Falls back to MemoryVFS in Safari or private browsing — data lost on tab close. Storage label shown on Patrol.
+
+---
 
 ## Data and privacy
 
-All your training data stays local and secure:
-
-- **SQLite database**: `%APPDATA%\NightNinjas\shadow-tracker.db` (Windows) · `~/Library/Application Support/NightNinjas/` (macOS) · `~/.config/night-ninjas/` (Linux)
-- **Strava credentials**: Stored securely in OS keychain (service: `NightNinjas-ShadowTracker`)
-- **No cloud sync**: Your data never leaves your machine
-- **No telemetry**: No analytics, no tracking
-
-### Internal naming note
-
-The app uses the `NightNinjas` namespace for internal storage to maintain compatibility with existing user databases. Do not rename these paths:
-
-- Database file: `%APPDATA%\NightNinjas\shadow-tracker.db`
-- Keychain service: `NightNinjas-ShadowTracker`
-
-Renaming them would orphan existing user databases and credentials. User-facing exports use VELOCITY naming.
+- All data stored locally in the browser (OPFS / IndexedDB)
+- Strava tokens stored encrypted in IndexedDB
+- No analytics, no telemetry, no cloud sync
+- Outbound calls: `strava.com` (OAuth + activity sync), Cloudflare Worker (token exchange), `api.open-meteo.com` (race-day weather, no auth required)
 
 ---
 
-## Architecture (developer reference)
+## Deployment
 
-```
-┌──────────────────────────────┐
-│  Next.js 16 App Router       │
-│  · Server Components         │
-│  · Server Actions            │
-└────────┬─────────────────────┘
-         │
-    ┌────┴─────────────────────┐
-    │                          │
-┌───▼───────────┐   ┌──────────▼──────────────┐
-│ better-sqlite3│   │ keytar (OS keychain)    │
-│ + Drizzle ORM │   │ — Strava credentials    │
-└───────────────┘   └─────────────────────────┘
-         │
-    ┌────┴──────────────────────────────────────────┐
-    │ Strava API      (OAuth + activity sync)       │
-    │ Anthropic API   (AI insights — BYOK, opt-in)  │
-    │ Garmin Connect  (opt-in)                      │
-    │ GitHub iCal     (NZ holidays, annual fetch)   │
-    └───────────────────────────────────────────────┘
+### Cloudflare Pages (PWA)
+
+Push to `main` → GitHub Actions builds + deploys automatically via `deploy.yml`.
+
+One-time setup:
+1. Repo Settings → Pages → Source: GitHub Actions
+2. Add secret `STRAVA_OAUTH_WORKER_URL` = your deployed Cloudflare Worker URL
+3. Add secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+
+### Cloudflare Worker (OAuth proxy)
+
+```bash
+cd oauth-worker
+npx wrangler secret put STRAVA_CLIENT_SECRET
+npx wrangler deploy
 ```
 
-### Key directories
+### Desktop (Tauri)
 
+Push a `v*` tag → GitHub Actions cross-builds Windows + macOS → draft GitHub Release.
+
+Before first desktop release, generate Tauri icons:
+```bash
+npx @tauri-apps/cli icon src/assets/icon.png
+# copy outputs to src-tauri/icons/
 ```
-app/
-├── (app)/              Main authenticated app
-│   ├── patrol/         Daily dashboard
-│   ├── recon/          Weekly compliance
-│   ├── strike/         Peak training week analysis
-│   ├── dojo/           Plan management
-│   ├── calendar/       Races, group runs, events — full CRUD
-│   ├── journal/        Wellness tracking
-│   ├── settings/       System config
-│   ├── shoes/          Gear inventory + rotation health
-│   ├── race/           Race execution planner + debrief
-│   ├── vo2max/         VO2max tracking + insights
-│   ├── profile/        Athlete profile
-│   ├── club/           Club view
-│   ├── coach-log/      Coach activity log
-│   └── help/           In-app user docs
-├── setup/              7-step first-run wizard
-└── api/                Server endpoints (Strava OAuth, sync)
-
-lib/
-├── db/                 Drizzle schema + connection + migrations
-├── plans/              Plan engines (Hansons, Lydiard, Custom)
-├── sources/            External data — Strava API, sync runner, NZ holidays
-├── actions/            Server actions for forms
-├── store/              Settings + secrets layer
-├── analysis/           Best-week, compliance computation
-├── data/               Cached/derived data accessors
-└── constants/          Shared keys (kept out of 'use server' files)
-
-components/
-├── brand/              Logo, Wordmark
-├── ui/                 Button, Card, Input, Stat, Stepper, EmptyState
-├── nav/                Sidebar
-├── calendar/           Sections used by both wizard + /calendar page
-└── sync/               Live progress, status banner
-```
-
-### Schema
-
-20 SQLite tables. Run `npm run db:studio` to browse them in Drizzle Studio.
-
-| Table | Purpose |
-|---|---|
-| `activities` | Synced Strava activities (one source of truth) |
-| `plans` | User's active plan + history |
-| `plan_periods` | Date-bound plan period rows for matrix rendering |
-| `plan_adjustments` | Per-week plan overrides (volume cap, skip) |
-| `block_debriefs` | Training block retrospectives |
-| `journal` | Daily wellness entries |
-| `daily_health_metrics` | Biometric readings (HRV, resting HR, weight) |
-| `settings` | App key/value config |
-| `sync_log` | Legacy sync audit trail |
-| `sync_jobs` | Stateful, resumable sync runs |
-| `races` | Goal race + tune-ups |
-| `race_results` | Post-race debrief data |
-| `recurring_sessions` | Weekly group runs |
-| `calendar_events` | Holidays, trips, sickness |
-| `nz_holidays` | Cached public holidays from sohnemann iCal |
-| `shoes` | Gear inventory synced from Strava |
-| `activity_shoe_assignments` | Activity ↔ shoe link |
-| `shoe_price_watches` | Replacement model price tracking |
-| `vo2max_observations` | VO2max readings (Cooper, Rockport, device, lab) |
-| `interruptions` | Injury/illness interruption log |
-
-### Plan engines
-
-Each plan implements `PlanEngine` (see `lib/plans/types.ts`). To add a new plan:
-
-1. Create `lib/plans/your-plan.ts` exporting a `PlanEngine`
-2. Register it in `lib/plans/index.ts`
-3. Done — wizard, dojo picker, and compliance pick it up automatically
-
-### Sync runner
-
-The Strava sync is a **stateful job runner**, not a one-shot fetch. Each
-sync creates a `sync_jobs` row tracking status (`pending` → `running` →
-`completed`/`paused`/`rate_limited`/`failed`), cursor position, and progress.
-
-If a sync is interrupted (process killed, network drop, computer sleep),
-the next page render of `/patrol` or `/calendar` calls
-`detectInterruptedJobs()` which flips orphans (`running` jobs without a
-heartbeat in 60s) to `paused`. The user sees a banner with a Resume button.
-
-If Strava returns a 429, the runner pauses with `rate_limited` status and
-a `rate_limit_resets_at` timestamp. The banner shows the countdown.
 
 ---
 
 ## Development scripts
 
 ```bash
-npm run dev           # Start dev server (Turbopack)
-npm run build         # Production build
-npm run start         # Run production build
-npm run lint
-npm run db:generate   # Generate Drizzle migrations from schema changes
-npm run db:migrate    # Apply pending migrations
-npm run db:studio     # Open Drizzle Studio (DB browser at localhost:4983)
+npm run dev      # Vite dev server (localhost:5173)
+npm run build    # Production build → dist/
+npm run preview  # Preview production build
+npm test         # Vitest (474 pure-engine tests)
+npm run lint     # ESLint
 ```
 
-When you change `lib/db/schema.ts`, also write a corresponding migration
-SQL file in `lib/db/migrations/NNNN_description.sql`. The checker applies
-these automatically on next run.
-
 ---
 
-## Privacy
+## Relation to VELOCITY
 
-| Question | Answer |
-|---|---|
-| Does my data leave this machine? | No |
-| Is there telemetry? | No. `NEXT_TELEMETRY_DISABLED=1` is set by default |
-| Where do my Strava tokens live? | OS keychain |
-| What outbound network calls? | `strava.com` for OAuth + sync; `anthropic.com` if AI insights enabled (BYOK); `connect.garmin.com` if Garmin connected; one annual GitHub fetch for NZ public holidays |
-| Does it work offline? | Yes — except syncing new activities |
+GHOST is a fork of VELOCITY (night-ninjas-shadow-tracker). It shares:
+- All pure analysis engines (`src/lib/*/`) — copied verbatim, same tests
+- Design tokens (ink/bone/accent/signal colour system)
+- DB schema (same tables, compatible structure)
 
----
+It replaces:
+- Next.js 15 + better-sqlite3 → Vite 6 + React 19 + wa-sqlite
+- Electron desktop → Tauri 2
+- Local-only desktop → installable PWA + optional desktop
 
-## License
-
-Personal use. Built for and used by the Night Ninjas community
-(`nightninjas.run`, est. 2016). The Night Ninjas brand and "est. 2016" mark
-are not licensed for redistribution outside the community.
+GHOST does **not** yet include:
+- Plan engines (hansons, pfitzinger, daniels, etc.) — pure support files exist, renderers not yet ported
+- AI coach (needs Anthropic BYOK wiring)
+- Garmin Connect sync
+- Patrol compliance matrix (uses plan engine)

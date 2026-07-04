@@ -21,14 +21,14 @@ A fork of VELOCITY (night-ninjas-shadow-trackerv2). Same training-science brain,
 
 **Stack**:
 - **Framework**: Vite 6 + React 19 + React Router 7
-- **Database**: wa-sqlite + IDBMirrorVFS (SQLite in browser via IndexedDB — no COOP/COEP headers needed)
+- **Database**: wa-sqlite (SQLite in browser via WASM)
+- **Storage**: AccessHandlePoolVFS (OPFS) — persistent; falls back to MemoryVFS if OPFS unavailable
 - **Styling**: Tailwind CSS 4 (Vite plugin)
 - **PWA**: vite-plugin-pwa + Workbox service worker
-- **Desktop**: Tauri 2 (~3–8 MB installer, unsigned)
+- **Desktop**: Tauri 2 (~5 MB installer, unsigned)
 - **OAuth proxy**: Cloudflare Worker (30 lines — the only server code)
-- **AI**: Anthropic SDK direct from browser, BYOK, `dangerouslyAllowBrowser`
-- **Tests**: Vitest — pure `*-pure.ts` engine tests from VELOCITY, unchanged
-- **Hosting**: GitHub Pages (free) + GitHub Releases for desktop installers
+- **Tests**: Vitest — 474 pure `*-pure.ts` engine tests from VELOCITY, unchanged
+- **Hosting**: Cloudflare Pages (free) + GitHub Releases for desktop installers
 
 ## Architecture
 
@@ -38,20 +38,21 @@ src/
   App.tsx           React Router routes (14 screens + /setup)
   index.css         Tailwind 4 @theme tokens (VELOCITY design system)
   db/
-    worker.ts       wa-sqlite Web Worker (IDBMirrorVFS, IndexedDB backend)
+    worker.ts       wa-sqlite Web Worker (OPFS VFS + MemoryVFS fallback)
     client.ts       Main-thread async bridge to the worker
-    DbContext.tsx   React context — ready state for DB init
-    migrations.ts   Ordered SQL migrations (same schema as VELOCITY)
-  routes/           One folder per screen — port from VELOCITY app/(app)/
+    DbContext.tsx   React context — ready state + storage label
+    migrations.ts   Ordered SQL migrations (0001, 0002, 0003)
+  routes/           One folder per screen (all 14 implemented)
   components/       Shared UI (TopNav, PageSkeleton, …)
   lib/              Pure analysis engines copied from VELOCITY (unchanged)
-    analysis/       *-pure.ts: compliance, monotony, trends, …
-    plans/          *-pure.ts: 9 plan engines (Base, Norwegian, etc.)
+    analysis/       *-pure.ts: load, trends, athlete-state, vo2max, biometrics, compliance…
+    plans/          *-pure.ts: capacity, pace-compliance, recovery, state-awareness
+                    NOTE: individual plan engines (hansons, pfitzinger etc.) not yet ported
     coach/          *-pure.ts: coach voice
-    race/           *-pure.ts: fueling, taper, execution, debrief
+    race/           *-pure.ts: fueling, taper, execution, debrief, macrocycle
     ai/             *-pure.ts: context builder
     weather/        *-pure.ts: heat adjust
-    garmin/         mapper
+    garmin/         mapper + types
 
 oauth-worker/       Cloudflare Worker — Strava /oauth/token proxy
   wrangler.toml
@@ -94,19 +95,38 @@ Worker  → POST strava.com/oauth/token (with client_secret)
 Browser stores tokens encrypted in IndexedDB
 ```
 
+## DB schema — current tables
+
+| Table | Added in | Purpose |
+|---|---|---|
+| `activities` | 0001 | Synced Strava activities |
+| `settings` | 0001 | Key/value app config |
+| `shoes` | 0001 | Gear inventory |
+| `journal` | 0001 | Daily wellness entries |
+| `plans` | 0001 | Selected training methodology + params |
+| `plan_periods` | 0001 | Date-bound plan period rows |
+| `races` | 0001 | Goal race + tune-ups |
+| `calendar_events` | 0001 | Holidays, trips, sickness, commitments |
+| `sync_jobs` | 0001 | Strava sync job state |
+| `recurring_sessions` | 0002 | Weekly group runs |
+| `race_results` | 0003 | Post-race debrief data |
+| `vo2max_observations` | 0003 | VO2max readings (Cooper/Rockport/Lab/device) |
+
+Migration 0002 also adds `is_goal INTEGER` and `level TEXT` columns to `races`.
+
 ## GitHub Actions
 
 | Workflow | Trigger | Output |
 |---|---|---|
-| `deploy.yml` | push to main | GitHub Pages PWA |
+| `deploy.yml` | push to main | Cloudflare Pages PWA |
 | `worker.yml` | push to main (oauth-worker/**) | Cloudflare Worker |
 | `desktop.yml` | push v* tag | Draft GitHub Release (.exe + .dmg) |
 
-## GitHub Pages setup (one-time, manual)
+## Cloudflare Pages setup (one-time, manual)
 
-1. Repo Settings → Pages → Source: GitHub Actions
+1. Connect repo to Cloudflare Pages (Dashboard → Workers & Pages → Create)
 2. Add secret `STRAVA_OAUTH_WORKER_URL` = your deployed Worker URL
-3. Add Cloudflare secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+3. Add secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
 
 ## Tauri icons (before first desktop release)
 
