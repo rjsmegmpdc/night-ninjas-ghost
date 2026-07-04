@@ -1,6 +1,6 @@
 import { query } from '@/db/client';
 import { ENGINES, type Dojo } from '@/lib/plans/index';
-import type { AthleteSnapshot, RecentActivitySnapshot } from './context-pure';
+import type { AthleteSnapshot, BiometricsSnapshot, RecentActivitySnapshot } from './context-pure';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -154,6 +154,30 @@ export async function buildAthleteSnapshot(): Promise<AthleteSnapshot> {
       : 'build'
     : 'off-season';
 
+  // -- Today's biometrics: merge journal (HRV, RHR) + daily_health_metrics --
+  const [journalBioRows, healthRows] = await Promise.all([
+    query(
+      `SELECT resting_hr, hrv FROM journal WHERE date = ? LIMIT 1`,
+      [todayIso]
+    ),
+    query(
+      `SELECT rhr_bpm, hrv_ms, sleep_duration_s, sleep_score, stress_score, body_battery
+       FROM daily_health_metrics WHERE date = ? ORDER BY synced_at DESC LIMIT 1`,
+      [todayIso]
+    ).catch(() => [] as unknown[][]),
+  ]);
+
+  let biometrics: BiometricsSnapshot | null = null;
+  const rhrBpm      = (healthRows[0]?.[0] ?? journalBioRows[0]?.[0]) as number | null;
+  const hrvMs       = (healthRows[0]?.[1] ?? (journalBioRows[0]?.[1] != null ? journalBioRows[0][1] : null)) as number | null;
+  const sleepDurationS = healthRows[0]?.[2] as number | null ?? null;
+  const sleepScore     = healthRows[0]?.[3] as number | null ?? null;
+  const stressScore    = healthRows[0]?.[4] as number | null ?? null;
+  const bodyBattery    = healthRows[0]?.[5] as number | null ?? null;
+  if (rhrBpm != null || hrvMs != null || bodyBattery != null || sleepScore != null) {
+    biometrics = { rhrBpm, hrvMs, sleepDurationS, sleepScore, stressScore, bodyBattery };
+  }
+
   return {
     asOfIso: todayIso,
     dojo,
@@ -163,8 +187,9 @@ export async function buildAthleteSnapshot(): Promise<AthleteSnapshot> {
     daysToRace,
     todaySession,
     week: { totalKm, longRunKm, avgPaceSpk, avgHr, sessions: weekRuns.length, targetKm },
-    state: null,        // CTL/ATL/TSB not computed here
+    state: null,
+    biometrics,
     recentActivities,
-    activeInjuries: [], // no injuries table in GHOST
+    activeInjuries: [],
   };
 }

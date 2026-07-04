@@ -11,6 +11,7 @@ const base: AthleteSnapshot = {
   todaySession: { label: 'Tue tempo', type: 'tempo', prescription: '8km @ MP' },
   week: { totalKm: 42.5, longRunKm: 18, avgPaceSpk: 300, avgHr: 142, sessions: 4, targetKm: 70 },
   state: { ctl: 55, atl: 60, tsb: -5, formClass: 'loaded', confidence: 'calibrated' },
+  biometrics: null,
   recentActivities: [
     { date: '2026-06-22', type: 'Run', name: 'Easy', distanceKm: 10, avgPaceSpk: 330, avgHr: 135 },
   ],
@@ -93,5 +94,21 @@ describe('snapshotToText', () => {
     const t = snapshotToText({ ...base, weekNumber: 0, programWeeks: 18 });
     expect(t).not.toContain('Program phase: program-week-N');
     expect(t).toContain('week 0');
+  });
+
+  it('emits biometrics when present', () => {
+    const t = snapshotToText({
+      ...base,
+      biometrics: { rhrBpm: 48, hrvMs: 62.5, sleepDurationS: null, sleepScore: 85, stressScore: null, bodyBattery: 72 },
+    });
+    expect(t).toContain('RHR 48bpm');
+    expect(t).toContain('HRV 62.5ms');
+    expect(t).toContain('sleep score 85/100');
+    expect(t).toContain('body battery 72/100');
+  });
+
+  it('omits biometrics block when biometrics is null', () => {
+    const t = snapshotToText({ ...base, biometrics: null });
+    expect(t).not.toContain("Today's biometrics:");
   });
 });

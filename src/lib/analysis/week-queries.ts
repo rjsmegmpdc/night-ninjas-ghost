@@ -184,3 +184,91 @@ export function aggregateWeekStats(activities: GhostActivity[]): WeekStats {
     avgPaceSpk, avgHr, totalElevationGainM, backToBackKm,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Daily health metrics (daily_health_metrics table — migration 0005)
+// ---------------------------------------------------------------------------
+
+export interface DailyBiometrics {
+  date: string;
+  source: string;
+  rhrBpm: number | null;
+  hrvMs: number | null;
+  sleepDurationS: number | null;
+  sleepScore: number | null;
+  stressScore: number | null;
+  bodyBattery: number | null;
+  vo2maxDevice: number | null;
+  weightKg: number | null;
+}
+
+export async function getTodayBiometrics(dateIso: string): Promise<DailyBiometrics | null> {
+  const rows = await query(
+    `SELECT date, source, rhr_bpm, hrv_ms, sleep_duration_s, sleep_score,
+            stress_score, body_battery, vo2max_device, weight_kg
+     FROM daily_health_metrics WHERE date = ? ORDER BY synced_at DESC LIMIT 1`,
+    [dateIso]
+  );
+  if (!rows.length) return null;
+  const r = rows[0];
+  return {
+    date:            r[0] as string,
+    source:          r[1] as string,
+    rhrBpm:          r[2] as number | null,
+    hrvMs:           r[3] as number | null,
+    sleepDurationS:  r[4] as number | null,
+    sleepScore:      r[5] as number | null,
+    stressScore:     r[6] as number | null,
+    bodyBattery:     r[7] as number | null,
+    vo2maxDevice:    r[8] as number | null,
+    weightKg:        r[9] as number | null,
+  };
+}
+
+export async function upsertBiometrics(b: Omit<DailyBiometrics, 'source'> & { source?: string }): Promise<void> {
+  const source = b.source ?? 'manual';
+  await query(
+    `INSERT INTO daily_health_metrics
+       (date, source, rhr_bpm, hrv_ms, sleep_duration_s, sleep_score, stress_score, body_battery, vo2max_device, weight_kg)
+     VALUES (?,?,?,?,?,?,?,?,?,?)
+     ON CONFLICT(date, source) DO UPDATE SET
+       rhr_bpm          = excluded.rhr_bpm,
+       hrv_ms           = excluded.hrv_ms,
+       sleep_duration_s = excluded.sleep_duration_s,
+       sleep_score      = excluded.sleep_score,
+       stress_score     = excluded.stress_score,
+       body_battery     = excluded.body_battery,
+       vo2max_device    = excluded.vo2max_device,
+       weight_kg        = excluded.weight_kg,
+       synced_at        = datetime('now')`,
+    [
+      b.date, source,
+      b.rhrBpm ?? null, b.hrvMs ?? null, b.sleepDurationS ?? null,
+      b.sleepScore ?? null, b.stressScore ?? null, b.bodyBattery ?? null,
+      b.vo2maxDevice ?? null, b.weightKg ?? null,
+    ]
+  );
+}
+
+export async function getRecentBiometrics(fromIso: string, toIso: string): Promise<DailyBiometrics[]> {
+  const rows = await query(
+    `SELECT date, source, rhr_bpm, hrv_ms, sleep_duration_s, sleep_score,
+            stress_score, body_battery, vo2max_device, weight_kg
+     FROM daily_health_metrics
+     WHERE date >= ? AND date <= ?
+     ORDER BY date ASC`,
+    [fromIso, toIso]
+  );
+  return rows.map((r) => ({
+    date:            r[0] as string,
+    source:          r[1] as string,
+    rhrBpm:          r[2] as number | null,
+    hrvMs:           r[3] as number | null,
+    sleepDurationS:  r[4] as number | null,
+    sleepScore:      r[5] as number | null,
+    stressScore:     r[6] as number | null,
+    bodyBattery:     r[7] as number | null,
+    vo2maxDevice:    r[8] as number | null,
+    weightKg:        r[9] as number | null,
+  }));
+}

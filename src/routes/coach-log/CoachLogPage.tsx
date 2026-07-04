@@ -338,7 +338,21 @@ interface LogFormState {
   energyL: number | null;
   stressL: number | null;
   restingHr: string;
+  hrv: string;
+  bodyBattery: string;
   notes: string;
+}
+
+function formFromEntry(e: JournalEntry | undefined): LogFormState {
+  return {
+    sleepQ:      e?.sleepQuality ?? null,
+    energyL:     e?.energyLevel ?? null,
+    stressL:     e?.stressLevel ?? null,
+    restingHr:   e?.restingHr != null ? String(e.restingHr) : '',
+    hrv:         e?.hrv != null ? String(e.hrv) : '',
+    bodyBattery: '',
+    notes:       e?.notes ?? '',
+  };
 }
 
 function TodayLogForm({
@@ -348,43 +362,58 @@ function TodayLogForm({
   todayEntry: JournalEntry | undefined;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<LogFormState>({
-    sleepQ: todayEntry?.sleepQuality ?? null,
-    energyL: todayEntry?.energyLevel ?? null,
-    stressL: todayEntry?.stressLevel ?? null,
-    restingHr: todayEntry?.restingHr != null ? String(todayEntry.restingHr) : '',
-    notes: todayEntry?.notes ?? '',
-  });
+  const [form, setForm] = useState<LogFormState>(() => formFromEntry(todayEntry));
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
 
+  // Load today's body battery from daily_health_metrics on mount
+  useEffect(() => {
+    const today = todayIso();
+    query(
+      `SELECT body_battery FROM daily_health_metrics WHERE date = ? ORDER BY synced_at DESC LIMIT 1`,
+      [today]
+    ).then((rows) => {
+      const bb = rows[0]?.[0] as number | null ?? null;
+      setForm((f) => ({ ...f, bodyBattery: bb != null ? String(bb) : '' }));
+    }).catch(() => { /* table may not exist in older DBs */ });
+  }, []);
+
   // Sync if todayEntry changes (after re-query)
   useEffect(() => {
-    setForm({
-      sleepQ: todayEntry?.sleepQuality ?? null,
-      energyL: todayEntry?.energyLevel ?? null,
-      stressL: todayEntry?.stressLevel ?? null,
-      restingHr: todayEntry?.restingHr != null ? String(todayEntry.restingHr) : '',
-      notes: todayEntry?.notes ?? '',
-    });
+    setForm((prev) => ({ ...formFromEntry(todayEntry), bodyBattery: prev.bodyBattery }));
   }, [todayEntry]);
 
   async function handleSave() {
     setSaving(true);
     try {
       const today = todayIso();
-      const hr = form.restingHr !== '' ? parseInt(form.restingHr, 10) : null;
+      const hr  = form.restingHr   !== '' ? parseInt(form.restingHr, 10)   : null;
+      const hrv = form.hrv         !== '' ? parseInt(form.hrv, 10)          : null;
+      const bb  = form.bodyBattery !== '' ? parseInt(form.bodyBattery, 10)  : null;
+
       await exec(
-        `INSERT INTO journal (date, sleep_quality, energy_level, stress_level, resting_hr, notes)
-         VALUES (?,?,?,?,?,?)
+        `INSERT INTO journal (date, sleep_quality, energy_level, stress_level, resting_hr, hrv, notes)
+         VALUES (?,?,?,?,?,?,?)
          ON CONFLICT(date) DO UPDATE SET
            sleep_quality=excluded.sleep_quality,
            energy_level=excluded.energy_level,
            stress_level=excluded.stress_level,
            resting_hr=excluded.resting_hr,
+           hrv=excluded.hrv,
            notes=excluded.notes`,
-        [today, form.sleepQ ?? null, form.energyL ?? null, form.stressL ?? null, hr ?? null, form.notes || null]
+        [today, form.sleepQ ?? null, form.energyL ?? null, form.stressL ?? null,
+         hr ?? null, hrv ?? null, form.notes || null]
       );
+
+      if (bb != null) {
+        await exec(
+          `INSERT INTO daily_health_metrics (date, source, body_battery)
+           VALUES (?, 'manual', ?)
+           ON CONFLICT(date, source) DO UPDATE SET body_battery=excluded.body_battery, synced_at=datetime('now')`,
+          [today, bb]
+        );
+      }
+
       onSaved();
       setSavedMsg(true);
       setTimeout(() => setSavedMsg(false), 2000);
@@ -418,21 +447,55 @@ function TodayLogForm({
         onChange={(v) => setForm((f) => ({ ...f, stressL: v }))}
       />
 
-      <div className="space-y-1.5">
-        <label htmlFor="resting-hr" className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          Resting HR
-        </label>
-        <input
-          id="resting-hr"
-          type="number"
-          inputMode="numeric"
-          min={30}
-          max={200}
-          placeholder="bpm"
-          value={form.restingHr}
-          onChange={(e) => setForm((f) => ({ ...f, restingHr: e.target.value }))}
-          className="w-32 bg-ink-shadow border border-ink-line px-3 py-1.5 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent"
-        />
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="space-y-1.5">
+          <label htmlFor="resting-hr" className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+            Resting HR
+          </label>
+          <input
+            id="resting-hr"
+            type="number"
+            inputMode="numeric"
+            min={30}
+            max={200}
+            placeholder="bpm"
+            value={form.restingHr}
+            onChange={(e) => setForm((f) => ({ ...f, restingHr: e.target.value }))}
+            className="w-full bg-ink-shadow border border-ink-line px-3 py-1.5 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="hrv-ms" className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+            HRV
+          </label>
+          <input
+            id="hrv-ms"
+            type="number"
+            inputMode="numeric"
+            min={10}
+            max={200}
+            placeholder="ms"
+            value={form.hrv}
+            onChange={(e) => setForm((f) => ({ ...f, hrv: e.target.value }))}
+            className="w-full bg-ink-shadow border border-ink-line px-3 py-1.5 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="body-battery" className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+            Body Battery
+          </label>
+          <input
+            id="body-battery"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={100}
+            placeholder="0–100"
+            value={form.bodyBattery}
+            onChange={(e) => setForm((f) => ({ ...f, bodyBattery: e.target.value }))}
+            className="w-full bg-ink-shadow border border-ink-line px-3 py-1.5 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent"
+          />
+        </div>
       </div>
 
       <div className="space-y-1.5">

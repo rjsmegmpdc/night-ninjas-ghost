@@ -174,4 +174,28 @@ export const MIGRATIONS: { name: string; sql: string }[] = [
       );
     `,
   },
+  {
+    name: '0005_daily_health_metrics',
+    sql: `
+      CREATE TABLE IF NOT EXISTS daily_health_metrics (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        date             TEXT    NOT NULL,
+        source           TEXT    NOT NULL DEFAULT 'manual',
+        rhr_bpm          INTEGER,
+        hrv_ms           REAL,
+        sleep_duration_s INTEGER,
+        sleep_score      INTEGER,
+        stress_score     INTEGER,
+        body_battery     INTEGER,
+        vo2max_device    REAL,
+        weight_kg        REAL,
+        raw              TEXT,
+        synced_at        TEXT    NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(date, source)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_health_date_source ON daily_health_metrics (date, source);
+      CREATE INDEX IF NOT EXISTS idx_health_date        ON daily_health_metrics (date);
+    `,
+  },
 ];

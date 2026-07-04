@@ -16,6 +16,15 @@ export interface ActiveInjurySnapshot {
   since: string;
 }
 
+export interface BiometricsSnapshot {
+  rhrBpm: number | null;
+  hrvMs: number | null;
+  sleepDurationS: number | null;
+  sleepScore: number | null;
+  stressScore: number | null;
+  bodyBattery: number | null;
+}
+
 export interface AthleteSnapshot {
   asOfIso: string;
   dojo: string;
@@ -39,6 +48,7 @@ export interface AthleteSnapshot {
     formClass: FormClass;
     confidence: string;
   } | null;
+  biometrics: BiometricsSnapshot | null;
   recentActivities: RecentActivitySnapshot[];
   activeInjuries: ActiveInjurySnapshot[];
 }
@@ -79,6 +89,17 @@ export function snapshotToText(s: AthleteSnapshot): string {
       `Freshness (PMC): CTL ${s.state.ctl.toFixed(0)}, ATL ${s.state.atl.toFixed(0)}, TSB ${s.state.tsb.toFixed(0)} ` +
         `(${s.state.formClass}; data confidence: ${s.state.confidence})`
     );
+  }
+  if (s.biometrics) {
+    const b = s.biometrics;
+    const parts: string[] = [];
+    if (b.rhrBpm != null) parts.push(`RHR ${b.rhrBpm}bpm`);
+    if (b.hrvMs != null) parts.push(`HRV ${b.hrvMs.toFixed(1)}ms`);
+    if (b.sleepScore != null) parts.push(`sleep score ${b.sleepScore}/100`);
+    if (b.sleepDurationS != null) parts.push(`sleep ${(b.sleepDurationS / 3600).toFixed(1)}h`);
+    if (b.stressScore != null) parts.push(`stress ${b.stressScore}/100`);
+    if (b.bodyBattery != null) parts.push(`body battery ${b.bodyBattery}/100`);
+    if (parts.length > 0) lines.push(`Today's biometrics: ${parts.join(', ')}`);
   }
   if (s.recentActivities.length) {
     lines.push(`Last ${s.recentActivities.length} activities:`);
