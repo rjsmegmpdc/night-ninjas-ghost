@@ -46,6 +46,66 @@ export async function getActivitiesInRange(fromIso: string, toIso: string): Prom
   }));
 }
 
+export interface ActivePlanPeriod {
+  dojo: string;
+  startDate: string;
+  programWeeks: number;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  goalRaceDate: string | null;
+  goalRaceName: string | null;
+  goalDistanceKm: number | null;
+  goalTimeS: number | null;
+}
+
+function parseGoalTime(t: string | null): number | null {
+  if (!t) return null;
+  const parts = t.split(':').map(Number);
+  if (parts.some(isNaN)) return null;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 3600 + parts[1] * 60;
+  return null;
+}
+
+export async function getActivePlanPeriod(): Promise<ActivePlanPeriod | null> {
+  const rows = await query(
+    `SELECT p.dojo, p.params_json, pp.start_date
+     FROM plan_periods pp
+     JOIN plans p ON p.id = pp.plan_id
+     WHERE pp.end_date IS NULL
+     ORDER BY pp.start_date DESC
+     LIMIT 1`,
+    []
+  );
+  if (!rows.length) return null;
+
+  const dojo = rows[0][0] as string;
+  const startDate = rows[0][2] as string;
+  let level: 'beginner' | 'intermediate' | 'advanced' = 'intermediate';
+  let programWeeks = 18;
+  try {
+    const params = JSON.parse(rows[0][1] as string);
+    if (params.level) level = params.level;
+    if (params.programWeeks) programWeeks = params.programWeeks;
+  } catch { /* ignore */ }
+
+  const goalRows = await query(
+    `SELECT date, name, distance_km, goal_time
+     FROM races WHERE is_goal = 1 ORDER BY date ASC LIMIT 1`,
+    []
+  );
+
+  return {
+    dojo,
+    startDate,
+    programWeeks,
+    level,
+    goalRaceDate:   goalRows.length ? (goalRows[0][0] as string) : null,
+    goalRaceName:   goalRows.length ? (goalRows[0][1] as string) : null,
+    goalDistanceKm: goalRows.length ? (goalRows[0][2] as number) : null,
+    goalTimeS:      goalRows.length ? parseGoalTime(goalRows[0][3] as string | null) : null,
+  };
+}
+
 export async function getTotalActivityCount(): Promise<number> {
   const rows = await query('SELECT COUNT(*) FROM activities');
   return (rows[0]?.[0] as number) ?? 0;
