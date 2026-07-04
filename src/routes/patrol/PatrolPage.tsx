@@ -322,7 +322,7 @@ function ActivityRow({ activity: a }: { activity: GhostActivity }) {
   const pace = a.movingTimeS > 0 && distKm > 0 ? a.movingTimeS / distKm : null;
 
   return (
-    <div className="px-6 py-3 grid grid-cols-[48px_1fr_80px_80px_56px] gap-3 items-center">
+    <div className="px-6 py-3 grid grid-cols-[48px_1fr_80px_80px_56px_40px] gap-3 items-center">
       <span className="font-display tracking-widest uppercase text-bone-dim text-sm">
         {activityDowLabel(a.startDate)}
       </span>
@@ -339,6 +339,19 @@ function ActivityRow({ activity: a }: { activity: GhostActivity }) {
       <span className="font-mono tabular-nums text-bone-mute text-xs">
         {a.avgHr ? `${Math.round(a.avgHr)} bpm` : '—'}
       </span>
+      {a.stravaId ? (
+        <a
+          href={`https://www.strava.com/activities/${a.stravaId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-[10px] text-bone-mute hover:text-accent transition-colors"
+          title="View on Strava"
+        >
+          ↗
+        </a>
+      ) : (
+        <span />
+      )}
     </div>
   );
 }

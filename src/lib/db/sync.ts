@@ -1,5 +1,5 @@
 import { exec } from '@/db/client';
-import { fetchActivitiesPage, refreshAccessToken } from '@/lib/strava/client';
+import { fetchActivitiesPage, refreshAccessToken, RateLimitError } from '@/lib/strava/client';
 import type { StravaActivity } from '@/lib/strava/types';
 import {
   getSetting,
@@ -7,9 +7,12 @@ import {
   getStoredTokens,
   storeTokens,
   setLastSync,
+  getSyncCursor,
+  setSyncCursor,
+  clearSyncCursor,
 } from './settings';
 
-export type SyncPhase = 'token' | 'fetching' | 'writing' | 'done' | 'error';
+export type SyncPhase = 'token' | 'fetching' | 'writing' | 'paused' | 'done' | 'error';
 
 export interface SyncProgress {
   phase: SyncPhase;
@@ -35,10 +38,11 @@ async function ensureFreshToken(): Promise<string> {
 
   const fresh = await refreshAccessToken(tokens.refreshToken, WORKER_URL);
   await storeTokens({
-    accessToken: fresh.access_token,
+    accessToken:  fresh.access_token,
     refreshToken: fresh.refresh_token,
-    expiresAt: fresh.expires_at,
-    athleteName: tokens.athleteName,
+    expiresAt:    fresh.expires_at,
+    athleteName:  tokens.athleteName,
+    athleteId:    tokens.athleteId,
   });
   return fresh.access_token;
 }
@@ -85,6 +89,10 @@ async function upsertActivity(a: StravaActivity): Promise<void> {
 
 // ---------------------------------------------------------------------------
 // Full / incremental sync
+// Supports:
+//   - cursor-based resume after 429 (strava_sync_cursor persisted per page)
+//   - incremental sync from last completed epoch (strava_last_sync_epoch)
+//   - emits 'paused' progress on RateLimitError, does not throw
 // ---------------------------------------------------------------------------
 
 export async function syncActivities(onProgress: ProgressCallback): Promise<void> {
@@ -92,9 +100,11 @@ export async function syncActivities(onProgress: ProgressCallback): Promise<void
     onProgress({ phase: 'token', fetched: 0, inserted: 0 });
     const accessToken = await ensureFreshToken();
 
-    // Incremental: only fetch activities after last successful sync epoch
+    // Prefer in-progress cursor (from a paused sync) over completed-sync epoch.
+    // This lets a rate-limited backfill resume instead of restarting.
+    const savedCursor = await getSyncCursor();
     const lastEpochStr = await getSetting('strava_last_sync_epoch');
-    const afterEpoch = lastEpochStr ? Number(lastEpochStr) : undefined;
+    const afterEpoch = savedCursor ?? (lastEpochStr ? Number(lastEpochStr) : undefined);
 
     let page = 1;
     let totalFetched = 0;
@@ -117,17 +127,27 @@ export async function syncActivities(onProgress: ProgressCallback): Promise<void
       }
 
       totalFetched += activities.length;
+
+      // Persist cursor after each successful page so a subsequent 429 can resume here.
+      if (latestEpoch > 0) await setSyncCursor(latestEpoch);
+
       page++;
       if (activities.length < 200) break;
     }
 
-    if (latestEpoch > 0) {
-      await setSetting('strava_last_sync_epoch', String(latestEpoch));
-    }
+    // Sync complete — promote cursor to last_sync_epoch and clear the in-progress cursor.
+    await clearSyncCursor();
+    if (latestEpoch > 0) await setSetting('strava_last_sync_epoch', String(latestEpoch));
     await setLastSync(new Date().toISOString());
 
     onProgress({ phase: 'done', fetched: totalFetched, inserted: totalInserted });
   } catch (e) {
+    if (e instanceof RateLimitError) {
+      // Cursor already saved above — just signal paused, don't throw.
+      // The caller (SetupPage) schedules a 15-min retry.
+      onProgress({ phase: 'paused', fetched: 0, inserted: 0 });
+      return;
+    }
     onProgress({
       phase: 'error',
       fetched: 0,

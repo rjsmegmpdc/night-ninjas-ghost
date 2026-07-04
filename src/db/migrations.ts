@@ -160,4 +160,18 @@ export const MIGRATIONS: { name: string; sql: string }[] = [
       );
     `,
   },
+  {
+    name: '0004_athlete_profiles',
+    sql: `
+      CREATE TABLE IF NOT EXISTS athlete_profiles (
+        athlete_id    INTEGER PRIMARY KEY,
+        athlete_name  TEXT    NOT NULL DEFAULT '',
+        scope         TEXT,
+        sync_cursor   INTEGER,
+        last_sync     TEXT,
+        settings_json TEXT,
+        updated_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+      );
+    `,
+  },
 ];
