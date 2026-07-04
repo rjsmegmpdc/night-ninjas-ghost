@@ -12,12 +12,7 @@ export default defineConfig({
   },
   test: {
     include: ['src/**/*.test.ts'],
-    // These two suites require the full plan engine (9 engines + derive.ts index)
-    // which is deferred to a later phase. Exclude so CI stays green.
-    exclude: [
-      'src/lib/plans/engine-snapshot.test.ts',
-      'src/lib/analysis/framework-stats.test.ts',
-    ],
+    exclude: [],
     environment: 'node',
     env: { TZ: 'Pacific/Auckland' },
   },
