@@ -1,60 +1,76 @@
 ## Branch
 main
 
-## Session: 2026-06-30
+## Session: 2026-07-04
 
 ### Completed
 
-**Phase 2 — Green build + 474/474 tests — merged to main**
+**Batch 4 — Settings, Help, Club, Journal — merged to main**
 
-- `npm run build` green (Vite, 5.86s)
-- `npm test` 474/474 passing (2 suites deferred — see below)
-- wa-sqlite worker: `IDBBatchAtomicVFS` replaces `IDBMirrorVFS` (v1.0.0 API change)
-- `worker: { format: 'es' }` in vite.config.ts (dynamic imports require ES worker format)
-- Vitest config split from vite.config.ts (`test` block invalid in Vite config)
-- `tsconfig.app.json` excludes `*.test.ts` from build type-checking
-- `src/vite-env.d.ts` created (fixes `Cannot find module ./index.css`)
-- Deleted `postcss.config.mjs` (Next.js leftover; Tailwind 4 Vite plugin owns PostCSS)
-- Missing pure libs copied from VELOCITY and stripped of `server-only`:
-  `compliance.ts`, `load.ts`, `ns-guardrails.ts`, `sport-classifier.ts`,
-  `vo2max-insights.ts`, `garmin/mapper.ts`, `garmin/types.ts`,
-  `plans/types.ts`, `plans/state-awareness.ts`
-- Merged `feat/phase2-green-tests` → `main`, pushed to `github.com/rjsmegmpdc/night-ninjas-ghost`
+- SettingsPage: Strava status, sync history, data stats, JSON export (Blob download), three-step wipe-with-CLEAR confirm
+- HelpPage: fully static reference — glossary (14 screens), 7 common tasks, storage guide, troubleshooting, privacy
+- ClubPage: identity inputs (athlete name + parkrun ID → settings), 4-week run summary with CSS bar chart, clipboard share text, recent runs list
+- JournalPage: 35-day Mon-anchored calendar grid (activity dots + energy bar), click-to-expand day detail with notes upsert, 5-week summary table
+- Documentation updated: README, CLAUDE.md, PHASES.md, PROGRESS.md
+
+**Batch 3 — Race, Vo2max, Coach Log — merged to main**
+
+- RacePage: pace plans (even/negative/progressive), fueling grid, carb-load 3-day plan, taper checklist, post-race recovery + debrief form (race_results table), Auckland weather via Open-Meteo, macrocycle block counter
+- Vo2maxPage: trend card with SVG sparkline + ACSM fitness band, 3-tier insights, Cooper/Rockport/Lab capture tabs, observation history, profile quick-form
+- CoachLogPage: 14-day activity bar strip, 4-metric wellness sparklines, emoji-picker daily log with upsert, 42-day history with inline edit + two-step delete
+- Migration 0003: race_results + vo2max_observations tables
+
+**Batch 2 — Dojo, Strike, Calendar — merged to main**
+
+- DojoPage: 9-methodology picker (5 primary + 4 collapsible), level toggle, macrocycle bar (base/build/peak/taper phases), start-date editor, plan writes to plans + plan_periods
+- StrikePage: CTL/ATL/TSB, 8-week intensity history (stacked bars), mileage trajectory, long-run block — wired to load.ts + athlete-state-pure.ts
+- CalendarPage: goal race management, tune-up races, capacity caps, commitments CRUD
+- Migration 0002: is_goal + level on races; recurring_sessions table
+
+**Batch 1 — Profile, Shoes, Recon — merged to main**
+
+- ProfilePage: athlete profile (age/weight/sex/HR zones), NS HR calibration, strength preferences, morning check-in with journal upsert
+- ShoesPage: LEFT JOIN distance aggregate, progress bars (green/amber/red), add/retire/unretire actions
+- ReconPage: monthly volume bar chart, zone distribution stacked bars, CTL/ATL line chart — trends-only (no plan engine needed)
+
+**Phase 2 — Green build + 474/474 tests — merged to main (2026-06-30)**
+
+- wa-sqlite OPFS VFS (AccessHandlePoolVFS) replacing IDBMirrorVFS
+- MemoryVFS fallback for Safari + private browsing
+- IDB version conflict root-cause found + resolved (service worker caching old builds)
+- Strava OAuth working: `night-ninjas-ghost.pages.dev` live
+- Full activity sync confirmed
 
 **Phase 1 — GHOST Scaffold — merged to main (2026-06-29)**
 
-Full zero-cost PWA + desktop architecture scaffolded and merged. Forked from VELOCITY at commit `7b67daa`.
-
 - Vite 6 + React 19 + React Router 7 replaces Next.js 15 + Electron
-- wa-sqlite + IDBBatchAtomicVFS Web Worker (SQLite in browser, no COOP/COEP, GitHub Pages compatible)
-- 14 route stubs + TopNav + PageSkeleton
-- 56 pure-function files + tests copied from VELOCITY (unchanged logic)
-- Cloudflare Worker for Strava OAuth token swap (the only server code)
-- Tauri 2 Rust scaffold for 3-8 MB desktop installers
-- GitHub Actions: Pages deploy + Worker deploy + Tauri cross-build
-- CLAUDE.md, PHASES.md, PROGRESS.md
+- wa-sqlite Web Worker, Cloudflare Worker OAuth proxy, Tauri 2 scaffold
+- 14 route stubs, 56 pure engine files copied from VELOCITY
+- GitHub Actions: Cloudflare Pages + Worker deploy + Tauri cross-build
 
 ### In progress
 - Nothing
 
 ### Blocked
-- `engine-snapshot.test.ts` — needs `src/lib/plans/index.ts` + all 9 plan engines (hansons, lydiard, daniels, pfitzinger, higdon, polarised, ultra, custom, norwegian-singles) + `derive.ts`
-- `framework-stats.test.ts` — needs `framework-stats.ts`, `week-queries.ts`, `intensity-distribution.ts`, `program-phase.ts`
+- `engine-snapshot.test.ts` — needs 9 plan engines + `src/lib/plans/index.ts`
+- `framework-stats.test.ts` — needs `intensity-distribution.ts`, `program-phase.ts`
 
 ### Next session should
-1. Enable GitHub Pages (repo Settings → Pages → GitHub Actions source)
-2. Add secrets: `STRAVA_OAUTH_WORKER_URL`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
-3. Port `/patrol` page — highest daily-use priority
-4. Port Strava sync to browser-side fetch via Cloudflare Worker
-5. Port setup wizard to React Router nested routes
+1. Consider porting plan engines (hansons, pfitzinger, daniels, etc.) to unlock Patrol compliance matrix and the two deferred test suites
+2. Wire up AI coach (Anthropic BYOK) — architecture is ready
+3. Consider Garmin Connect biometrics sync
 
 ## Key decisions
-- IDBBatchAtomicVFS (not IDBMirrorVFS): wa-sqlite v1.0.0 renamed the VFS; no COOP/COEP needed
-- One Cloudflare Worker: unavoidable — Strava blocks browser CORS on /oauth/token
-- Tauri 2 unsigned: acceptable for club-internal distribution
-- Pure engines: 56 files copied unchanged — same tests, zero logic changes
-- `engine-snapshot` and `framework-stats` deferred: deep dependency chains, not blocking PWA MVP
 
-## Files changed
-- Phase 1: initial scaffold — see PHASES.md Phase 1 for full list
-- Phase 2: see commit `6a7957a` on `feat/phase2-green-tests`
+- **OPFS over IDBMirrorVFS**: wa-sqlite v1.0.0 renamed VFS; OPFS gives true file persistence without COOP/COEP headers
+- **MemoryVFS fallback**: non-fatal OPFS failure (Safari, private browsing) — data survives the session, not the tab close
+- **4-batch deploy cadence**: kept CI usage to ~4 builds / ~12 GH Actions minutes against 500 builds/month Cloudflare limit
+- **Worktree isolation per agent**: parallel developer agents each got an isolated git worktree; outputs copied back after verification
+- **No plan engines yet**: pure support files (capacity-pure, pace-compliance-pure, etc.) exist; individual engine renderers (hansons.ts etc.) not yet ported — Dojo shows static descriptions, Patrol shows trends-only
+
+## Files changed (Batch 4)
+- `src/routes/settings/SettingsPage.tsx`
+- `src/routes/help/HelpPage.tsx`
+- `src/routes/club/ClubPage.tsx`
+- `src/routes/journal/JournalPage.tsx`
+- `README.md`, `CLAUDE.md`, `PHASES.md`, `PROGRESS.md`

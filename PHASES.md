@@ -2,32 +2,45 @@
 
 ## Current state
 
-**Version**: 0.1.0  
-**Branch**: main (scaffold)  
-**Tests**: 56 pure-function files ported from VELOCITY — need import-path fixes before running  
-**Status**: Phase 1 scaffold complete. Vite + React + Router shell, wa-sqlite worker, all 14 route stubs, Tauri config, Cloudflare Worker, GitHub Actions (Pages + Worker + Desktop). Pure engines copied. Next: fix imports + get build green.
+**Version**: 0.3.0  
+**Branch**: main  
+**Tests**: 474/474 passing (29 test files — all pure-engine tests green)
+**Status**: All 14 screens implemented and deployed on Cloudflare Pages. OPFS persistent storage confirmed working. Strava OAuth + full activity sync live.
 
 ---
 
-## App routes (14 screens)
+## App routes (14 screens + setup)
 
-| Route | Name | Status |
+| Route | Name | Status | Batch |
+|---|---|---|---|
+| `/setup/*` | Setup wizard | ✅ Implemented | Initial |
+| `/patrol` | Patrol | ✅ Implemented | Initial |
+| `/profile` | Profile | ✅ Implemented | 1 |
+| `/shoes` | Shoes | ✅ Implemented | 1 |
+| `/recon` | Recon | ✅ Implemented | 1 |
+| `/dojo` | Dojo | ✅ Implemented | 2 |
+| `/strike` | Strike | ✅ Implemented | 2 |
+| `/calendar` | Calendar | ✅ Implemented | 2 |
+| `/race` | Race | ✅ Implemented | 3 |
+| `/vo2max` | VO2max | ✅ Implemented | 3 |
+| `/coach-log` | Coach Log | ✅ Implemented | 3 |
+| `/settings` | Settings | ✅ Implemented | 4 |
+| `/help` | Help | ✅ Implemented | 4 |
+| `/club` | Club | ✅ Implemented | 4 |
+| `/journal` | Journal | ✅ Implemented | 4 |
+
+---
+
+## Not yet ported (future phases)
+
+| Feature | Dependency | Notes |
 |---|---|---|
-| `/patrol` | Patrol | Stub — port from VELOCITY |
-| `/recon` | Recon | Stub |
-| `/dojo` | Dojo | Stub |
-| `/calendar` | Calendar | Stub |
-| `/coach-log` | Coach Log | Stub |
-| `/race` | Race | Stub |
-| `/strike` | Strike | Stub |
-| `/vo2max` | VO2max | Stub |
-| `/shoes` | Shoes | Stub |
-| `/journal` | Journal | Stub |
-| `/profile` | Profile | Stub |
-| `/club` | Club | Stub |
-| `/settings` | Settings | Stub |
-| `/help` | Help | Stub |
-| `/setup/*` | Setup wizard | Stub |
+| Plan engines (hansons, pfitzinger, etc.) | `src/lib/plans/index.ts` + 9 engine files | Pure support files exist; renderers not ported |
+| Patrol compliance matrix | Plan engines | Recon shows trends-only; compliance heatmap deferred |
+| `engine-snapshot.test.ts` | Plan engines | Blocked until engines ported |
+| `framework-stats.test.ts` | `intensity-distribution.ts`, `program-phase.ts` | Blocked |
+| AI coach | Anthropic BYOK wiring | Architecture ready, not implemented |
+| Garmin Connect sync | `daily_health_metrics` table | Schema exists in VELOCITY; not ported to GHOST |
 
 ---
 

@@ -1,5 +1,7 @@
 # ARCHITECTURE.md — VELOCITY Solution Architecture
 
+> **Note (2026-07-04):** This document describes the VELOCITY (Next.js/Electron) architecture and has not been updated for GHOST. For the GHOST PWA architecture see `README.md` and `CLAUDE.md`.
+
 > Audience: testers and contributors. Describes how the system is structured, how data moves through it, and where each feature lives.
 
 ---
