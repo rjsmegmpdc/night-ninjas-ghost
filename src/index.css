@@ -36,6 +36,7 @@
   *, *::before, *::after { box-sizing: border-box; }
 
   html {
+    font-size: 130%;
     color-scheme: dark;
     background-color: #0A0A0A;
     color: #F5F5F0;
