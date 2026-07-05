@@ -18,10 +18,9 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
   ].join(' ');
 }
 
-// P1: replace '/calendar' with localStorage.getItem('ghost.home_page') ?? '/calendar'
-const HOME = '/calendar';
-
 export function TopNav() {
+  const HOME = localStorage.getItem('ghost.home_page') ?? '/calendar';
+
   return (
     <header className="bg-ink border-b border-ink-line sticky top-0 z-50">
 

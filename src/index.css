@@ -36,10 +36,12 @@
   *, *::before, *::after { box-sizing: border-box; }
 
   html {
-    font-size: 130%;
+    /* --font-scale is written by applyDisplayPrefs() in main.tsx before render.
+       Unset on first load → var() falls back to 1, preserving current 130% base. */
+    font-size: calc(130% * var(--font-scale, 1));
     color-scheme: dark;
-    background-color: #0A0A0A;
-    color: #F5F5F0;
+    background-color: var(--color-ink);
+    color: var(--color-bone);
   }
 
   body {
@@ -48,9 +50,78 @@
   }
 
   ::selection {
-    background: #FF5F00;
-    color: #F5F5F0;
+    background: var(--color-accent);
+    color: var(--color-bone);
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * Color presets — applied by setting data-theme on <html>.
+ * "ink" is the default; no attribute needed for it.
+ * Override only the tokens that change — everything else inherits from @theme.
+ * ------------------------------------------------------------------------- */
+
+[data-theme="dusk"] {
+  /* Warm brown-tinted dark */
+  --color-ink:           #0E0B08;
+  --color-ink-shadow:    #17120D;
+  --color-ink-panel:     #1F1912;
+  --color-ink-line:      #2E241A;
+  --color-ink-line-bold: #3E3226;
+  --color-bone:          #F0EDE6;
+  --color-bone-dim:      #A09080;
+  --color-bone-mute:     #6A5E50;
+}
+
+[data-theme="oled"] {
+  /* Pure black surfaces — AMOLED / battery-saver */
+  --color-ink:           #000000;
+  --color-ink-shadow:    #080808;
+  --color-ink-panel:     #101010;
+  --color-ink-line:      #202020;
+  --color-ink-line-bold: #303030;
+}
+
+[data-theme="storm"] {
+  /* Cool slate/blue-grey dark */
+  --color-ink:           #09090F;
+  --color-ink-shadow:    #10101A;
+  --color-ink-panel:     #181826;
+  --color-ink-line:      #24243A;
+  --color-ink-line-bold: #32324E;
+  --color-bone:          #EDF2F8;
+  --color-bone-dim:      #9AAAB8;
+  --color-bone-mute:     #637585;
+}
+
+[data-theme="dawn"] {
+  /* Light / day mode — full palette inversion */
+  color-scheme: light;
+  --color-ink:           #F5F5F3;
+  --color-ink-shadow:    #EAEAE8;
+  --color-ink-panel:     #E0E0DE;
+  --color-ink-line:      #CECECE;
+  --color-ink-line-bold: #BCBCBC;
+  --color-bone:          #111110;
+  --color-bone-dim:      #4A4A48;
+  --color-bone-mute:     #787876;
+  /* Slightly darker accent stays readable on light surfaces */
+  --color-accent:        #CC4400;
+  --color-accent-hover:  #E04D00;
+}
+
+[data-theme="high-contrast"] {
+  /* WCAG AAA — pure black/white with amber accent */
+  --color-ink:           #000000;
+  --color-ink-shadow:    #0A0A0A;
+  --color-ink-panel:     #111111;
+  --color-ink-line:      #3A3A3A;
+  --color-ink-line-bold: #5A5A5A;
+  --color-bone:          #FFFFFF;
+  --color-bone-dim:      #DDDDDD;
+  --color-bone-mute:     #AAAAAA;
+  --color-accent:        #FFB347;
+  --color-accent-hover:  #FFC870;
 }
 
 /* Hides scrollbar visually while keeping scroll functionality — used on the

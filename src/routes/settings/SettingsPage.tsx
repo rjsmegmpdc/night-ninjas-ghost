@@ -101,6 +101,163 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ---------------------------------------------------------------------------
+// Section 0: Display preferences (localStorage — no DB, instant effect)
+// ---------------------------------------------------------------------------
+
+const HOME_OPTIONS = [
+  { to: '/patrol',   label: 'Patrol'   },
+  { to: '/recon',    label: 'Recon'    },
+  { to: '/dojo',     label: 'Dojo'     },
+  { to: '/calendar', label: 'Calendar' },
+  { to: '/gear',     label: 'Gear'     },
+  { to: '/settings', label: 'Settings' },
+] as const;
+
+const FONT_OPTIONS = [
+  { value: '0.85', label: 'Small'    },
+  { value: '1',    label: 'Normal'   },
+  { value: '1.15', label: 'Large'    },
+  { value: '1.3',  label: 'X-Large'  },
+] as const;
+
+const PRESET_OPTIONS = [
+  { value: 'ink',           label: 'Ink',            bg: '#0A0A0A', fg: '#F5F5F0', spot: '#FF5F00' },
+  { value: 'dusk',          label: 'Dusk',           bg: '#0E0B08', fg: '#F0EDE6', spot: '#FF5F00' },
+  { value: 'oled',          label: 'OLED',           bg: '#000000', fg: '#F5F5F0', spot: '#FF5F00' },
+  { value: 'storm',         label: 'Storm',          bg: '#09090F', fg: '#EDF2F8', spot: '#FF5F00' },
+  { value: 'dawn',          label: 'Dawn',           bg: '#F5F5F3', fg: '#111110', spot: '#CC4400' },
+  { value: 'high-contrast', label: 'Hi-Contrast',    bg: '#000000', fg: '#FFFFFF', spot: '#FFB347' },
+] as const;
+
+type PresetValue = typeof PRESET_OPTIONS[number]['value'];
+
+function DisplaySection() {
+  const [homePage, setHomePage] = useState<string>(
+    () => localStorage.getItem('ghost.home_page') ?? '/calendar',
+  );
+  const [fontScale, setFontScale] = useState<string>(
+    () => localStorage.getItem('ghost.font_scale') ?? '1',
+  );
+  const [colorPreset, setColorPreset] = useState<PresetValue>(
+    () => (localStorage.getItem('ghost.color_preset') as PresetValue | null) ?? 'ink',
+  );
+
+  function handleHome(value: string) {
+    setHomePage(value);
+    localStorage.setItem('ghost.home_page', value);
+  }
+
+  function handleFont(value: string) {
+    setFontScale(value);
+    localStorage.setItem('ghost.font_scale', value);
+    document.documentElement.style.setProperty('--font-scale', value);
+  }
+
+  function handlePreset(value: PresetValue) {
+    setColorPreset(value);
+    localStorage.setItem('ghost.color_preset', value);
+    const root = document.documentElement;
+    if (value === 'ink') {
+      root.removeAttribute('data-theme');
+      root.style.colorScheme = '';
+    } else {
+      root.setAttribute('data-theme', value);
+      root.style.colorScheme = value === 'dawn' ? 'light' : 'dark';
+    }
+  }
+
+  return (
+    <section aria-labelledby="display-heading" className="border border-ink-line p-6 space-y-6">
+      <div className="space-y-1">
+        <SectionLabel>display</SectionLabel>
+        <h2 id="display-heading" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
+          Preferences
+        </h2>
+      </div>
+
+      {/* Home page */}
+      <div className="space-y-2">
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">Home page</p>
+        <p className="font-mono text-xs text-bone-dim">
+          Where the GHOST button takes you.
+        </p>
+        <select
+          value={homePage}
+          onChange={(e) => handleHome(e.target.value)}
+          className="bg-ink border border-ink-line px-3 py-2 font-mono text-xs text-bone focus:outline-none focus:border-accent"
+        >
+          {HOME_OPTIONS.map((o) => (
+            <option key={o.to} value={o.to}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Font size */}
+      <div className="space-y-2">
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">Font size</p>
+        <div className="flex flex-wrap gap-2">
+          {FONT_OPTIONS.map((o) => {
+            const active = fontScale === o.value;
+            return (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => handleFont(o.value)}
+                className={[
+                  'px-4 py-1.5 font-mono text-xs uppercase tracking-widest border transition-colors',
+                  active
+                    ? 'border-accent text-accent bg-accent/10'
+                    : 'border-ink-line text-bone-mute hover:border-bone-mute hover:text-bone',
+                ].join(' ')}
+              >
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Color presets */}
+      <div className="space-y-2">
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">Theme</p>
+        <div className="flex flex-wrap gap-3">
+          {PRESET_OPTIONS.map((p) => {
+            const active = colorPreset === p.value;
+            return (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => handlePreset(p.value)}
+                aria-label={p.label}
+                aria-pressed={active}
+                className={[
+                  'w-16 h-16 border-2 flex flex-col justify-between p-2 transition-all',
+                  active ? 'border-accent scale-105' : 'border-ink-line hover:border-bone-mute',
+                ].join(' ')}
+                style={{ backgroundColor: p.bg }}
+              >
+                {/* Label text in the swatch's own fg color */}
+                <span
+                  className="font-mono text-[8px] uppercase tracking-wider leading-tight"
+                  style={{ color: p.fg }}
+                >
+                  {p.label}
+                </span>
+                {/* Accent stripe at the bottom of the swatch */}
+                <span
+                  className="block h-1 w-full rounded-sm"
+                  style={{ backgroundColor: p.spot }}
+                />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Section 1: Strava connection
 // ---------------------------------------------------------------------------
 
@@ -996,6 +1153,9 @@ export default function SettingsPage() {
           </p>
         </div>
       )}
+
+      {/* Section 0: Display preferences */}
+      <DisplaySection />
 
       {/* Section 1: Strava */}
       <StravaSection settings={settings} />
