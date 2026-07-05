@@ -721,19 +721,29 @@ function ActivityRow({ activity: a }: { activity: GhostActivity }) {
   const pace = a.movingTimeS > 0 && distKm > 0 ? a.movingTimeS / distKm : null;
   const dow = DOW_LABELS[activityDow(a.startDate)] ?? '?';
 
+  const stravaLink = a.stravaId ? (
+    <a href={`https://www.strava.com/activities/${a.stravaId}`} target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] text-bone-mute hover:text-accent transition-colors" title="View on Strava">↗</a>
+  ) : <span />;
+
   return (
-    <div className="px-6 py-3 grid grid-cols-[48px_1fr_80px_80px_56px_40px] gap-3 items-center">
-      <span className="font-display tracking-widest uppercase text-bone-dim text-sm">{dow}</span>
-      <div>
-        <div className="text-bone text-sm truncate">{a.name}</div>
-        <div className="font-mono text-xs text-bone-mute mt-0.5">{a.type}</div>
+    <div className="px-4 sm:px-6 py-3">
+      {/* The fixed columns sum past a phone's width, so mobile gets a
+          two-line layout and the full grid starts at sm. */}
+      <div className="grid grid-cols-[40px_1fr_24px] sm:grid-cols-[48px_1fr_80px_80px_56px_40px] gap-3 items-center">
+        <span className="font-display tracking-widest uppercase text-bone-dim text-sm">{dow}</span>
+        <div className="min-w-0">
+          <div className="text-bone text-sm truncate">{a.name}</div>
+          <div className="font-mono text-xs text-bone-mute mt-0.5">{a.type}</div>
+        </div>
+        <span className="hidden sm:block font-mono tabular-nums text-bone text-sm">{distKm.toFixed(1)} km</span>
+        <span className="hidden sm:block font-mono tabular-nums text-bone-dim text-sm">{pace ? `${formatSpk(pace)}/km` : '—'}</span>
+        <span className="hidden sm:block font-mono tabular-nums text-bone-mute text-xs">{a.avgHr ? `${Math.round(a.avgHr)} bpm` : '—'}</span>
+        {stravaLink}
       </div>
-      <span className="font-mono tabular-nums text-bone text-sm">{distKm.toFixed(1)} km</span>
-      <span className="font-mono tabular-nums text-bone-dim text-sm">{pace ? `${formatSpk(pace)}/km` : '—'}</span>
-      <span className="font-mono tabular-nums text-bone-mute text-xs">{a.avgHr ? `${Math.round(a.avgHr)} bpm` : '—'}</span>
-      {a.stravaId ? (
-        <a href={`https://www.strava.com/activities/${a.stravaId}`} target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] text-bone-mute hover:text-accent transition-colors" title="View on Strava">↗</a>
-      ) : <span />}
+      {/* Mobile stats line, aligned under the name column */}
+      <div className="sm:hidden pl-[52px] mt-1 font-mono tabular-nums text-xs text-bone-dim">
+        {distKm.toFixed(1)} km{pace ? ` · ${formatSpk(pace)}/km` : ''}{a.avgHr ? ` · ${Math.round(a.avgHr)} bpm` : ''}
+      </div>
     </div>
   );
 }

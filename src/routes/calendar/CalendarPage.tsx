@@ -329,10 +329,10 @@ function NzRaceSearch({
               >
                 <div className="min-w-0">
                   <span className="font-mono text-xs text-bone block truncate">{race.name}</span>
-                  <span className="font-mono text-[10px] text-bone-mute">{race.city}</span>
+                  <span className="font-mono text-[10px] text-bone-dim">{race.city}</span>
                 </div>
                 <div className="shrink-0 text-right">
-                  <span className="font-mono text-[10px] text-bone-mute block">
+                  <span className="font-mono text-[10px] text-bone-dim block">
                     {new Date(race.date + 'T12:00:00Z').toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', timeZone: 'UTC' })}
                   </span>
                   <span className="font-mono text-[10px] text-bone-dim">
@@ -425,7 +425,7 @@ function GoalRaceBlock({ goalRace, onRefresh }: { goalRace: Race | null; onRefre
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-4">
-        <p className="font-mono text-xs text-bone-dim uppercase tracking-widest">Goal Race</p>
+        <p className="font-mono text-xs text-bone uppercase tracking-widest">Goal Race</p>
         {!showForm && (
           goalRace
             ? <button onClick={openEdit} className="font-mono text-xs text-bone-mute hover:text-accent transition-colors">Edit</button>
@@ -484,17 +484,17 @@ function GoalRaceCard({
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <p className="font-display tracking-widest text-2xl uppercase text-bone">{race.name}</p>
-          <p className="font-mono text-xs text-bone-dim">{formatDisplayDate(race.date)}</p>
+          <p className="font-mono text-xs text-bone">{formatDisplayDate(race.date)}</p>
         </div>
         <LevelBadge level={race.level} />
       </div>
 
       <div className="flex items-center gap-4 flex-wrap">
-        <span className="font-mono text-sm text-bone-dim">
+        <span className="font-mono text-sm text-bone">
           {distanceLabelFromKm(race.distance_km)}
         </span>
         {race.goal_time && (
-          <span className="font-mono text-sm text-bone-mute">
+          <span className="font-mono text-sm text-bone-dim">
             Goal: {race.goal_time}
           </span>
         )}
@@ -566,7 +566,7 @@ function TuneupRacesBlock({ tuneupRaces, onRefresh }: { tuneupRaces: Race[]; onR
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-4">
-        <p className="font-mono text-xs text-bone-dim uppercase tracking-widest">Tune-up Races</p>
+        <p className="font-mono text-xs text-bone uppercase tracking-widest">Tune-up Races</p>
         {!adding && (
           <button onClick={() => { setAdding(true); setForm(BLANK_RACE_FORM); }} className="font-mono text-xs text-bone-mute hover:text-accent transition-colors">
             + Add
@@ -584,7 +584,7 @@ function TuneupRacesBlock({ tuneupRaces, onRefresh }: { tuneupRaces: Race[]; onR
             <div key={r.id} className="px-4 py-3 flex items-center justify-between gap-4">
               <div className="space-y-0.5 min-w-0">
                 <p className="font-mono text-sm text-bone truncate">{r.name}</p>
-                <p className="font-mono text-xs text-bone-mute">
+                <p className="font-mono text-xs text-bone-dim">
                   {formatDisplayDate(r.date)} · {distanceLabelFromKm(r.distance_km)}
                   {r.goal_time && ` · ${r.goal_time}`}
                 </p>
@@ -945,7 +945,7 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
       <SectionLabel>commitments</SectionLabel>
 
       <div className="flex items-center justify-between gap-4">
-        <p className="font-mono text-xs text-bone-dim uppercase tracking-widest">Calendar Events</p>
+        <p className="font-mono text-xs text-bone uppercase tracking-widest">Calendar Events</p>
         {!adding && (
           <button
             onClick={() => { setAdding(true); setForm(BLANK_EVENT_FORM); }}
@@ -973,9 +973,9 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
                     {EVENT_TYPE_LABELS[ev.type as EventType] ?? ev.type}
                   </span>
                 </div>
-                <p className="font-mono text-xs text-bone-mute">{formatDisplayDate(ev.date)}</p>
+                <p className="font-mono text-xs text-bone-dim">{formatDisplayDate(ev.date)}</p>
                 {ev.notes && (
-                  <p className="font-mono text-xs text-bone-mute leading-relaxed">{ev.notes}</p>
+                  <p className="font-mono text-xs text-bone-dim leading-relaxed">{ev.notes}</p>
                 )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">

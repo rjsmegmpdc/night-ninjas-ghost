@@ -374,6 +374,36 @@ const CATEGORY_LABELS: Record<GearCategory | 'watchlist', string> = {
   watchlist: 'Watchlist',
 };
 
+/** Food is measured in volume/weight, packs in capacity — not "size". */
+const SIZE_FIELD: Record<GearCategory, { label: string; placeholder: string }> = {
+  clothing: { label: 'Size',     placeholder: 'M / XL / EU 42' },
+  backpack: { label: 'Capacity', placeholder: '12L / 2L bladder' },
+  hardware: { label: 'Size',     placeholder: '120cm / one-size' },
+  food:     { label: 'Volume',   placeholder: '500ml / 40g / 24-pack' },
+};
+
+// ---------------------------------------------------------------------------
+// Gear profile — the athlete's own sizes, remembered per category in
+// localStorage so every later add is pre-filled with their measurements.
+// ---------------------------------------------------------------------------
+
+type GearProfile = Partial<Record<GearCategory, { size: string; brand: string }>>;
+
+function loadGearProfile(): GearProfile {
+  try {
+    return JSON.parse(localStorage.getItem('ghost.gear_profile') ?? '{}') as GearProfile;
+  } catch {
+    return {};
+  }
+}
+
+function saveGearProfile(category: GearCategory, size: string, brand: string) {
+  if (!size.trim() && !brand.trim()) return;
+  const profile = loadGearProfile();
+  profile[category] = { size: size.trim(), brand: brand.trim() };
+  localStorage.setItem('ghost.gear_profile', JSON.stringify(profile));
+}
+
 function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean; onAdded: () => void }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -383,12 +413,35 @@ function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean
 
   function set(k: keyof typeof form, v: string) { setForm(f => ({ ...f, [k]: v })); }
 
+  function handleCategoryChange(next: GearCategory) {
+    setCategory(next);
+    // Pre-fill the athlete's remembered size/brand for this category,
+    // but never overwrite something they've already typed.
+    const remembered = loadGearProfile()[next];
+    if (remembered) {
+      setForm(f => ({
+        ...f,
+        size:  f.size.trim()  ? f.size  : remembered.size,
+        brand: f.brand.trim() ? f.brand : remembered.brand,
+      }));
+    }
+  }
+
+  function handleOpen() {
+    setOpen(true);
+    const remembered = loadGearProfile()[category];
+    if (remembered) {
+      setForm(f => ({ ...f, size: remembered.size, brand: remembered.brand }));
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) return;
     setBusy(true);
     try {
       await addGearItem({ ...form, name: form.name.trim(), category, is_watchlist: isWatchlist });
+      saveGearProfile(category, form.size, form.brand);
       setForm({ name: '', brand: '', model: '', size: '', target_price: '', url: '', notes: '' });
       setOpen(false);
       onAdded();
@@ -399,13 +452,15 @@ function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean
     return (
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={handleOpen}
         className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-bone-mute hover:text-accent transition-colors"
       >
         <Plus size={12} /> Add {defaultWatchlist ? 'to watchlist' : 'item'}
       </button>
     );
   }
+
+  const sizeField = SIZE_FIELD[category];
 
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="border border-ink-line p-4 space-y-3">
@@ -414,15 +469,16 @@ function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean
         <button type="button" onClick={() => setOpen(false)} className="text-bone-mute hover:text-bone"><X size={14} /></button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div className="col-span-2 sm:col-span-3 space-y-1">
+      {/* Single column on mobile — one field per row, thumb-friendly */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="sm:col-span-3 space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Name *</label>
           <input type="text" required value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Arc'teryx Norvan vest" className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-sm px-3 py-2 placeholder:text-bone-mute focus:outline-none focus:border-accent" />
         </div>
 
         <div className="space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Category</label>
-          <select value={category} onChange={e => setCategory(e.target.value as GearCategory)} className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent">
+          <select value={category} onChange={e => handleCategoryChange(e.target.value as GearCategory)} className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent">
             {(['clothing','backpack','hardware','food'] as GearCategory[]).map(c => (
               <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
             ))}
@@ -440,11 +496,11 @@ function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean
         </div>
 
         <div className="space-y-1">
-          <label className="font-mono text-[10px] uppercase text-bone-mute">Size</label>
-          <input type="text" value={form.size} onChange={e => set('size', e.target.value)} placeholder="US 11 / XL / 1.5L" className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
+          <label className="font-mono text-[10px] uppercase text-bone-mute">{sizeField.label}</label>
+          <input type="text" value={form.size} onChange={e => set('size', e.target.value)} placeholder={sizeField.placeholder} className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 placeholder:text-bone-mute focus:outline-none focus:border-accent" />
         </div>
 
-        <div className="flex items-center gap-2 col-span-2">
+        <div className="flex items-center gap-2 sm:col-span-2">
           <input id="watchlist-chk" type="checkbox" checked={isWatchlist} onChange={e => setIsWatchlist(e.target.checked)} className="accent-accent" />
           <label htmlFor="watchlist-chk" className="font-mono text-xs text-bone-dim cursor-pointer">Add to watchlist (waiting for a deal)</label>
         </div>
@@ -455,20 +511,20 @@ function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean
               <label className="font-mono text-[10px] uppercase text-bone-mute">Target price (NZD)</label>
               <input type="number" step="0.01" value={form.target_price} onChange={e => set('target_price', e.target.value)} className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
             </div>
-            <div className="col-span-2 space-y-1">
+            <div className="sm:col-span-2 space-y-1">
               <label className="font-mono text-[10px] uppercase text-bone-mute">Product URL (optional)</label>
               <input type="url" value={form.url} onChange={e => set('url', e.target.value)} placeholder="https://..." className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
             </div>
           </>
         )}
 
-        <div className="col-span-2 sm:col-span-3 space-y-1">
+        <div className="sm:col-span-3 space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Notes</label>
           <input type="text" value={form.notes} onChange={e => set('notes', e.target.value)} className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
         </div>
       </div>
 
-      <button type="submit" disabled={busy || !form.name.trim()} className="px-4 py-2 border border-accent text-accent hover:bg-accent hover:text-ink font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50">
+      <button type="submit" disabled={busy || !form.name.trim()} className="w-full sm:w-auto px-4 py-2.5 border border-accent text-accent hover:bg-accent hover:text-ink font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50">
         {busy ? 'Adding…' : 'Add'}
       </button>
     </form>
