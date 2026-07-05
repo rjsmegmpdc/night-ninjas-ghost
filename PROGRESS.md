@@ -1,9 +1,18 @@
 ## Branch
-main (feat/onboarding merged)
+main (feat/strike-rolling-volume merged)
 
 ## Session: 2026-07-06 (continued)
 
 ### Completed
+
+**feat/strike-rolling-volume — merged to main (7979a73)**
+
+- `StrikePage.tsx`: `RollingVolumeCard` — first Recharts use in GHOST (ComposedChart, lazy `charts` chunk ~112 kB gzip, loads only on Strike)
+- 56 display days, each carrying its trailing 28-day run-km sum; single sliding-window pass computes both series
+- **Actual**: orange area from activities (classifySport/isRunning filter)
+- **Planned**: dashed grey line — active plan's `engine.renderWeek(params, weekNum).totalKmTarget / 7` per day, memoised per week, 0 outside program bounds; omitted (with a Dojo link hint) when no plan is active
+- Header shows latest actual-vs-plan delta (+green / −amber)
+- Card hidden entirely when no runs in the window
 
 **feat/mobile-nav — merged to main (575ed08)**
 
@@ -52,8 +61,7 @@ main (feat/onboarding merged)
 ### Next session should
 
 1. Patrol page: "tonight's mission" deep-link to activity recording (stretch)
-2. Strike dashboard: rolling 28-day mileage chart (Recharts) comparing actual vs planned
-3. Garmin Connect OAuth sync (alternative to GDPR file import)
+2. Garmin Connect OAuth sync (alternative to GDPR file import) — needs Garmin developer registration first (external dependency)
 
 ---
 
