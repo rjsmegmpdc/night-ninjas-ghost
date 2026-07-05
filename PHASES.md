@@ -33,9 +33,24 @@
 
 ## Remaining opportunities
 
+### UX / personalisation
+
+| Feature | Dependency | Notes |
+|---|---|---|
+| GHOST logo → configurable home button | None | `localStorage.ghost.home_page`; dropdown in Settings Display section; default `/calendar` |
+| Display preferences — font scale | None | 4 sizes (0.85/1/1.15/1.3×); CSS `--font-scale` var on `<html>`; `applyDisplayPrefs()` in `main.tsx` before render |
+| Display preferences — 6 color presets | None | `data-theme` on `<html>` + CSS token overrides for Ink/Dusk/OLED/Storm/Dawn/High Contrast |
+| Slicker first-run onboarding | None | Detect no Strava token → redirect to `/setup` login-style screen; StatHunters-style flow; auto-trigger first sync after OAuth |
+| Privacy-first storage notice | First-run onboarding | Full-screen plain-language card before first OAuth; acknowledged via `localStorage.ghost.privacy_acknowledged`; explains OPFS, localStorage, and token storage |
+| Strava Client ID localStorage cache | First-run onboarding | Pre-fills setup form on return visits; token stays in OPFS only (not localStorage) |
+
+### Data
+
 | Feature | Dependency | Notes |
 |---|---|---|
 | Garmin Connect OAuth sync | `daily_health_metrics` schema ✅, mapper ✅ | Needs Garmin developer registration + Cloudflare Worker |
+| Strike: 28-day mileage chart | Recharts (already in deps ✅) | Actual vs planned rolling weekly volume |
+| Patrol: tonight's mission deep-link | None | Opens activity in Strava app / recording |
 | Ultra plan stub | `src/lib/plans/ultra.ts` | `status: 'stub'` — lowest priority |
 | Patrol compliance flag display | ✅ Done (feat/patrol-compliance-flags) | FAST/SLOW/SHORT badges now shown on week grid |
 

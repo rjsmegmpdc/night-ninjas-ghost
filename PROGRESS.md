@@ -30,9 +30,81 @@ main (feat/garmin-gdpr-import merged)
 - Nothing
 
 ### Next session should
+
+#### P1 — Display preferences + home button (localStorage, no DB changes)
+
+**GHOST logo → home button**
+- `TopNav.tsx`: wrap `<span>GHOST</span>` in `<Link to={homePage}>` where `homePage` is read from `localStorage.getItem('ghost.home_page') ?? '/calendar'`
+- `SettingsPage.tsx`: new "Display" section (before Data Management); "Home page" dropdown: all 6 nav destinations (Patrol, Recon, Dojo, Calendar, Gear, Strike) + Journal/Coach Log — saves to `localStorage.ghost.home_page` immediately on change
+
+**Font scale**
+- 4 options: Small (85%), Normal (100%), Large (115%), X-Large (130%)
+- Apply by setting `document.documentElement.style.setProperty('--font-scale', '1.15')` (or similar)
+- In `index.css`: `font-size: calc(1rem * var(--font-scale, 1))` on `html` — all `rem` units scale automatically
+- localStorage key: `ghost.font_scale` (values: `'0.85'|'1'|'1.15'|'1.3'`)
+
+**Color presets (6 options)**
+- Apply by setting a `data-theme` attribute on `<html>` — CSS in `index.css` handles the token overrides
+- Preset names + token changes:
+  1. **Ink** (default — current dark palette, no changes)
+  2. **Dusk** — slightly warmer dark, `--ink: oklch(10% 0.02 25)`, `--bone: oklch(88% 0.01 60)`
+  3. **OLED** — pure black, `--ink: oklch(0% 0 0)`, higher contrast accent
+  4. **Storm** — cool/blue-grey dark, `--ink: oklch(10% 0.02 240)`
+  5. **Dawn** — light/day mode, `--ink: oklch(97% 0 0)`, `--bone: oklch(18% 0 0)`, invert accent lightness
+  6. **High Contrast** — WCAG AAA, `--ink: oklch(0% 0 0)`, `--bone: oklch(100% 0 0)`, `--accent: oklch(75% 0.18 60)`
+- localStorage key: `ghost.color_preset` (values: `'ink'|'dusk'|'oled'|'storm'|'dawn'|'high-contrast'`)
+
+**Apply on startup**
+- `main.tsx`: before `ReactDOM.render`, read both localStorage keys and call a `applyDisplayPrefs()` function that sets the CSS variable and `data-theme` attribute — avoids flash-of-wrong-theme
+
+---
+
+#### P2 — Slicker onboarding + privacy-first storage notice
+
+**First-run detection and redirect**
+- In `App.tsx` (or a top-level `<Bootstrap>` component): on mount, check `localStorage.ghost.strava_client_id` and the SQLite `settings.strava.client_id`
+- If neither exists: redirect to `/setup` immediately (don't show any other page)
+- Sequence mirrors StatHunters: → enter Strava Client ID → "Authorise with Strava" button → OAuth redirect → token exchange → auto-start first 90-day activity sync → redirect to home page
+- The setup page should feel like a login screen, not a settings form
+
+**localStorage caching for Strava Client ID**
+- After successful OAuth: also write `localStorage.setItem('ghost.strava_client_id', clientId)`
+- On subsequent visits: pre-fill the client ID input in setup (or skip setup entirely if SQLite also has the token)
+- The actual OAuth tokens (access_token, refresh_token) stay in SQLite OPFS only — not localStorage (reduces exposure if XSS)
+
+**Privacy notice (plain language, first run only)**
+- Show a dismissable overlay before the first OAuth redirect — not a modal, a full-screen card with the GHOST branding
+- Content (verbatim, write these words):
+  > **What GHOST stores on your device**
+  >
+  > GHOST runs entirely in your browser. Nothing you enter or sync leaves your device except the requests GHOST makes directly to Strava on your behalf.
+  >
+  > **In your browser's private storage (IndexedDB/OPFS):** All your activities, shoes, journal entries, plans, and race calendar. This storage is tied to this browser and device. Clearing your browser site data deletes it.
+  >
+  > **In browser localStorage:** Your display preferences (theme, font size), your home page, and your Strava App Client ID. These are lightweight settings, not your training data.
+  >
+  > **Your Strava OAuth token:** Stored in private browser storage after you connect. GHOST uses it to pull your activities. You can revoke access at any time at strava.com/settings/apps — GHOST will need to reconnect if you do.
+  >
+  > No accounts. No servers. No analytics. Your data stays yours.
+- Dismiss button: "Got it — let's go" → sets `localStorage.ghost.privacy_acknowledged = 'true'` → proceeds to OAuth
+- Only shown if `localStorage.ghost.privacy_acknowledged` is not set
+
+**localStorage keys summary** (for implementation reference)
+
+| Key | Value | Purpose |
+|---|---|---|
+| `ghost.home_page` | e.g. `'/calendar'` | Home button destination |
+| `ghost.font_scale` | `'0.85'` / `'1'` / `'1.15'` / `'1.3'` | Font size multiplier |
+| `ghost.color_preset` | `'ink'` / `'dusk'` / `'oled'` / `'storm'` / `'dawn'` / `'high-contrast'` | Theme preset |
+| `ghost.strava_client_id` | e.g. `'123456'` | Pre-fills setup form on return visits |
+| `ghost.privacy_acknowledged` | `'true'` | Suppresses privacy notice after first read |
+
+---
+
+#### P3 — Deferred from previous session
 1. Patrol page: "tonight's mission" deep-link to activity recording (stretch)
 2. Strike dashboard: rolling 28-day mileage chart (Recharts) comparing actual vs planned
-3. Garmin Connect OAuth sync (alternative to GDPR file import) — if user wants live sync without manual export
+3. Garmin Connect OAuth sync (alternative to GDPR file import)
 
 ## Key decisions
 
