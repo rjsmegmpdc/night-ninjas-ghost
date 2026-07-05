@@ -198,4 +198,30 @@ export const MIGRATIONS: { name: string; sql: string }[] = [
       CREATE INDEX IF NOT EXISTS idx_health_date        ON daily_health_metrics (date);
     `,
   },
+  {
+    name: '0006_gear_items',
+    sql: `
+      ALTER TABLE shoes ADD COLUMN description TEXT;
+      ALTER TABLE shoes ADD COLUMN size        TEXT;
+
+      CREATE TABLE IF NOT EXISTS gear_items (
+        id           INTEGER PRIMARY KEY,
+        name         TEXT    NOT NULL,
+        category     TEXT    NOT NULL DEFAULT 'clothing',
+        brand        TEXT,
+        model        TEXT,
+        description  TEXT,
+        size         TEXT,
+        quantity     INTEGER NOT NULL DEFAULT 1,
+        notes        TEXT,
+        is_watchlist INTEGER NOT NULL DEFAULT 0,
+        target_price REAL,
+        url          TEXT,
+        created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+      );
+
+      INSERT INTO settings (key, value) VALUES ('gear_strava_imported_at', '')
+      ON CONFLICT(key) DO NOTHING;
+    `,
+  },
 ];

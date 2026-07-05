@@ -13,7 +13,7 @@ const CoachLog  = lazy(() => import('./routes/coach-log/CoachLogPage'));
 const Race      = lazy(() => import('./routes/race/RacePage'));
 const Strike    = lazy(() => import('./routes/strike/StrikePage'));
 const Vo2max    = lazy(() => import('./routes/vo2max/Vo2maxPage'));
-const Shoes     = lazy(() => import('./routes/shoes/ShoesPage'));
+const Gear      = lazy(() => import('./routes/gear/GearPage'));
 const Journal   = lazy(() => import('./routes/journal/JournalPage'));
 const Profile   = lazy(() => import('./routes/profile/ProfilePage'));
 const Club      = lazy(() => import('./routes/club/ClubPage'));
@@ -54,7 +54,8 @@ function AppShell() {
             <Route path="/race"      element={<Race />} />
             <Route path="/strike"    element={<Strike />} />
             <Route path="/vo2max"    element={<Vo2max />} />
-            <Route path="/shoes"     element={<Shoes />} />
+            <Route path="/gear"      element={<Gear />} />
+            <Route path="/shoes"     element={<Navigate to="/gear" replace />} />
             <Route path="/journal"   element={<Journal />} />
             <Route path="/profile"   element={<Profile />} />
             <Route path="/club"      element={<Club />} />

@@ -33,3 +33,30 @@ export interface StravaRefreshResponse {
   refresh_token: string;
   expires_at: number;
 }
+
+export interface StravaShoe {
+  id: string;
+  name: string;
+  brand_name: string;
+  model_name: string;
+  description: string;
+  retired: boolean;
+  distance: number; // metres
+}
+
+export interface StravaBike {
+  id: string;
+  name: string;
+  brand_name: string;
+  model_name: string;
+  description: string;
+  retired: boolean;
+  distance: number; // metres
+  weight: number;   // kg
+  frame_type: string;
+}
+
+export interface StravaAthleteGear {
+  shoes: StravaShoe[];
+  bikes: StravaBike[];
+}

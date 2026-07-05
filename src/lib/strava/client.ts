@@ -1,4 +1,4 @@
-import type { StravaActivity, StravaTokenResponse, StravaRefreshResponse } from './types';
+import type { StravaActivity, StravaTokenResponse, StravaRefreshResponse, StravaAthleteGear } from './types';
 
 export const STRAVA_API = 'https://www.strava.com/api/v3';
 
@@ -85,4 +85,23 @@ export async function fetchActivitiesPage(
   if (res.status === 429) throw new RateLimitError();
   if (!res.ok) throw new Error(`Strava API error ${res.status}`);
   return res.json() as Promise<StravaActivity[]>;
+}
+
+// ---------------------------------------------------------------------------
+// Athlete gear fetch
+// ---------------------------------------------------------------------------
+
+/** Fetches the full athlete object from Strava and extracts shoes + bikes. */
+export async function fetchAthleteGear(accessToken: string): Promise<StravaAthleteGear> {
+  const res = await fetch(`${STRAVA_API}/athlete`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (res.status === 401) throw new Error('Strava token expired — reconnect in Settings');
+  if (res.status === 429) throw new RateLimitError();
+  if (!res.ok) throw new Error(`Strava API error ${res.status}`);
+  const athlete = await res.json() as { shoes?: StravaAthleteGear['shoes']; bikes?: StravaAthleteGear['bikes'] };
+  return {
+    shoes: athlete.shoes ?? [],
+    bikes: athlete.bikes ?? [],
+  };
 }

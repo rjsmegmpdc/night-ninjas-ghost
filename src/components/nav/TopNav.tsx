@@ -5,7 +5,7 @@ const NAV = [
   { to: '/recon',     label: 'Recon'     },
   { to: '/dojo',      label: 'Dojo'      },
   { to: '/calendar',  label: 'Calendar'  },
-  { to: '/shoes',     label: 'Shoes'     },
+  { to: '/gear',      label: 'Gear'      },
   { to: '/settings',  label: 'Settings'  },
 ];
 
