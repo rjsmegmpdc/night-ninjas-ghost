@@ -1,9 +1,14 @@
 ## Branch
-main (feat/mobile-polish merged)
+main (feat/patrol-mission-links merged)
 
 ## Session: 2026-07-06 (continued)
 
 ### Completed
+
+**feat/patrol-mission-links — merged to main (0b0fe55)**
+
+- Tonight's mission (pending): "▶ Record on Strava" button via `strava://record` deep link — opens the Strava app's record screen; mobile-only (`sm:hidden`) since the scheme doesn't resolve on desktop
+- Tonight's mission (done): each completed run links to its Strava activity page (universal link — app on phones, web on desktop); runs without stravaId stay plain text
 
 **feat/mobile-polish — merged to main (dbcc5ba)**
 
@@ -68,8 +73,8 @@ main (feat/mobile-polish merged)
 
 ### Next session should
 
-1. Patrol page: "tonight's mission" deep-link to activity recording (stretch)
-2. Garmin Connect OAuth sync (alternative to GDPR file import) — needs Garmin developer registration first (external dependency)
+1. Garmin Connect OAuth sync (alternative to GDPR file import) — **blocked**: needs Garmin developer registration first (external dependency, Matt's action)
+2. Backlog is otherwise clear — next features are Matt's call
 
 ---
 
