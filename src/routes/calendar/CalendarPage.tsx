@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { ExternalLink } from 'lucide-react';
 import { useDb } from '@/db/DbContext';
 import { query, exec } from '@/db/client';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { NZ_RACES, type NzRace } from '@/data/nz-races-2026';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -248,6 +250,8 @@ interface RaceFormState {
   distance_km:   string;
   goal_time:     string;
   level:         Level;
+  raceUrl:       string | null;  // originator page link (from NZ_RACES)
+  raceSearchUrl: string | null;  // Google fallback if url 404s
 }
 
 const BLANK_RACE_FORM: RaceFormState = {
@@ -257,6 +261,8 @@ const BLANK_RACE_FORM: RaceFormState = {
   distance_km:   '5',
   goal_time:     '',
   level:         'intermediate',
+  raceUrl:       null,
+  raceSearchUrl: null,
 };
 
 function initRaceForm(r: Race): RaceFormState {
@@ -267,7 +273,79 @@ function initRaceForm(r: Race): RaceFormState {
     distance_km:   String(r.distance_km),
     goal_time:     r.goal_time ?? '',
     level:         LEVEL_OPTIONS.includes(r.level as Level) ? (r.level as Level) : 'intermediate',
+    raceUrl:       null,
+    raceSearchUrl: null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// NZ race combobox
+// ---------------------------------------------------------------------------
+
+function NzRaceSearch({
+  value,
+  onTextChange,
+  onSelect,
+}: {
+  value: string;
+  onTextChange: (name: string) => void;
+  onSelect: (race: NzRace) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const results = useMemo(() => {
+    if (value.length < 2) return [];
+    const q = value.toLowerCase();
+    return NZ_RACES.filter(
+      (r) => r.name.toLowerCase().includes(q) || r.city.toLowerCase().includes(q),
+    ).slice(0, 8);
+  }, [value]);
+
+  function handleSelect(race: NzRace) {
+    onSelect(race);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => { onTextChange(e.target.value); setOpen(true); }}
+        onFocus={() => { if (value.length >= 2) setOpen(true); }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder="Search NZ races or type manually…"
+        className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+      />
+      {open && results.length > 0 && (
+        <ul className="absolute z-50 left-0 right-0 top-full border border-ink-line border-t-0 bg-ink-shadow max-h-52 overflow-y-auto">
+          {results.map((race) => (
+            <li key={`${race.name}-${race.date}`}>
+              <button
+                type="button"
+                onMouseDown={() => handleSelect(race)}
+                className="w-full px-3 py-2 text-left flex items-center justify-between gap-3 hover:bg-ink-panel transition-colors"
+              >
+                <div className="min-w-0">
+                  <span className="font-mono text-xs text-bone block truncate">{race.name}</span>
+                  <span className="font-mono text-[10px] text-bone-mute">{race.city}</span>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="font-mono text-[10px] text-bone-mute block">
+                    {new Date(race.date + 'T12:00:00Z').toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', timeZone: 'UTC' })}
+                  </span>
+                  <span className="font-mono text-[10px] text-bone-dim">
+                    {race.distance_km === 42.195 ? 'Marathon' : 'Half'}
+                  </span>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 function GoalRaceBlock({ goalRace, onRefresh }: { goalRace: Race | null; onRefresh: () => void }) {
@@ -563,6 +641,19 @@ function RaceForm({
 }: RaceFormProps) {
   const isOther = form.distanceLabel === 'Other';
 
+  function handleNzSelect(race: NzRace) {
+    const distLabel = race.distance_km === 42.195 ? 'Marathon' : 'Half Marathon';
+    onChange({
+      ...form,
+      name:          race.name,
+      date:          race.date,
+      distanceLabel: distLabel,
+      distance_km:   String(race.distance_km),
+      raceUrl:       race.url,
+      raceSearchUrl: race.searchUrl,
+    });
+  }
+
   return (
     <div className="border border-ink-line bg-ink-shadow p-4 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -577,16 +668,40 @@ function RaceForm({
           />
         </div>
 
-        {/* Name */}
+        {/* Name — NZ race search combobox */}
         <div className="space-y-1">
           <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Race Name *</label>
-          <input
-            type="text"
+          <NzRaceSearch
             value={form.name}
-            onChange={(e) => onChange({ ...form, name: e.target.value })}
-            placeholder="e.g. Auckland Marathon"
-            className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+            onTextChange={(name) => onChange({ ...form, name, raceUrl: null, raceSearchUrl: null })}
+            onSelect={handleNzSelect}
           />
+          {/* Originator link — shown after selecting a NZ race */}
+          {form.raceUrl && (
+            <div className="flex items-center gap-2 flex-wrap pt-0.5">
+              <a
+                href={form.raceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 font-mono text-[10px] text-accent hover:underline"
+              >
+                Event page <ExternalLink size={10} aria-hidden="true" />
+              </a>
+              {form.raceSearchUrl && (
+                <>
+                  <span className="font-mono text-[10px] text-bone-mute">·</span>
+                  <a
+                    href={form.raceSearchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 font-mono text-[10px] text-bone-mute hover:text-bone hover:underline"
+                  >
+                    Google if 404 <ExternalLink size={10} aria-hidden="true" />
+                  </a>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Distance */}
