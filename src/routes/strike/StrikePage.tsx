@@ -24,6 +24,18 @@ import {
   trendFor,
   type ResolvedDayMetrics,
 } from '@/lib/analysis/biometrics-pure';
+import { getActivePlanPeriod, type ActivePlanPeriod } from '@/lib/analysis/week-queries';
+import { ENGINES, type Dojo } from '@/lib/plans/index';
+import type { PlanParams } from '@/lib/plans/types';
+import {
+  ComposedChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 // ---------------------------------------------------------------------------
 // UTC date helpers — always build keys with UTC so they match computeEwma's
@@ -152,12 +164,23 @@ interface LongRunData {
   twoWeeksAgoLongKm: number;
 }
 
+interface RollingDay {
+  /** ISO date */
+  date: string;
+  /** Trailing 28-day actual run km ending on this day */
+  actual: number;
+  /** Trailing 28-day planned run km, or null when no plan is active */
+  planned: number | null;
+}
+
 interface StrikeData {
   athleteState: AthleteStateData;
   intensityWeeks: WeekIntensity[];
   mileageWeeks: WeekMileage[];
   longRun: LongRunData | null;
   biometrics: ResolvedDayMetrics[];
+  rolling: RollingDay[];
+  hasPlan: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -390,6 +413,104 @@ async function fetchLongRun(
   return { longRunKm, weekTotalKm, twoWeeksAgoLongKm };
 }
 
+// ---------------------------------------------------------------------------
+// Rolling 28-day volume — actual vs planned.
+//
+// Each display day carries the trailing 28-day sum. Display window = 56 days,
+// so the query reaches back 56 + 27 lead-in days. Planned daily km is the
+// active plan's weekly totalKmTarget / 7 for whichever program week the day
+// falls in (0 outside program bounds); null series when no plan is active.
+// ---------------------------------------------------------------------------
+
+const ROLLING_WINDOW = 28;
+const ROLLING_DISPLAY_DAYS = 56;
+
+function plannedDailyKmLookup(plan: ActivePlanPeriod): ((dayIso: string) => number) | null {
+  const engine = ENGINES[plan.dojo as Dojo];
+  if (!engine) return null;
+
+  const params: PlanParams = {
+    goalDistanceKm: plan.goalDistanceKm ?? 42.195,
+    goalTimeS: plan.goalTimeS ?? 12600,
+    level: plan.level,
+    programWeeks: plan.programWeeks,
+    startDate: plan.startDate,
+  };
+
+  // Render each program week once; cache the daily share of its km target.
+  const weeklyDaily = new Map<number, number>();
+  const start = new Date(plan.startDate + 'T00:00:00Z').getTime();
+
+  return (dayIso: string) => {
+    const days = Math.floor((new Date(dayIso + 'T00:00:00Z').getTime() - start) / 86400000);
+    if (days < 0) return 0;
+    const weekNum = Math.floor(days / 7) + 1;
+    if (weekNum > plan.programWeeks) return 0;
+    if (!weeklyDaily.has(weekNum)) {
+      const template = engine.renderWeek(params, weekNum);
+      weeklyDaily.set(weekNum, (template.totalKmTarget ?? 0) / 7);
+    }
+    return weeklyDaily.get(weekNum)!;
+  };
+}
+
+async function fetchRollingVolume(todayIso: string): Promise<{ rolling: RollingDay[]; hasPlan: boolean }> {
+  const leadDays = ROLLING_DISPLAY_DAYS + ROLLING_WINDOW - 1;
+  const fromIso = utcDaysAgo(leadDays);
+
+  const [rows, plan] = await Promise.all([
+    query(
+      `SELECT start_date, distance, sport_type, name
+       FROM activities
+       WHERE start_date >= ? AND start_date <= ?
+       ORDER BY start_date`,
+      [fromIso, todayIso + 'T99:99:99'],
+    ),
+    getActivePlanPeriod().catch(() => null),
+  ]);
+
+  // Daily actual run km
+  const dailyKm = new Map<string, number>();
+  for (const r of rows) {
+    const cat = classifySport(r[2] as string | null, (r[3] as string | null) ?? undefined);
+    if (!isRunning(cat)) continue;
+    const day = (r[0] as string).slice(0, 10);
+    dailyKm.set(day, (dailyKm.get(day) ?? 0) + ((r[1] as number) ?? 0) / 1000);
+  }
+
+  const plannedFor = plan ? plannedDailyKmLookup(plan) : null;
+
+  // Walk the full lead-in once, keeping a sliding 28-day window.
+  const rolling: RollingDay[] = [];
+  const actualWindow: number[] = [];
+  const plannedWindow: number[] = [];
+  let actualSum = 0;
+  let plannedSum = 0;
+
+  for (let i = leadDays; i >= 0; i--) {
+    const dayIso = utcDaysAgo(i);
+    const a = dailyKm.get(dayIso) ?? 0;
+    const p = plannedFor ? plannedFor(dayIso) : 0;
+
+    actualWindow.push(a); actualSum += a;
+    plannedWindow.push(p); plannedSum += p;
+    if (actualWindow.length > ROLLING_WINDOW) {
+      actualSum -= actualWindow.shift()!;
+      plannedSum -= plannedWindow.shift()!;
+    }
+
+    if (i < ROLLING_DISPLAY_DAYS) {
+      rolling.push({
+        date: dayIso,
+        actual: Math.round(actualSum * 10) / 10,
+        planned: plannedFor ? Math.round(plannedSum * 10) / 10 : null,
+      });
+    }
+  }
+
+  return { rolling, hasPlan: !!plannedFor };
+}
+
 async function fetchBiometrics(fromIso: string, toIso: string): Promise<ResolvedDayMetrics[]> {
   const [healthRows, journalRows] = await Promise.all([
     query(
@@ -505,10 +626,14 @@ export default function StrikePage() {
       fetchMileageWeeks(cutoffIso, todayIso),
       fetchLongRun(weekMonday, twoWeeksAgo, weekSunday),
       fetchBiometrics(bioFrom, todayIso),
+      fetchRollingVolume(todayIso),
     ])
-      .then(([athleteState, intensityWeeks, mileageWeeks, longRun, biometrics]) => {
+      .then(([athleteState, intensityWeeks, mileageWeeks, longRun, biometrics, rollingRes]) => {
         if (cancelled) return;
-        setData({ athleteState, intensityWeeks, mileageWeeks, longRun, biometrics });
+        setData({
+          athleteState, intensityWeeks, mileageWeeks, longRun, biometrics,
+          rolling: rollingRes.rolling, hasPlan: rollingRes.hasPlan,
+        });
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -539,7 +664,7 @@ export default function StrikePage() {
     );
   }
 
-  const { athleteState, intensityWeeks, mileageWeeks, longRun, biometrics } = data;
+  const { athleteState, intensityWeeks, mileageWeeks, longRun, biometrics, rolling, hasPlan } = data;
   const tooFewActivities = athleteState.activityCount < 7;
 
   return (
@@ -567,6 +692,11 @@ export default function StrikePage() {
             <IntensityHistoryCard weeks={intensityWeeks} />
             <MileageTrajectoryCard weeks={mileageWeeks} />
           </div>
+
+          {/* Card 3b: Rolling 28-day volume — actual vs planned */}
+          {rolling.some((d) => d.actual > 0) && (
+            <RollingVolumeCard days={rolling} hasPlan={hasPlan} />
+          )}
 
           {/* Card 4: Long Run — only if > 10km exists this week */}
           {longRun && <LongRunCard data={longRun} />}
@@ -1006,6 +1136,116 @@ function MileageBar({
         aria-label={`${week.weekKey}: ${week.runKm.toFixed(1)} km`}
       />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Card 3b: Rolling 28-day volume — actual vs planned (Recharts)
+// ---------------------------------------------------------------------------
+
+function RollingTooltip({
+  active, payload, label,
+}: {
+  active?: boolean;
+  payload?: { name: string; value: number; color: string }[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="border border-ink-line bg-ink-shadow px-3 py-2 space-y-1">
+      <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest">
+        28d to {label ? shortDate(label) : ''}
+      </p>
+      {payload.map((p) => (
+        <p key={p.name} className="font-mono text-xs" style={{ color: p.color }}>
+          {p.name} {p.value.toFixed(1)} km
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function RollingVolumeCard({ days, hasPlan }: { days: RollingDay[]; hasPlan: boolean }) {
+  const latest = days[days.length - 1];
+  const delta = hasPlan && latest?.planned != null && latest.planned > 0
+    ? latest.actual - latest.planned
+    : null;
+
+  return (
+    <section className="border border-ink-line" aria-label="Rolling 28-day volume">
+      <div className="px-6 py-4 border-b border-ink-line flex items-center justify-between flex-wrap gap-3">
+        <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          rolling volume · 28-day window
+        </span>
+        <div className="flex items-center gap-4">
+          <LegendSwatch color="bg-accent" label="Actual" />
+          {hasPlan && <LegendSwatch color="bg-bone-dim" label="Planned" />}
+          {delta !== null && (
+            <span className={`font-mono text-xs ${delta >= 0 ? 'text-signal-ok' : 'text-signal-warn'}`}>
+              {signedStr(delta)} km vs plan
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="px-2 pt-5 pb-2">
+        <ResponsiveContainer width="100%" height={220}>
+          <ComposedChart data={days} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
+            <XAxis
+              dataKey="date"
+              tickFormatter={shortDate}
+              interval={13}
+              tick={{ fill: '#6E6E6A', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
+              axisLine={{ stroke: '#2A2A2A' }}
+              tickLine={false}
+            />
+            <YAxis
+              width={44}
+              unit=""
+              tick={{ fill: '#6E6E6A', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
+              axisLine={{ stroke: '#2A2A2A' }}
+              tickLine={false}
+            />
+            <Tooltip content={<RollingTooltip />} cursor={{ stroke: '#3A3A3A' }} />
+            <Area
+              type="monotone"
+              dataKey="actual"
+              name="Actual"
+              stroke="#FF5F00"
+              strokeWidth={2}
+              fill="#FF5F00"
+              fillOpacity={0.12}
+              dot={false}
+              activeDot={{ r: 3, fill: '#FF5F00' }}
+              isAnimationActive={false}
+            />
+            {hasPlan && (
+              <Line
+                type="monotone"
+                dataKey="planned"
+                name="Planned"
+                stroke="#A5A5A0"
+                strokeWidth={1.5}
+                strokeDasharray="5 4"
+                dot={false}
+                activeDot={{ r: 3, fill: '#A5A5A0' }}
+                isAnimationActive={false}
+              />
+            )}
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      {!hasPlan && (
+        <div className="px-6 pb-4">
+          <p className="font-mono text-xs text-bone-mute">
+            No active plan — pick a dojo in{' '}
+            <Link to="/dojo" className="text-accent hover:underline">Dojo</Link>{' '}
+            to see planned volume alongside actual.
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 
