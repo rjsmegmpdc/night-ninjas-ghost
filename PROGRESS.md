@@ -1,9 +1,17 @@
 ## Branch
-main (feat/profile-sync merged)
+main (feat/sync-e2e-encryption merged)
 
 ## Session: 2026-07-06 (continued)
 
 ### Completed
+
+**feat/sync-e2e-encryption — merged to main (44222b3)**
+
+- Profile Sync now offered to club members / third parties → backups end-to-end encrypted; account owner cannot read them
+- `src/lib/sync-crypto-pure.ts`: PBKDF2-SHA256 (310k iter) → AES-256-GCM; versioned envelope (salt/iv/ct); 5 new tests (round-trip, no plaintext leakage, wrong passphrase, tamper, fresh salt+iv) — 579 total passing
+- Passphrase collected after the Access round-trip (never persisted); backup = choose (min 8, no-reset warning), restore = enter; wrong passphrase retries without redoing the email code
+- Legacy v1 plaintext blobs still restorable; next backup overwrites with v2 envelope; worker unchanged
+- Access policy note for club rollout: keep `Emails ending in @` (anyone) or list club emails in the Access policy for a closed group
 
 **feat/profile-sync — merged to main (00366bc)**
 
