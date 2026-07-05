@@ -20,7 +20,13 @@ interface JournalEntry {
   energy:     number | null;
   stress:     number | null;
   restingHr:  number | null;
+  hrv:        number | null;
   notes:      string;
+}
+
+interface DayHealthMetrics {
+  bodyBattery: number | null;
+  hrvMs:       number | null;
 }
 
 interface WeekSummary {
@@ -30,6 +36,7 @@ interface WeekSummary {
   runCount:      number;
   wellnessDays:  number;
   avgEnergy:     number | null;
+  avgHrv:        number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -166,8 +173,8 @@ function buildWeekSummaries(
   days: string[],
   actMap: Map<string, ActivityEntry[]>,
   journalMap: Map<string, JournalEntry>,
+  healthMap: Map<string, DayHealthMetrics>,
 ): WeekSummary[] {
-  // Group days into 5 Mon–Sun rows (7 per row)
   const weeks: WeekSummary[] = [];
   for (let w = 0; w < 5; w++) {
     const weekDays = days.slice(w * 7, w * 7 + 7);
@@ -177,6 +184,7 @@ function buildWeekSummaries(
     let runCount = 0;
     let wellnessDays = 0;
     const energyValues: number[] = [];
+    const hrvValues: number[] = [];
 
     for (const d of weekDays) {
       const acts = actMap.get(d);
@@ -192,12 +200,20 @@ function buildWeekSummaries(
       if (j) {
         wellnessDays++;
         if (j.energy !== null) energyValues.push(j.energy);
+        if (j.hrv !== null) hrvValues.push(j.hrv);
       }
+      const h = healthMap.get(d);
+      if (h?.hrvMs != null) hrvValues.push(h.hrvMs);
     }
 
     const avgEnergy =
       energyValues.length > 0
         ? energyValues.reduce((a, b) => a + b, 0) / energyValues.length
+        : null;
+
+    const avgHrv =
+      hrvValues.length > 0
+        ? Math.round(hrvValues.reduce((a, b) => a + b, 0) / hrvValues.length)
         : null;
 
     weeks.push({
@@ -207,9 +223,9 @@ function buildWeekSummaries(
       runCount,
       wellnessDays,
       avgEnergy,
+      avgHrv,
     });
   }
-  // Newest first
   return weeks.reverse();
 }
 
@@ -222,6 +238,7 @@ function DayCell({
   todayIso,
   acts,
   journal,
+  health,
   selected,
   onClick,
 }: {
@@ -229,6 +246,7 @@ function DayCell({
   todayIso: string;
   acts:     ActivityEntry[] | undefined;
   journal:  JournalEntry | undefined;
+  health:   DayHealthMetrics | undefined;
   selected: boolean;
   onClick:  () => void;
 }) {
@@ -236,6 +254,7 @@ function DayCell({
   const isToday   = iso === todayIso;
   const hasDots   = acts && acts.length > 0;
   const dotsToShow = acts ? acts.slice(0, 2) : [];
+  const hasHealth = (journal?.hrv != null) || (health?.bodyBattery != null) || (health?.hrvMs != null);
 
   return (
     <button
@@ -252,10 +271,19 @@ function DayCell({
         isToday    ? 'ring-1 ring-accent' : '',
       ].filter(Boolean).join(' ')}
     >
-      {/* Day number */}
-      <span className="font-mono text-xs text-bone-mute leading-none">
-        {formatDayNumber(iso)}
-      </span>
+      {/* Day number + health indicator */}
+      <div className="flex items-center justify-between w-full">
+        <span className="font-mono text-xs text-bone-mute leading-none">
+          {formatDayNumber(iso)}
+        </span>
+        {hasHealth && (
+          <span
+            aria-hidden="true"
+            className="w-1 h-1 rounded-full bg-signal-ok opacity-70 flex-shrink-0"
+            title="Biometrics logged"
+          />
+        )}
+      </div>
 
       {/* Activity dots */}
       {hasDots && (
@@ -295,12 +323,14 @@ function DayDetail({
   iso,
   acts,
   journal,
+  health,
   onClose,
   onSaved,
 }: {
   iso:     string;
   acts:    ActivityEntry[] | undefined;
   journal: JournalEntry | undefined;
+  health:  DayHealthMetrics | undefined;
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
@@ -431,6 +461,22 @@ function DayDetail({
                 </span>
               </div>
             )}
+            {(journal.hrv !== null || health?.hrvMs != null) && (
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono text-xs text-bone-mute">HRV</span>
+                <span className="font-mono text-xs text-bone-dim">
+                  {journal.hrv ?? Math.round(health!.hrvMs!)} ms
+                </span>
+              </div>
+            )}
+            {health?.bodyBattery != null && (
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono text-xs text-bone-mute">Body Battery</span>
+                <span className="font-mono text-xs text-bone-dim">
+                  {health.bodyBattery}/100
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <p className="font-mono text-sm text-bone-mute">No wellness data logged.</p>
@@ -496,7 +542,7 @@ function WeekSummaries({ summaries }: { summaries: WeekSummary[] }) {
         {/* Column headers */}
         <div
           className="grid gap-2 px-4 py-2 text-xs font-mono text-bone-mute uppercase tracking-widest"
-          style={{ gridTemplateColumns: '1fr auto auto auto auto' }}
+          style={{ gridTemplateColumns: '1fr auto auto auto auto auto' }}
           aria-hidden="true"
         >
           <span>Week</span>
@@ -504,12 +550,13 @@ function WeekSummaries({ summaries }: { summaries: WeekSummary[] }) {
           <span className="text-right w-12">Runs</span>
           <span className="text-right w-16">Wellness</span>
           <span className="text-right w-16">Avg nrg</span>
+          <span className="text-right w-16">Avg HRV</span>
         </div>
         {summaries.map((wk) => (
           <div
             key={wk.isoMonday}
             className="grid gap-2 px-4 py-3 font-mono text-sm"
-            style={{ gridTemplateColumns: '1fr auto auto auto auto' }}
+            style={{ gridTemplateColumns: '1fr auto auto auto auto auto' }}
           >
             <span className="text-bone-dim">{wk.label}</span>
             <span className="text-right w-16 text-bone">
@@ -523,6 +570,9 @@ function WeekSummaries({ summaries }: { summaries: WeekSummary[] }) {
             </span>
             <span className="text-right w-16 text-bone-mute">
               {wk.avgEnergy !== null ? wk.avgEnergy.toFixed(1) : '—'}
+            </span>
+            <span className="text-right w-16 text-bone-mute">
+              {wk.avgHrv !== null ? `${wk.avgHrv}ms` : '—'}
             </span>
           </div>
         ))}
@@ -542,6 +592,7 @@ export default function JournalPage() {
 
   const [actMap,     setActMap]     = useState<Map<string, ActivityEntry[]>>(new Map());
   const [journalMap, setJournalMap] = useState<Map<string, JournalEntry>>(new Map());
+  const [healthMap,  setHealthMap]  = useState<Map<string, DayHealthMetrics>>(new Map());
   const [days,       setDays]       = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const todayIso = todayUtcIso();
@@ -551,17 +602,23 @@ export default function JournalPage() {
     cutoff.setUTCDate(cutoff.getUTCDate() - 35);
     const cutoffIso = cutoff.toISOString().slice(0, 10);
 
-    const [actRows, journalRows] = await Promise.all([
+    const [actRows, journalRows, healthRows] = await Promise.all([
       query(
         `SELECT date(start_date) as d, name, distance, moving_time, sport_type
          FROM activities WHERE start_date >= ? ORDER BY start_date ASC`,
         [cutoffIso],
       ),
       query(
-        `SELECT id, date, sleep_quality, energy_level, stress_level, resting_hr, notes
+        `SELECT id, date, sleep_quality, energy_level, stress_level, resting_hr, hrv, notes
          FROM journal WHERE date >= ? ORDER BY date ASC`,
         [cutoffIso],
       ),
+      query(
+        `SELECT date, MAX(body_battery) as body_battery, MAX(hrv_ms) as hrv_ms
+         FROM daily_health_metrics WHERE date >= ?
+         GROUP BY date ORDER BY date ASC`,
+        [cutoffIso],
+      ).catch(() => [] as unknown[][]),
     ]);
 
     // Build actMap
@@ -583,21 +640,32 @@ export default function JournalPage() {
       else newActMap.set(d, [entry]);
     }
 
-    // Build journalMap
+    // Build journalMap (now includes hrv at index 6, notes at index 7)
     const newJournalMap = new Map<string, JournalEntry>();
     for (const r of journalRows) {
-      const id       = r[0] as number;
-      const date     = r[1] as string;
-      const sleepQ   = r[2] as number | null;
-      const energy   = r[3] as number | null;
-      const stress   = r[4] as number | null;
-      const restHr   = r[5] as number | null;
-      const notes    = (r[6] as string | null) ?? '';
-      newJournalMap.set(date, { id, sleepQ, energy, stress, restingHr: restHr, notes });
+      const id     = r[0] as number;
+      const date   = r[1] as string;
+      const sleepQ = r[2] as number | null;
+      const energy = r[3] as number | null;
+      const stress = r[4] as number | null;
+      const restHr = r[5] as number | null;
+      const hrv    = r[6] as number | null;
+      const notes  = (r[7] as string | null) ?? '';
+      newJournalMap.set(date, { id, sleepQ, energy, stress, restingHr: restHr, hrv, notes });
+    }
+
+    // Build healthMap
+    const newHealthMap = new Map<string, DayHealthMetrics>();
+    for (const r of healthRows) {
+      const date        = r[0] as string;
+      const bodyBattery = r[1] as number | null;
+      const hrvMs       = r[2] as number | null;
+      newHealthMap.set(date, { bodyBattery, hrvMs });
     }
 
     setActMap(newActMap);
     setJournalMap(newJournalMap);
+    setHealthMap(newHealthMap);
     setDays(buildDayWindow());
   }, []);
 
@@ -608,7 +676,7 @@ export default function JournalPage() {
 
   if (!ready) return <PageSkeleton />;
 
-  const weekSummaries = buildWeekSummaries(days, actMap, journalMap);
+  const weekSummaries = buildWeekSummaries(days, actMap, journalMap, healthMap);
 
   return (
     <div className="px-4 sm:px-8 lg:px-12 py-8 max-w-7xl mx-auto space-y-8">
@@ -655,6 +723,7 @@ export default function JournalPage() {
               todayIso={todayIso}
               acts={actMap.get(iso)}
               journal={journalMap.get(iso)}
+              health={healthMap.get(iso)}
               selected={selectedDate === iso}
               onClick={() =>
                 setSelectedDate((prev) => (prev === iso ? null : iso))
@@ -672,6 +741,10 @@ export default function JournalPage() {
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-bone-dim flex-shrink-0" aria-hidden="true" />
             <span className="font-mono text-xs text-bone-mute">Other sport</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1 h-1 rounded-full bg-signal-ok opacity-70 flex-shrink-0" aria-hidden="true" />
+            <span className="font-mono text-xs text-bone-mute">Biometrics logged</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
@@ -696,6 +769,7 @@ export default function JournalPage() {
           iso={selectedDate}
           acts={actMap.get(selectedDate)}
           journal={journalMap.get(selectedDate)}
+          health={healthMap.get(selectedDate)}
           onClose={() => setSelectedDate(null)}
           onSaved={loadData}
         />
