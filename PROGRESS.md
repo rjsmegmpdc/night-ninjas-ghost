@@ -1,5 +1,5 @@
 ## Branch
-feat/compliance-and-pmc
+main (feat/patrol-compliance-flags merged)
 
 ## Session: 2026-07-05
 
@@ -44,20 +44,36 @@ feat/compliance-and-pmc
 - calendar-blocks.ts, plans/index.ts, program-phase.ts, intensity-distribution.ts, framework-stats.ts
 - Engine snapshot tests (54) + framework-stats tests unblocked; 574 total passing
 
-**feat/compliance-and-pmc — in progress**
+**feat/compliance-and-pmc — merged to main**
 
 - `PatrolPage.tsx`: replaced `buildMinimalCompliance()` shim with `evaluateWeek(template, asActivities(activities))` — real per-session flag evaluation (ok/fast/slow/short/none) now feeds `getFrameworkStats()`
-- `snapshot-builder.ts`: added CTL/ATL/TSB computation — queries last 56 days, uses `computeActivityLoad()` + `computeEwma()` + `classifyForm()` + `rollupConfidence()` (same pattern as StrikePage). `state` is now populated in AthleteSnapshot when ≥7 activities exist; null when insufficient history. PMC query runs in parallel with plan query.
+- `snapshot-builder.ts`: added CTL/ATL/TSB computation — queries last 56 days, uses `computeActivityLoad()` + `computeEwma()` + `classifyForm()` + `rollupConfidence()`. `state` now populated when ≥7 activities exist; null otherwise.
+
+**fix/coach-log-form-state — merged to main (34f7757)**
+
+- `CoachLogPage.tsx`: added `hrv: ''` and `bodyBattery: ''` to `InlineEditForm` useState initialiser — CI type error from missing fields added by feat/biometrics.
+
+**fix/strike-trend-type — merged to main (8d0b410)**
+
+- `StrikePage.tsx`: extended `trend` type in BiometricsCard metrics array to include `mean: number | null` — CI `tsc -b` caught `mean` property missing from inline type.
+- `PatrolPage.tsx`: removed orphaned `WeekCompliance` type import — was unused after shim deletion; `tsc -b` treats unused imports as TS6133 errors.
+
+**feat/patrol-compliance-flags — merged to main (9fa3e63)**
+
+- `PatrolPage.tsx`: exposed `compliance` from `derived` useMemo return; passed to `WeekPlanGrid` as prop
+- Added `COMPLIANCE_FLAG` lookup table: `fast` → amber FAST, `slow` → muted SLOW, `short` → amber SHORT; `ok/none/warn/miss` produce no badge (handled by status dot)
+- `WeekPlanGrid`: reads `compliance.days` per-DOW; renders flag badges beneath actual run row, guard `status === 'done' && sessionFlags.length > 0`
+- Updated PHASES.md: marked two completed remaining items; added patrol-compliance-flags as done
 
 ### In progress
-- `feat/compliance-and-pmc` (not yet merged)
+- Nothing
 
 ### Blocked
 - Nothing
 
 ### Next session should
-1. Merge `feat/compliance-and-pmc` to main (Matt's call)
-2. Consider Garmin Connect OAuth sync (daily_health_metrics schema exists)
+1. Consider Garmin Connect OAuth sync — Garmin developer registration → Cloudflare Worker → OAuth flow → upsert to daily_health_metrics (mapper already exists)
+2. Alternatively: Garmin Connect JSON file import (lower effort, no OAuth) — file picker → mapper → bulk insert historical biometrics
 
 ## Key decisions
 
