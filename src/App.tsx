@@ -1,8 +1,9 @@
-import { Routes, Route, Navigate } from 'react-router';
-import { Suspense, lazy } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router';
+import { Suspense, lazy, useState, useEffect } from 'react';
 import { DbProvider, useDb } from './db/DbContext';
 import { TopNav } from './components/nav/TopNav';
 import { PageSkeleton } from './components/ui/PageSkeleton';
+import { getStoredTokens } from '@/lib/db/settings';
 
 // Route-level code-split — each screen loads on demand
 const Patrol    = lazy(() => import('./routes/patrol/PatrolPage'));
@@ -21,8 +22,43 @@ const Settings  = lazy(() => import('./routes/settings/SettingsPage'));
 const Help      = lazy(() => import('./routes/help/HelpPage'));
 const Setup     = lazy(() => import('./routes/setup/SetupPage'));
 
+/**
+ * First-run gate: if the user has never connected Strava, land them on /setup
+ * instead of an empty dashboard. localStorage `ghost.onboarded` is the fast
+ * path — set after the first successful connection so return visits skip the
+ * DB check entirely. Existing users (tokens in DB, flag not yet set) get the
+ * flag backfilled on their next load.
+ */
+function useFirstRunRedirect(ready: boolean): boolean {
+  const location = useLocation();
+  const onSetup = location.pathname.startsWith('/setup');
+  const [needsSetup, setNeedsSetup] = useState<boolean | null>(
+    () => (localStorage.getItem('ghost.onboarded') === 'true' ? false : null),
+  );
+
+  useEffect(() => {
+    if (!ready || needsSetup !== null) return;
+    let cancelled = false;
+    getStoredTokens()
+      .then((tokens) => {
+        if (cancelled) return;
+        if (tokens) {
+          localStorage.setItem('ghost.onboarded', 'true');
+          setNeedsSetup(false);
+        } else {
+          setNeedsSetup(true);
+        }
+      })
+      .catch(() => { if (!cancelled) setNeedsSetup(false); });
+    return () => { cancelled = true; };
+  }, [ready, needsSetup]);
+
+  return needsSetup === true && !onSetup;
+}
+
 function AppShell() {
   const { ready, error: dbError } = useDb();
+  const redirectToSetup = useFirstRunRedirect(ready);
 
   if (!ready) {
     return (
@@ -39,13 +75,17 @@ function AppShell() {
     );
   }
 
+  if (redirectToSetup) return <Navigate to="/setup" replace />;
+
+  const home = localStorage.getItem('ghost.home_page') ?? '/patrol';
+
   return (
     <div className="min-h-screen bg-ink text-bone">
       <TopNav />
       <main>
         <Suspense fallback={<PageSkeleton />}>
           <Routes>
-            <Route path="/" element={<Navigate to="/patrol" replace />} />
+            <Route path="/" element={<Navigate to={home} replace />} />
             <Route path="/patrol"    element={<Patrol />} />
             <Route path="/recon"     element={<Recon />} />
             <Route path="/dojo"      element={<Dojo />} />

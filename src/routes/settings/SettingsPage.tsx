@@ -493,6 +493,7 @@ function DataManagementSection() {
       await exec('DELETE FROM plans');
       await exec('DELETE FROM plan_periods');
       await exec('DELETE FROM settings');
+      localStorage.removeItem('ghost.onboarded');
       window.location.href = '/setup';
     } catch {
       setWiping(false);

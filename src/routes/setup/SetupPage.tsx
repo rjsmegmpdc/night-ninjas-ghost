@@ -187,6 +187,7 @@ export default function SetupPage() {
           athleteName:  newAthleteName,
           athleteId:    newAthleteId,
         });
+        localStorage.setItem('ghost.onboarded', 'true');
 
         navigate('/setup', { replace: true });
         const tokens = await getStoredTokens();
@@ -240,6 +241,7 @@ export default function SetupPage() {
 
   async function proceedWithNewAthlete(newTokens: StoredTokens, partialScope: boolean) {
     await storeTokens(newTokens);
+    localStorage.setItem('ghost.onboarded', 'true');
     setState({ status: 'connected', tokens: newTokens, lastSync: null, partialScope });
     startSync(newTokens);
   }
@@ -271,6 +273,7 @@ export default function SetupPage() {
     void revokeToken(tokens.accessToken, WORKER_URL);
 
     await clearTokens();
+    localStorage.removeItem('ghost.onboarded');
     setState({ status: 'not-connected' });
   }
 
@@ -385,38 +388,95 @@ function StravaSection({
 }
 
 // ---------------------------------------------------------------------------
-// Not connected — Strava brand button
-// Official brand: #FC4C02 orange, 48px height, white text
-// Place official PNG at public/strava/btn_strava_connectwith_orange@2x.png
+// Privacy notice — shown once, before the first OAuth redirect.
+// Plain language on what GHOST stores and where. Dismissal is remembered in
+// localStorage so returning users go straight to the connect button.
+// ---------------------------------------------------------------------------
+
+function PrivacyNotice({ onAcknowledge }: { onAcknowledge: () => void }) {
+  return (
+    <div className="space-y-5">
+      <p className="font-mono text-xs text-accent uppercase tracking-widest">
+        What GHOST stores on your device
+      </p>
+
+      <div className="space-y-4 font-mono text-xs text-bone-dim leading-relaxed">
+        <p>
+          GHOST runs entirely in your browser. Nothing you enter or sync leaves your
+          device except the requests GHOST makes directly to Strava on your behalf.
+        </p>
+        <p>
+          <strong className="text-bone">In your browser's private storage:</strong>{' '}
+          All your activities, shoes, journal entries, plans, and race calendar.
+          This storage is tied to this browser and device. Clearing your browser
+          site data deletes it.
+        </p>
+        <p>
+          <strong className="text-bone">In browser localStorage:</strong>{' '}
+          Your display preferences (theme, font size) and your home page. These
+          are lightweight settings, not your training data.
+        </p>
+        <p>
+          <strong className="text-bone">Your Strava connection:</strong>{' '}
+          Stored in private browser storage after you connect. GHOST uses it to
+          pull your activities. You can revoke access at any time at{' '}
+          <a
+            href="https://www.strava.com/settings/apps"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline"
+          >
+            strava.com/settings/apps
+          </a>
+          {' '}— GHOST will need to reconnect if you do.
+        </p>
+        <p className="text-bone">
+          No accounts. No servers. No analytics. Your data stays yours.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={onAcknowledge}
+        className="font-mono text-xs uppercase tracking-widest px-5 py-3 border border-accent text-accent hover:bg-accent hover:text-ink transition-colors"
+      >
+        Got it — let's go
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Not connected — login-style first-run screen.
+// Privacy notice gates the connect button on the very first visit; the
+// technical OAuth params live in a collapsed details block.
+// Official Strava brand: #FC4C02 orange, 48px height, white text.
 // ---------------------------------------------------------------------------
 
 function NotConnected() {
+  const [acknowledged, setAcknowledged] = useState<boolean>(
+    () => localStorage.getItem('ghost.privacy_acknowledged') === 'true',
+  );
   const redirectUri = `${window.location.origin}/setup`;
   const authUrl = CLIENT_ID ? buildStravaAuthUrl() : '#';
 
-  return (
-    <div className="space-y-4">
-      <p className="font-mono text-sm text-bone-dim leading-relaxed">
-        Connect your Strava account to pull your activity history into GHOST.
-      </p>
+  if (!acknowledged) {
+    return (
+      <PrivacyNotice
+        onAcknowledge={() => {
+          localStorage.setItem('ghost.privacy_acknowledged', 'true');
+          setAcknowledged(true);
+        }}
+      />
+    );
+  }
 
-      <div className="border border-ink-line p-4 space-y-2 bg-ink">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-3">OAuth params</p>
-        <div className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-1.5 font-mono text-xs">
-          <span className="text-bone-mute">client_id</span>
-          <span className={CLIENT_ID ? 'text-accent' : 'text-signal-miss'}>
-            {CLIENT_ID ?? 'NOT SET — add VITE_STRAVA_CLIENT_ID secret'}
-          </span>
-          <span className="text-bone-mute">redirect_uri</span>
-          <span className="text-bone break-all">{redirectUri}</span>
-          <span className="text-bone-mute">scope</span>
-          <span className="text-bone">activity:read_all</span>
-        </div>
-        <p className="font-mono text-xs text-bone-mute mt-3 leading-relaxed">
-          Strava must have <strong className="text-bone">{window.location.hostname}</strong> set as
-          the Authorization Callback Domain.
-        </p>
-      </div>
+  return (
+    <div className="space-y-6">
+      <p className="font-mono text-sm text-bone-dim leading-relaxed">
+        Connect your Strava account and GHOST will pull in your activity history
+        automatically — your last 90 days sync the moment you're in.
+      </p>
 
       {/* Official Strava "Connect with Strava" button — Strava brand colour #FC4C02 */}
       <a
@@ -434,6 +494,28 @@ function NotConnected() {
         </svg>
         Connect with Strava
       </a>
+
+      <details className="border border-ink-line bg-ink">
+        <summary className="px-4 py-3 font-mono text-xs text-bone-mute uppercase tracking-widest cursor-pointer select-none hover:text-bone transition-colors">
+          Connection details
+        </summary>
+        <div className="px-4 pb-4 space-y-2">
+          <div className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-1.5 font-mono text-xs">
+            <span className="text-bone-mute">client_id</span>
+            <span className={CLIENT_ID ? 'text-accent' : 'text-signal-miss'}>
+              {CLIENT_ID ?? 'NOT SET — add VITE_STRAVA_CLIENT_ID secret'}
+            </span>
+            <span className="text-bone-mute">redirect_uri</span>
+            <span className="text-bone break-all">{redirectUri}</span>
+            <span className="text-bone-mute">scope</span>
+            <span className="text-bone">activity:read_all</span>
+          </div>
+          <p className="font-mono text-xs text-bone-mute mt-3 leading-relaxed">
+            Strava must have <strong className="text-bone">{window.location.hostname}</strong> set as
+            the Authorization Callback Domain.
+          </p>
+        </div>
+      </details>
     </div>
   );
 }
