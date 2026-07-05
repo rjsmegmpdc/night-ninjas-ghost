@@ -1,5 +1,64 @@
 ## Branch
-main (feat/patrol-compliance-flags merged)
+main (feat/gear-page merged)
+
+## Session: 2026-07-06
+
+### Completed
+
+**feat/dojo-training-calendar — merged to main (4c569c5)**
+
+- `DojoPage.tsx`: full rewrite — picker collapses when a plan is active
+- `ActivePlanBar`: compact strip showing dojo name, current phase/week number, goal race, editable start date, "Change plan" button
+- `TrainingCalendar`: week-by-week grid grouped by calendar month; calls `engine.renderWeek()` with full `WeekContext` (goalRace, tuneupRaces, lifeEvents) for every program week
+- `WeekRow`: phase dot (colour-coded base/build/peak/taper), phaseName from engine, km target, "← now" indicator on current week, goal race accent banner
+- `DayCell`: 7-column grid per week; session type badge (E/L/T/I/RP/X/S/—), distance, life event markers, tuneup race markers, past-day muted opacity
+- Macrocycle overview bar: coloured phase blocks across all weeks with legend
+- "No goal race set" advisory when races table is empty
+- New DB queries: loadCalendarData() — parallel fetch of goalRace, tuneupRaces, lifeEvents, capacity settings
+- `showPicker` state: false = calendar view; true = picker; "Change plan" toggles back
+
+**feat/data/nz-races — merged to main (c87e8bd, ba859fb)**
+
+- `src/data/nz-races-2026.ts`: 49 NZ half marathon + marathon events Jul 2026–Jun 2027
+- Sourced from runningcalendar.co.nz; macron-safe slug() function derives event URLs
+- Every race has `url` (primary → originator page) and `searchUrl` (Google fallback for slug 404s)
+- `NZ_HALF_MARATHONS` and `NZ_MARATHONS` exports for use in CalendarPage race-add UI
+
+**feat/gear-page — merged to main (c84490f)**
+
+- Migration 0006: `gear_items` table (name, category, brand, model, description, size, quantity, is_watchlist, target_price, url); ALTER `shoes` adds `description` and `size` columns
+- `src/lib/strava/types.ts`: `StravaShoe`, `StravaBike`, `StravaAthleteGear` types added
+- `src/lib/strava/client.ts`: `fetchAthleteGear()` — calls `GET /athlete`, returns shoes + bikes
+- `src/routes/gear/GearPage.tsx` (new):
+  - **Import banner**: one-click Strava import — upserts all shoes by strava_gear_id, timestamps last import
+  - **Shoe rotation analysis**: Race shoe / Trail / Daily trainer / Near limit badges derived from best pace, activity type split, km% used; avg and best pace per shoe from joined activities
+  - **Deal search**: "Find deals" per shoe/item → Google `{brand} {model} sale NZ running`
+  - **Gear sections**: Clothing, Backpacks, Hardware, Food — manual add form per category
+  - **Watchlist**: target price, size, product URL per item; deal search button; "waiting for a sale" intent
+  - Retired shoes collapsible via ChevronDown toggle
+- `src/App.tsx`: `/gear` route added; `/shoes` now redirects to `/gear`
+- `src/components/nav/TopNav.tsx`: "Shoes" → "Gear"
+
+### In progress
+- Nothing
+
+### Blocked
+- Nothing
+
+### Next session should
+1. Wire NZ race data into CalendarPage — searchable combobox for adding target/tuneup races from `NZ_RACES`
+2. Garmin GDPR export import — file picker UI → garmin/mapper.ts → bulk upsert to daily_health_metrics
+3. CalendarPage race-add: primary URL + "Search Google" fallback for slug 404s
+
+## Key decisions
+
+- **OPFS over IDBMirrorVFS**: wa-sqlite v1.0.0 renamed VFS; OPFS gives true file persistence without COOP/COEP headers
+- **MemoryVFS fallback**: non-fatal OPFS failure (Safari, private browsing) — data survives the session, not the tab close
+- **4-batch deploy cadence**: kept CI usage to ~4 builds / ~12 GH Actions minutes against 500 builds/month Cloudflare limit
+- **Biometrics split storage**: HRV → journal table (was already there but never exposed); body battery → daily_health_metrics (device metric, not wellness rating)
+- **BYOK AI coach**: Anthropic key stored in settings table, never leaves device; direct API call from browser
+- **Gear: no transactions in GHOST**: deal search opens Google; no cart, no checkout, no affiliate links
+- **Shoe rotation advice is computed not queried**: pure JS from aggregated activity stats — no extra table needed
 
 ## Session: 2026-07-05
 
