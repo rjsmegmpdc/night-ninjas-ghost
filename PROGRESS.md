@@ -1,9 +1,20 @@
 ## Branch
-main (feat/byo-strava-credentials merged)
+main (feat/profile-sync merged)
 
 ## Session: 2026-07-06 (continued)
 
 ### Completed
+
+**feat/profile-sync — merged to main (00366bc)**
+
+- Optional cross-device backup/restore of the setup blob (API creds, display prefs, home page, gear profile) — never activities
+- Identity: Cloudflare Access One-Time PIN on the worker's `/sync` path; app stays account-free
+- Cookie-free JWT handoff: `/sync/start` (behind Access) bounces the Access JWT to the app in a URL fragment → app uses `Authorization: Bearer` — works in mobile Safari
+- Worker verifies RS256 JWT against team JWKS (aud/iss/exp, 1h cert cache); KV key `profile:<email>`, 8KB JSON cap; 501 until configured (safe to deploy first)
+- `src/lib/sync-profile.ts` + SetupPage Profile Sync section (Back up / Restore buttons); wizard points new devices at Restore
+- `docs/ACCESS-SETUP.md`: complete one-time dashboard click-path (KV create, Zero Trust team, OTP login method, Access app on `/sync` with custom-domain fallback, AUD tag, wrangler vars, verify)
+- **Matt's action required**: complete docs/ACCESS-SETUP.md Parts 1–5 (~10 min) to activate
+- **Known limitation / follow-up**: blobs unencrypted in KV — add client-side encryption with recovery phrase before wider use
 
 **feat/byo-strava-credentials — merged to main (49d8ef2)**
 
