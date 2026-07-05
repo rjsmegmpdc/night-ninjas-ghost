@@ -10,25 +10,27 @@
  *   2. Cloudflare Access intercepts → email + one-time PIN
  *   3. Worker bounces back to /setup#sync_token=<Access JWT>
  *   4. App calls /sync/profile with  Authorization: Bearer <jwt>
+ *
+ * End-to-end encryption: the blob is encrypted on-device with a key
+ * derived from a user passphrase (PBKDF2-SHA256 → AES-256-GCM) before
+ * upload. The server — including the deployment owner — stores only
+ * ciphertext. There is no passphrase reset: losing it means backing up
+ * again from a configured device.
  */
 
 import { getStravaCredentials, saveStravaCredentials } from '@/lib/strava/credentials';
+import {
+  encryptProfile,
+  decryptProfile,
+  type ProfileBlob,
+  type EncryptedEnvelope,
+} from '@/lib/sync-crypto-pure';
+
+export type { ProfileBlob, EncryptedEnvelope } from '@/lib/sync-crypto-pure';
 
 const WORKER_URL = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
 
 export type SyncIntent = 'backup' | 'restore';
-
-export interface ProfileBlob {
-  v: 1;
-  clientId?: string;
-  clientSecret?: string;
-  prefs?: {
-    homePage?: string;
-    fontScale?: string;
-    colorPreset?: string;
-  };
-  gearProfile?: string; // opaque JSON string, as stored in localStorage
-}
 
 // ---------------------------------------------------------------------------
 // Auth handoff
@@ -114,15 +116,16 @@ export async function applyProfileBlob(blob: ProfileBlob): Promise<{ restoredCre
 // API calls
 // ---------------------------------------------------------------------------
 
-export async function uploadProfile(): Promise<void> {
+export async function uploadProfile(passphrase: string): Promise<void> {
   const blob = await buildProfileBlob();
+  const envelope = await encryptProfile(blob, passphrase);
   const res = await fetch(`${WORKER_URL}/sync/profile`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${getJwt()}`,
     },
-    body: JSON.stringify(blob),
+    body: JSON.stringify(envelope),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -130,7 +133,7 @@ export async function uploadProfile(): Promise<void> {
   }
 }
 
-export async function downloadProfile(): Promise<ProfileBlob> {
+export async function downloadAndDecryptProfile(passphrase: string): Promise<ProfileBlob> {
   const res = await fetch(`${WORKER_URL}/sync/profile`, {
     headers: { Authorization: `Bearer ${getJwt()}` },
   });
@@ -139,5 +142,8 @@ export async function downloadProfile(): Promise<ProfileBlob> {
     const body = await res.text().catch(() => '');
     throw new Error(`Restore failed (${res.status}): ${body}`);
   }
-  return res.json() as Promise<ProfileBlob>;
+  const data = await res.json() as EncryptedEnvelope | ProfileBlob;
+  if ('ct' in data) return decryptProfile(data, passphrase);
+  // Legacy v1 plaintext blob (pre-encryption MVP) — apply as-is
+  return data;
 }

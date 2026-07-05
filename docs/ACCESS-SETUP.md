@@ -118,9 +118,19 @@ secrets stay in `wrangler secret`.)
   (`profile:<email>`).
 - Blobs are capped at 8 KB and must be JSON.
 
-## Known limitation (candidate follow-up)
+## Encryption
 
-Blobs are stored **unencrypted** in KV — readable by the Cloudflare
-account owner (you). Acceptable for a personal deployment; for wider use,
-add client-side encryption with a recovery phrase before upload
-(planned hardening, see PROGRESS.md).
+Blobs are **end-to-end encrypted**: after the email code, the user
+chooses a passphrase (min 8 chars); the blob is encrypted on-device
+(PBKDF2-SHA256, 310k iterations → AES-256-GCM) before upload. KV — and
+therefore the Cloudflare account owner — only ever holds ciphertext.
+Safe to offer to club members and other third parties.
+
+There is deliberately **no passphrase reset**: a forgotten passphrase
+means backing up again from a device that's already set up. A wrong
+passphrase on restore fails decryption cleanly and allows retry without
+redoing the email code.
+
+Legacy note: backups made before encryption shipped (v1 plaintext) are
+still restorable; the next backup overwrites them with an encrypted v2
+envelope.

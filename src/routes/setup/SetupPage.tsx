@@ -28,8 +28,9 @@ import {
   startSyncAuth,
   consumeSyncReturn,
   uploadProfile,
-  downloadProfile,
+  downloadAndDecryptProfile,
   applyProfileBlob,
+  type SyncIntent,
 } from '@/lib/sync-profile';
 
 const WORKER_URL = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
@@ -88,6 +89,7 @@ export default function SetupPage() {
   const [state, setState] = useState<SetupState>({ status: 'loading' });
   const [clientId, setClientId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<{ type: 'ok' | 'err' | 'busy'; msg: string } | null>(null);
+  const [pendingSync, setPendingSync] = useState<SyncIntent | null>(null);
   const retryTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadState = useCallback(async () => {
@@ -107,21 +109,29 @@ export default function SetupPage() {
     });
   }, []);
 
-  // Returned from Cloudflare Access with a sync token? Run the pending intent.
+  // Returned from Cloudflare Access with a sync token? Ask for the
+  // encryption passphrase before doing anything — the passphrase is never
+  // persisted, so it must be collected after the redirect round-trip.
   useEffect(() => {
     if (!ready) return;
     const intent = consumeSyncReturn();
     if (!intent) return;
+    setPendingSync(intent);
+    setSyncStatus(null);
+  }, [ready]);
 
-    async function run() {
+  async function executeSync(intent: SyncIntent, passphrase: string) {
+    try {
       if (intent === 'backup') {
-        setSyncStatus({ type: 'busy', msg: 'Backing up profile…' });
-        await uploadProfile();
-        setSyncStatus({ type: 'ok', msg: 'Profile backed up. Restore it on any device with the same email.' });
+        setSyncStatus({ type: 'busy', msg: 'Encrypting and backing up…' });
+        await uploadProfile(passphrase);
+        setPendingSync(null);
+        setSyncStatus({ type: 'ok', msg: 'Profile backed up — encrypted with your passphrase. Restore on any device with the same email + passphrase.' });
       } else {
-        setSyncStatus({ type: 'busy', msg: 'Restoring profile…' });
-        const blob = await downloadProfile();
+        setSyncStatus({ type: 'busy', msg: 'Downloading and decrypting…' });
+        const blob = await downloadAndDecryptProfile(passphrase);
         const { restoredCreds } = await applyProfileBlob(blob);
+        setPendingSync(null);
         setSyncStatus({
           type: 'ok',
           msg: restoredCreds
@@ -130,12 +140,12 @@ export default function SetupPage() {
         });
         await loadState();
       }
-    }
-
-    run().catch((e: unknown) => {
+    } catch (e) {
+      // Wrong passphrase keeps the prompt open for a retry — the Access
+      // token is still valid, no need to redo the email code.
       setSyncStatus({ type: 'err', msg: e instanceof Error ? e.message : String(e) });
-    });
-  }, [ready, loadState]);
+    }
+  }
 
   // Initial load: handle OAuth callback or check existing connection
   useEffect(() => {
@@ -358,7 +368,12 @@ export default function SetupPage() {
       />
 
       {/* Profile sync — optional cross-device backup/restore */}
-      <ProfileSyncSection status={syncStatus} />
+      <ProfileSyncSection
+        status={syncStatus}
+        pendingSync={pendingSync}
+        onExecute={(intent, passphrase) => { void executeSync(intent, passphrase); }}
+        onCancelPending={() => { setPendingSync(null); setSyncStatus(null); }}
+      />
 
       {/* Powered by Strava — required by brand guidelines */}
       <footer className="flex items-center gap-2 pt-2 border-t border-ink-line">
@@ -461,7 +476,27 @@ function StravaSection({
 // /sync path; the app itself stays account-free.
 // ---------------------------------------------------------------------------
 
-function ProfileSyncSection({ status }: { status: { type: 'ok' | 'err' | 'busy'; msg: string } | null }) {
+function ProfileSyncSection({
+  status,
+  pendingSync,
+  onExecute,
+  onCancelPending,
+}: {
+  status: { type: 'ok' | 'err' | 'busy'; msg: string } | null;
+  pendingSync: SyncIntent | null;
+  onExecute: (intent: SyncIntent, passphrase: string) => void;
+  onCancelPending: () => void;
+}) {
+  const [passphrase, setPassphrase] = useState('');
+  const [showPassphrase, setShowPassphrase] = useState(false);
+  const busy = status?.type === 'busy';
+  const passphraseOk = passphrase.length >= 8;
+
+  function submit() {
+    if (!pendingSync || !passphraseOk || busy) return;
+    onExecute(pendingSync, passphrase);
+  }
+
   return (
     <section className="border border-ink-line p-6 space-y-4">
       <div className="space-y-1">
@@ -473,27 +508,84 @@ function ProfileSyncSection({ status }: { status: { type: 'ok' | 'err' | 'busy';
         Move your setup between devices without redoing it. Backs up your API
         credentials, theme, font size, home page, and gear sizes — never your
         activities (those re-sync from Strava). You'll verify an email with a
-        6-digit code; the backup is tied to that email.
+        6-digit code, then choose a passphrase. Everything is{' '}
+        <strong className="text-bone">encrypted on your device before upload</strong> —
+        nobody, including whoever runs this site, can read your backup.
       </p>
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        <button
-          type="button"
-          onClick={() => startSyncAuth('backup')}
-          disabled={!WORKER_URL || status?.type === 'busy'}
-          className="font-mono text-xs uppercase tracking-widest px-4 py-2.5 border border-ink-line text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          Back up this device
-        </button>
-        <button
-          type="button"
-          onClick={() => startSyncAuth('restore')}
-          disabled={!WORKER_URL || status?.type === 'busy'}
-          className="font-mono text-xs uppercase tracking-widest px-4 py-2.5 border border-ink-line text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          Restore to this device
-        </button>
-      </div>
+      {!pendingSync && (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            onClick={() => startSyncAuth('backup')}
+            disabled={!WORKER_URL || busy}
+            className="font-mono text-xs uppercase tracking-widest px-4 py-2.5 border border-ink-line text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Back up this device
+          </button>
+          <button
+            type="button"
+            onClick={() => startSyncAuth('restore')}
+            disabled={!WORKER_URL || busy}
+            className="font-mono text-xs uppercase tracking-widest px-4 py-2.5 border border-ink-line text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Restore to this device
+          </button>
+        </div>
+      )}
+
+      {/* Passphrase prompt — appears after the email code round-trip */}
+      {pendingSync && (
+        <div className="border border-accent/40 bg-ink-shadow p-4 space-y-3 max-w-md">
+          <p className="font-mono text-xs text-accent uppercase tracking-widest">
+            {pendingSync === 'backup' ? 'Choose an encryption passphrase' : 'Enter your encryption passphrase'}
+          </p>
+          <p className="font-mono text-xs text-bone-dim leading-relaxed">
+            {pendingSync === 'backup'
+              ? 'At least 8 characters. You’ll need it to restore on another device. There is no reset — if you lose it, just back up again from a device that’s already set up.'
+              : 'The passphrase you chose when you backed up.'}
+          </p>
+          <div className="relative">
+            <input
+              type={showPassphrase ? 'text' : 'password'}
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+              placeholder="passphrase"
+              autoComplete="off"
+              spellCheck={false}
+              disabled={busy}
+              className="w-full bg-ink border border-ink-line px-3 py-2 pr-12 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent disabled:opacity-50"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassphrase(!showPassphrase)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] text-bone-mute hover:text-bone"
+              tabIndex={-1}
+            >
+              {showPassphrase ? 'hide' : 'show'}
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!passphraseOk || busy}
+              className="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-accent text-accent hover:bg-accent hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {busy ? 'Working…' : pendingSync === 'backup' ? 'Encrypt & back up' : 'Decrypt & restore'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setPassphrase(''); onCancelPending(); }}
+              disabled={busy}
+              className="font-mono text-xs text-bone-mute hover:text-bone disabled:opacity-40 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {status && (
         <p
