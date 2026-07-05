@@ -567,6 +567,8 @@ function InlineEditForm({
     energyL: entry.energyLevel,
     stressL: entry.stressLevel,
     restingHr: entry.restingHr != null ? String(entry.restingHr) : '',
+    hrv: '',
+    bodyBattery: '',
     notes: entry.notes ?? '',
   });
   const [saving, setSaving] = useState(false);
