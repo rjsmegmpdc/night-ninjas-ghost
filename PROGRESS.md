@@ -1,9 +1,20 @@
 ## Branch
-main (feat/patrol-mission-links merged)
+main (feat/byo-strava-credentials merged)
 
 ## Session: 2026-07-06 (continued)
 
 ### Completed
+
+**feat/byo-strava-credentials — merged to main (49d8ef2)**
+
+- Per-user Strava API app model: each user creates their own free API app; Client ID + Secret stored in local SQLite settings (`strava.client_id` / `strava.client_secret`), never leave the device except inside token requests
+- New `src/lib/strava/credentials.ts`: `getStravaCredentials()` (stored-first, `VITE_STRAVA_CLIENT_ID` env fallback keeps baked-in deployments working), `getTokenCredentials()`, save/clear helpers
+- `client.ts`: `exchangeCode`/`refreshAccessToken` accept optional credentials → included in worker request body
+- `oauth-worker`: body credentials win, env secrets now optional fallback; pure-BYO deployment needs only `ALLOWED_ORIGIN`
+- `SetupPage`: new `needs-credentials` state → `CredentialsWizard` — guided 2 steps: create app at strava.com/settings/api (copy buttons for website + callback domain, sensible field values shown), paste Client ID + masked Secret with validation; "Change API credentials" under Connection details
+- Privacy notice: added plain-language paragraph — API app details stored locally, not your password
+- Disconnect keeps credentials (only tokens cleared); full data wipe clears them
+- Token refresh in `sync.ts` + GearPage passes stored credentials through
 
 **feat/patrol-mission-links — merged to main (0b0fe55)**
 
