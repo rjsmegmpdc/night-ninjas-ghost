@@ -1,9 +1,29 @@
 ## Branch
-main (feat/garmin-gdpr-import merged)
+main (feat/onboarding merged)
 
 ## Session: 2026-07-06 (continued)
 
 ### Completed
+
+**feat/mobile-nav — merged to main (575ed08)**
+
+- `TopNav.tsx`: mobile (< sm) header stacks into two rows — slim 10px GHOST brand strip + horizontally swipeable nav strip; desktop unchanged
+- `index.css`: `@utility no-scrollbar` hides the scrollbar on the swipe rail
+- GHOST label is now a `<Link>` home button on both layouts
+
+**feat/display-preferences — merged to main (b357505)** *(was P1)*
+
+- `main.tsx`: `applyDisplayPrefs()` runs before React mounts — no flash of wrong theme/font
+- `index.css`: `html font-size: calc(130% * var(--font-scale, 1))`; base colors moved to `var(--color-ink/bone)`; 5 `[data-theme]` preset overrides (dusk, oled, storm, dawn, high-contrast)
+- `SettingsPage.tsx`: Display section (first) — home page select, 4 font-size buttons, 6 theme swatches rendered in their own colours; all apply live + persist to localStorage
+- `TopNav.tsx`: HOME read from `localStorage.ghost.home_page` per render
+
+**feat/onboarding — merged to main (4ecf8a8)** *(was P2)*
+
+- `App.tsx`: `useFirstRunRedirect` — `ghost.onboarded` localStorage fast path; unset → check stored tokens once DB ready → no tokens → redirect `/setup`; existing users backfilled. Root `/` honours `ghost.home_page`
+- `SetupPage.tsx`: `PrivacyNotice` full card gates the first connect (plain-language OPFS/localStorage/token explanation, Strava revoke link, "Got it — let's go" → `ghost.privacy_acknowledged`); `NotConnected` restyled as login screen — OAuth params collapsed into `<details>`; `ghost.onboarded` set on token store, cleared on disconnect
+- `SettingsPage.tsx`: full data wipe clears `ghost.onboarded`
+- **Plan deviation**: no client-ID localStorage cache — Client ID is a build-time env var (`VITE_STRAVA_CLIENT_ID`), no user input exists to pre-fill; `ghost.onboarded` covers the fast-return intent
 
 **feat/calendar-nz-race-search — merged to main (39af9a3)**
 
@@ -31,7 +51,15 @@ main (feat/garmin-gdpr-import merged)
 
 ### Next session should
 
-#### P1 — Display preferences + home button (localStorage, no DB changes)
+1. Patrol page: "tonight's mission" deep-link to activity recording (stretch)
+2. Strike dashboard: rolling 28-day mileage chart (Recharts) comparing actual vs planned
+3. Garmin Connect OAuth sync (alternative to GDPR file import)
+
+---
+
+## Implemented specs (kept for reference — shipped 2026-07-06)
+
+#### P1 — Display preferences + home button (localStorage, no DB changes) ✅ SHIPPED
 
 **GHOST logo → home button**
 - `TopNav.tsx`: wrap `<span>GHOST</span>` in `<Link to={homePage}>` where `homePage` is read from `localStorage.getItem('ghost.home_page') ?? '/calendar'`
@@ -59,7 +87,7 @@ main (feat/garmin-gdpr-import merged)
 
 ---
 
-#### P2 — Slicker onboarding + privacy-first storage notice
+#### P2 — Slicker onboarding + privacy-first storage notice ✅ SHIPPED
 
 **First-run detection and redirect**
 - In `App.tsx` (or a top-level `<Bootstrap>` component): on mount, check `localStorage.ghost.strava_client_id` and the SQLite `settings.strava.client_id`
@@ -101,10 +129,6 @@ main (feat/garmin-gdpr-import merged)
 
 ---
 
-#### P3 — Deferred from previous session
-1. Patrol page: "tonight's mission" deep-link to activity recording (stretch)
-2. Strike dashboard: rolling 28-day mileage chart (Recharts) comparing actual vs planned
-3. Garmin Connect OAuth sync (alternative to GDPR file import)
 
 ## Key decisions
 
