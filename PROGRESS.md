@@ -1,7 +1,53 @@
 ## Branch
-main (feat/gear-page merged)
+main (feat/garmin-gdpr-import merged)
 
-## Session: 2026-07-06
+## Session: 2026-07-06 (continued)
+
+### Completed
+
+**feat/calendar-nz-race-search — merged to main (39af9a3)**
+
+- `CalendarPage.tsx`: `RaceFormState` gains `raceUrl` and `raceSearchUrl` fields
+- `NzRaceSearch` combobox component: filters all 49 `NZ_RACES` by name or city as user types (min 2 chars); dropdown shows race name, city, date, Half/Marathon badge
+- Selecting a result auto-fills name, date, distance; selecting manually clears stored URLs
+- Event page link (originator URL) + "Google if 404" fallback appear beneath name field after a NZ race is selected
+- Works identically for both goal race and tuneup race add forms via shared `RaceForm` component
+
+**feat/garmin-gdpr-import — merged to main (22cca3b)**
+
+- `SettingsPage.tsx`: `GarminImportSection` added (Section 6)
+- User unzips Garmin export, selects JSON files from `DI_CONNECT` folder; no JSZip dependency — native `File.text()` only
+- `parseGarminFiles()`: iterates all records in each file; extracts date from `calendarDate`, `summaryDate`, `startTimestampGMT`, `date`, or `dailySleepDTO.calendarDate`
+- Calls all existing mapper extractors (`extractSleep`, `extractDailySummary`, `extractHrv`, `extractWeight`, `extractVo2max`) per record; merges by date with null-coalescing
+- Preview panel shows day count, oldest–newest range, and which metric types were found (RHR/HRV/Sleep/Stress/Body Battery/VO2 max/Weight) before user confirms
+- `upsertHealthRows()`: BEGIN/COMMIT transaction; `ON CONFLICT DO UPDATE SET ... COALESCE` merges across re-imports without clobbering existing values
+- Last imported timestamp stored in `settings` key `garmin_gdpr_imported_at`; displayed as relative time
+
+### In progress
+- Nothing
+
+### Blocked
+- Nothing
+
+### Next session should
+1. Patrol page: "tonight's mission" deep-link to activity recording (stretch)
+2. Strike dashboard: rolling 28-day mileage chart (Recharts) comparing actual vs planned
+3. Garmin Connect OAuth sync (alternative to GDPR file import) — if user wants live sync without manual export
+
+## Key decisions
+
+- **OPFS over IDBMirrorVFS**: wa-sqlite v1.0.0 renamed VFS; OPFS gives true file persistence without COOP/COEP headers
+- **MemoryVFS fallback**: non-fatal OPFS failure (Safari, private browsing) — data survives the session, not the tab close
+- **4-batch deploy cadence**: kept CI usage to ~4 builds / ~12 GH Actions minutes against 500 builds/month Cloudflare limit
+- **Biometrics split storage**: HRV → journal table (was already there but never exposed); body battery → daily_health_metrics (device metric, not wellness railway)
+- **BYOK AI coach**: Anthropic key stored in settings table, never leaves device; direct API call from browser
+- **Gear: no transactions in GHOST**: deal search opens Google; no cart, no checkout, no affiliate links
+- **Garmin import: no ZIP library**: user unzips manually; `File.text()` reads JSON files directly — zero new dependencies
+- **Garmin import: COALESCE upsert**: re-importing merges new fields without overwriting existing ones; safe to run multiple times
+
+---
+
+## Session: 2026-07-06 (earlier)
 
 ### Completed
 
