@@ -52,3 +52,10 @@
     color: #F5F5F0;
   }
 }
+
+/* Hides scrollbar visually while keeping scroll functionality — used on the
+   mobile nav strip so the swipe rail looks clean. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
