@@ -1,7 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDb } from '@/db/DbContext';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { query, exec } from '@/db/client';
+import {
+  extractSleep,
+  extractDailySummary,
+  extractHrv,
+  extractWeight,
+  extractVo2max,
+} from '@/lib/garmin/mapper';
+import type { GarminDailySnapshot } from '@/lib/garmin/types';
 
 // ---------------------------------------------------------------------------
 // Date helpers
@@ -580,6 +588,326 @@ function AiCoachSection() {
 }
 
 // ---------------------------------------------------------------------------
+// Section 6: Garmin GDPR import
+// ---------------------------------------------------------------------------
+
+function extractGarminDate(record: unknown): string | null {
+  const r = record as Record<string, unknown>;
+  if (typeof r.calendarDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.calendarDate)) return r.calendarDate;
+  if (typeof r.summaryDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.summaryDate)) return r.summaryDate;
+  if (typeof r.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.date)) return r.date;
+  if (typeof r.startTimestampGMT === 'string') {
+    const m = r.startTimestampGMT.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (m) return m[1];
+  }
+  const dto = r.dailySleepDTO as Record<string, unknown> | undefined;
+  if (dto && typeof dto.calendarDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dto.calendarDate))
+    return dto.calendarDate;
+  return null;
+}
+
+async function parseGarminFiles(files: File[]): Promise<GarminDailySnapshot[]> {
+  const byDate = new Map<string, GarminDailySnapshot>();
+
+  for (const file of files) {
+    let json: unknown;
+    try {
+      json = JSON.parse(await file.text());
+    } catch {
+      continue; // skip malformed / non-JSON files
+    }
+
+    const records = Array.isArray(json) ? json : [json];
+
+    for (const record of records) {
+      const date = extractGarminDate(record);
+      if (!date) continue;
+
+      const prev: GarminDailySnapshot = byDate.get(date) ?? {
+        date,
+        rhrBpm: null,
+        hrvMs: null,
+        sleepDurationS: null,
+        sleepScore: null,
+        stressScore: null,
+        bodyBattery: null,
+        vo2maxDevice: null,
+        weightKg: null,
+        raw: {},
+      };
+
+      const { sleepDurationS, sleepScore } = extractSleep(record);
+      const { rhrBpm, stressScore, bodyBattery } = extractDailySummary(record);
+      const { hrvMs } = extractHrv(record);
+      const { weightKg } = extractWeight(record);
+
+      // VO2 max: present on MaxMet-style records that have a generic subobject
+      let vo2maxDevice = prev.vo2maxDevice;
+      const r = record as Record<string, unknown>;
+      if (r.generic) {
+        const { vo2maxDevice: v } = extractVo2max([record]);
+        if (v !== null) vo2maxDevice = vo2maxDevice ?? v;
+      }
+
+      byDate.set(date, {
+        date,
+        rhrBpm:         prev.rhrBpm         ?? rhrBpm,
+        hrvMs:          prev.hrvMs           ?? hrvMs,
+        sleepDurationS: prev.sleepDurationS  ?? sleepDurationS,
+        sleepScore:     prev.sleepScore      ?? sleepScore,
+        stressScore:    prev.stressScore     ?? stressScore,
+        bodyBattery:    prev.bodyBattery     ?? bodyBattery,
+        vo2maxDevice,
+        weightKg:       prev.weightKg        ?? weightKg,
+        raw:            prev.raw,
+      });
+    }
+  }
+
+  return Array.from(byDate.values())
+    .filter(
+      (s) =>
+        s.rhrBpm !== null || s.hrvMs !== null || s.sleepDurationS !== null ||
+        s.sleepScore !== null || s.stressScore !== null || s.bodyBattery !== null ||
+        s.vo2maxDevice !== null || s.weightKg !== null,
+    )
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+async function upsertHealthRows(rows: GarminDailySnapshot[]): Promise<void> {
+  const SQL = `
+    INSERT INTO daily_health_metrics
+      (date, source, rhr_bpm, hrv_ms, sleep_duration_s, sleep_score,
+       stress_score, body_battery, vo2max_device, weight_kg, raw, synced_at)
+    VALUES (?, 'garmin', ?, ?, ?, ?, ?, ?, ?, ?, '{}', datetime('now'))
+    ON CONFLICT(date, source) DO UPDATE SET
+      rhr_bpm         = COALESCE(excluded.rhr_bpm,         rhr_bpm),
+      hrv_ms          = COALESCE(excluded.hrv_ms,          hrv_ms),
+      sleep_duration_s= COALESCE(excluded.sleep_duration_s,sleep_duration_s),
+      sleep_score     = COALESCE(excluded.sleep_score,     sleep_score),
+      stress_score    = COALESCE(excluded.stress_score,    stress_score),
+      body_battery    = COALESCE(excluded.body_battery,    body_battery),
+      vo2max_device   = COALESCE(excluded.vo2max_device,  vo2max_device),
+      weight_kg       = COALESCE(excluded.weight_kg,       weight_kg),
+      synced_at       = datetime('now')`;
+
+  await exec('BEGIN');
+  try {
+    for (const s of rows) {
+      await exec(SQL, [
+        s.date, s.rhrBpm, s.hrvMs, s.sleepDurationS, s.sleepScore,
+        s.stressScore, s.bodyBattery, s.vo2maxDevice, s.weightKg,
+      ]);
+    }
+    await exec('COMMIT');
+  } catch (e) {
+    await exec('ROLLBACK');
+    throw e;
+  }
+}
+
+interface ParsedPreview {
+  rows:    GarminDailySnapshot[];
+  oldest:  string;
+  newest:  string;
+  metrics: string[];
+}
+
+function summariseMetrics(rows: GarminDailySnapshot[]): string[] {
+  const flags: Record<string, string> = {
+    rhrBpm:         'RHR',
+    hrvMs:          'HRV',
+    sleepDurationS: 'Sleep',
+    sleepScore:     'Sleep score',
+    stressScore:    'Stress',
+    bodyBattery:    'Body Battery',
+    vo2maxDevice:   'VO2 max',
+    weightKg:       'Weight',
+  };
+  return Object.entries(flags)
+    .filter(([k]) => rows.some((r) => (r as unknown as Record<string, unknown>)[k] !== null))
+    .map(([, label]) => label);
+}
+
+function GarminImportSection() {
+  const { ready } = useDb();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [lastImported, setLastImported] = useState<string | null>(null);
+  const [parsing, setParsing] = useState(false);
+  const [preview, setPreview] = useState<ParsedPreview | null>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importDone, setImportDone] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+    query("SELECT value FROM settings WHERE key = 'garmin_gdpr_imported_at'").then((rows) => {
+      const v = rows[0]?.[0] as string | null;
+      if (v) setLastImported(v);
+    });
+  }, [ready]);
+
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setParsing(true);
+    setParseError(null);
+    setPreview(null);
+    setImportDone(null);
+    try {
+      const rows = await parseGarminFiles(files);
+      if (rows.length === 0) {
+        setParseError('No health metrics found in the selected files. Make sure you selected JSON files from the DI_CONNECT folder of your Garmin export.');
+        return;
+      }
+      setPreview({
+        rows,
+        oldest:  rows[0].date,
+        newest:  rows[rows.length - 1].date,
+        metrics: summariseMetrics(rows),
+      });
+    } catch (err) {
+      setParseError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setParsing(false);
+    }
+  }
+
+  async function handleImport() {
+    if (!preview) return;
+    setImporting(true);
+    try {
+      await upsertHealthRows(preview.rows);
+      const now = new Date().toISOString();
+      await exec(
+        `INSERT INTO settings (key, value) VALUES ('garmin_gdpr_imported_at', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`,
+        [now],
+      );
+      setLastImported(now);
+      setImportDone(preview.rows.length);
+      setPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err) {
+      setParseError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  return (
+    <section aria-labelledby="garmin-heading" className="border border-ink-line p-6 space-y-4">
+      <SectionLabel>garmin</SectionLabel>
+      <h2 id="garmin-heading" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
+        GDPR Export Import
+      </h2>
+
+      <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-xl">
+        At{' '}
+        <a
+          href="https://www.garmin.com/en-US/account/datamanagement/exportdata/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-accent hover:underline"
+        >
+          garmin.com → Data Export
+        </a>
+        , request your data. Unzip the archive, open the <span className="text-bone">DI_CONNECT</span> folder,
+        then select all the JSON files below. GHOST reads RHR, HRV, sleep, stress, body battery, VO2 max, and weight.
+      </p>
+
+      {lastImported && (
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-signal-ok flex-shrink-0" aria-hidden="true" />
+          <span className="font-mono text-xs text-signal-ok">
+            Last imported {relativeTime(lastImported)}
+            {' '}·{' '}
+            <span className="text-bone-mute">{formatDateTime(lastImported)}</span>
+          </span>
+        </div>
+      )}
+
+      {/* File picker */}
+      <div>
+        <label htmlFor="garmin-file-input" className="font-mono text-xs text-bone-mute uppercase tracking-widest block mb-2">
+          Select JSON files
+        </label>
+        <input
+          id="garmin-file-input"
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".json,application/json"
+          onChange={(e) => { void handleFiles(e); }}
+          disabled={parsing || importing}
+          className="block font-mono text-xs text-bone-dim file:mr-3 file:py-1.5 file:px-3 file:border file:border-ink-line file:bg-ink-panel file:font-mono file:text-xs file:text-bone-dim file:uppercase file:tracking-widest hover:file:border-accent hover:file:text-accent file:transition-colors cursor-pointer disabled:opacity-50"
+        />
+      </div>
+
+      {/* Parsing indicator */}
+      {parsing && (
+        <p className="font-mono text-xs text-bone-mute" role="status" aria-live="polite">
+          Parsing files…
+        </p>
+      )}
+
+      {/* Parse error */}
+      {parseError && (
+        <div className="border border-signal-miss/40 bg-signal-miss/5 p-3" role="alert">
+          <p className="font-mono text-xs text-signal-miss">{parseError}</p>
+        </div>
+      )}
+
+      {/* Preview */}
+      {preview && (
+        <div className="border border-ink-line bg-ink-shadow p-4 space-y-3">
+          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">Ready to import</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div>
+              <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest">Days</p>
+              <p className="font-display text-2xl tracking-widest text-bone">{preview.rows.length}</p>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest">From</p>
+              <p className="font-mono text-xs text-bone">{formatShort(preview.oldest)}</p>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest">To</p>
+              <p className="font-mono text-xs text-bone">{formatShort(preview.newest)}</p>
+            </div>
+          </div>
+          <div>
+            <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-1">Metrics found</p>
+            <div className="flex flex-wrap gap-1">
+              {preview.metrics.map((m) => (
+                <span key={m} className="font-mono text-[10px] px-2 py-0.5 border border-ink-line text-bone-dim">
+                  {m}
+                </span>
+              ))}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => { void handleImport(); }}
+            disabled={importing}
+            className="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-accent text-accent hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {importing ? 'Importing…' : `Import ${preview.rows.length} days`}
+          </button>
+        </div>
+      )}
+
+      {/* Done */}
+      {importDone !== null && (
+        <p className="font-mono text-xs text-signal-ok" role="status" aria-live="polite">
+          Imported {importDone} days of Garmin biometrics.
+        </p>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page root
 // ---------------------------------------------------------------------------
 
@@ -695,6 +1023,9 @@ export default function SettingsPage() {
 
       {/* Section 5: AI coach BYOK */}
       <AiCoachSection />
+
+      {/* Section 6: Garmin GDPR import */}
+      <GarminImportSection />
     </div>
   );
 }
