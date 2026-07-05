@@ -654,7 +654,7 @@ function BiometricsCard({ days }: { days: ResolvedDayMetrics[] }) {
     unit: string;
     value: number | null;
     lowerIsBetter: boolean;
-    trend: { latest: number | null; priorMean: number | null };
+    trend: { latest: number | null; priorMean: number | null; mean: number | null };
     decimals?: number;
   }[] = [
     { label: 'HRV', unit: 'ms', value: hrv.latest, lowerIsBetter: false, trend: hrv, decimals: 1 },

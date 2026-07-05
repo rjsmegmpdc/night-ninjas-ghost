@@ -19,7 +19,7 @@ import type { WeekTemplate, DayPlan, PlanParams } from '@/lib/plans/types';
 import { getFrameworkStats, type FrameworkStat } from '@/lib/analysis/framework-stats';
 import type { Activity } from '@/lib/db/schema';
 import type { ProgramPhase } from '@/lib/plans/program-phase';
-import { evaluateWeek, type WeekCompliance } from '@/lib/analysis/compliance';
+import { evaluateWeek } from '@/lib/analysis/compliance';
 
 // ---------------------------------------------------------------------------
 // Date helpers
