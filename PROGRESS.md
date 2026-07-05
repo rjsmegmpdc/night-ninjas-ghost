@@ -1,9 +1,17 @@
 ## Branch
-main (feat/strike-rolling-volume merged)
+main (feat/mobile-polish merged)
 
 ## Session: 2026-07-06 (continued)
 
 ### Completed
+
+**feat/mobile-polish — merged to main (dbcc5ba)**
+
+- Full mobile-overflow audit of all 15 screens (Explore agent): one true breaker — Patrol `ActivityRow` fixed grid summed 412px, forcing horizontal page scroll on phones. Now 3-col grid + stats line under the name at mobile; 6-col grid from `sm:`
+- **Contrast root cause**: `--color-bone-mute` #6E6E6A was ~3.7:1 on ink — fails WCAG AA (4.5:1) for small text; that's why Calendar looked faint. Raised to #8A8A85 (~5.5:1) globally; dusk/storm/dawn theme variants that also failed raised to match
+- CalendarPage content bumped a tier: section heads → bone, race dates/distances → bone, metadata/notes → dim, NZ-race combobox city/date → dim
+- **Gear form**: size field now category-aware — Food → "Volume" (500ml / 40g / 24-pack), Backpack → "Capacity", others "Size" (same DB column); single stacked column on mobile, full-width submit
+- `ghost.gear_profile` (localStorage): remembers athlete's size/brand per category on each add; pre-fills next add and category switches, never overwrites typed input
 
 **feat/strike-rolling-volume — merged to main (7979a73)**
 
