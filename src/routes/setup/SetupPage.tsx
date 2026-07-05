@@ -24,6 +24,13 @@ import {
   getTokenCredentials,
   saveStravaCredentials,
 } from '@/lib/strava/credentials';
+import {
+  startSyncAuth,
+  consumeSyncReturn,
+  uploadProfile,
+  downloadProfile,
+  applyProfileBlob,
+} from '@/lib/sync-profile';
 
 const WORKER_URL = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
 
@@ -80,6 +87,7 @@ export default function SetupPage() {
   const navigate        = useNavigate();
   const [state, setState] = useState<SetupState>({ status: 'loading' });
   const [clientId, setClientId] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<{ type: 'ok' | 'err' | 'busy'; msg: string } | null>(null);
   const retryTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadState = useCallback(async () => {
@@ -98,6 +106,36 @@ export default function SetupPage() {
       partialScope: scope === 'activity:read',
     });
   }, []);
+
+  // Returned from Cloudflare Access with a sync token? Run the pending intent.
+  useEffect(() => {
+    if (!ready) return;
+    const intent = consumeSyncReturn();
+    if (!intent) return;
+
+    async function run() {
+      if (intent === 'backup') {
+        setSyncStatus({ type: 'busy', msg: 'Backing up profile…' });
+        await uploadProfile();
+        setSyncStatus({ type: 'ok', msg: 'Profile backed up. Restore it on any device with the same email.' });
+      } else {
+        setSyncStatus({ type: 'busy', msg: 'Restoring profile…' });
+        const blob = await downloadProfile();
+        const { restoredCreds } = await applyProfileBlob(blob);
+        setSyncStatus({
+          type: 'ok',
+          msg: restoredCreds
+            ? 'Profile restored — API credentials and preferences are in. Connect with Strava below.'
+            : 'Preferences restored. This backup held no API credentials — run the wizard below.',
+        });
+        await loadState();
+      }
+    }
+
+    run().catch((e: unknown) => {
+      setSyncStatus({ type: 'err', msg: e instanceof Error ? e.message : String(e) });
+    });
+  }, [ready, loadState]);
 
   // Initial load: handle OAuth callback or check existing connection
   useEffect(() => {
@@ -319,6 +357,9 @@ export default function SetupPage() {
         onChangeCredentials={() => setState({ status: 'needs-credentials' })}
       />
 
+      {/* Profile sync — optional cross-device backup/restore */}
+      <ProfileSyncSection status={syncStatus} />
+
       {/* Powered by Strava — required by brand guidelines */}
       <footer className="flex items-center gap-2 pt-2 border-t border-ink-line">
         <span className="font-mono text-xs text-bone-mute">Powered by</span>
@@ -415,6 +456,67 @@ function StravaSection({
 }
 
 // ---------------------------------------------------------------------------
+// Profile sync — optional backup/restore of setup across devices.
+// Identity is Cloudflare Access (email + one-time PIN) on the worker's
+// /sync path; the app itself stays account-free.
+// ---------------------------------------------------------------------------
+
+function ProfileSyncSection({ status }: { status: { type: 'ok' | 'err' | 'busy'; msg: string } | null }) {
+  return (
+    <section className="border border-ink-line p-6 space-y-4">
+      <div className="space-y-1">
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">optional</p>
+        <h2 className="font-display tracking-widest text-2xl uppercase text-bone">Profile Sync</h2>
+      </div>
+
+      <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-xl">
+        Move your setup between devices without redoing it. Backs up your API
+        credentials, theme, font size, home page, and gear sizes — never your
+        activities (those re-sync from Strava). You'll verify an email with a
+        6-digit code; the backup is tied to that email.
+      </p>
+
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button
+          type="button"
+          onClick={() => startSyncAuth('backup')}
+          disabled={!WORKER_URL || status?.type === 'busy'}
+          className="font-mono text-xs uppercase tracking-widest px-4 py-2.5 border border-ink-line text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          Back up this device
+        </button>
+        <button
+          type="button"
+          onClick={() => startSyncAuth('restore')}
+          disabled={!WORKER_URL || status?.type === 'busy'}
+          className="font-mono text-xs uppercase tracking-widest px-4 py-2.5 border border-ink-line text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          Restore to this device
+        </button>
+      </div>
+
+      {status && (
+        <p
+          className={`font-mono text-xs leading-relaxed ${
+            status.type === 'ok' ? 'text-signal-ok' : status.type === 'err' ? 'text-signal-miss' : 'text-bone-mute'
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          {status.msg}
+        </p>
+      )}
+
+      <p className="font-mono text-[10px] text-bone-mute leading-relaxed max-w-xl">
+        Requires profile sync to be enabled on this deployment (Cloudflare
+        Access + KV — see docs/ACCESS-SETUP.md). If it isn't, the buttons
+        will return an error and nothing is stored.
+      </p>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Credentials wizard — guided, per-user Strava API app setup.
 // Strava has no password login for apps: every user creates their own free
 // API app once, and GHOST stores its ID + secret locally on this device.
@@ -469,6 +571,12 @@ function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
       <p className="font-mono text-xs text-bone-dim leading-relaxed">
         GHOST talks to Strava through your own free API app — a one-time,
         two-minute setup. Your details are stored only on this device.
+      </p>
+
+      <p className="font-mono text-xs text-bone-mute leading-relaxed border border-ink-line px-3 py-2">
+        Already set up GHOST on another device? Skip this — use{' '}
+        <strong className="text-bone">Profile Sync</strong> at the bottom of
+        this page to restore your credentials here.
       </p>
 
       {/* Step 1 — create the app on Strava */}

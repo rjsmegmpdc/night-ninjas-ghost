@@ -5,7 +5,16 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ALLOWED_ORIGIN = "https://night-ninjas-ghost.pages.dev"
+# Profile sync — fill in after completing docs/ACCESS-SETUP.md:
+# ACCESS_TEAM_DOMAIN = "<yourteam>.cloudflareaccess.com"
+# ACCESS_AUD         = "<Access application audience tag>"
+
+# Profile sync KV — create with `wrangler kv namespace create SYNC_KV`
+# then paste the returned id here and uncomment:
+# [[kv_namespaces]]
+# binding = "SYNC_KV"
+# id      = "<namespace id>"
 
 # Secrets (set via `wrangler secret put`, never committed):
-#   STRAVA_CLIENT_ID
-#   STRAVA_CLIENT_SECRET
+#   STRAVA_CLIENT_ID     (optional — baked-in shared-app deployments only)
+#   STRAVA_CLIENT_SECRET (optional — baked-in shared-app deployments only)
