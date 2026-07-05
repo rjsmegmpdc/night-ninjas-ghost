@@ -19,7 +19,7 @@ import type { WeekTemplate, DayPlan, PlanParams } from '@/lib/plans/types';
 import { getFrameworkStats, type FrameworkStat } from '@/lib/analysis/framework-stats';
 import type { Activity } from '@/lib/db/schema';
 import type { ProgramPhase } from '@/lib/plans/program-phase';
-import type { WeekCompliance } from '@/lib/analysis/compliance';
+import { evaluateWeek, type WeekCompliance } from '@/lib/analysis/compliance';
 
 // ---------------------------------------------------------------------------
 // Date helpers
@@ -119,15 +119,6 @@ function asActivities(acts: GhostActivity[]): Activity[] {
   }));
 }
 
-function buildMinimalCompliance(template: WeekTemplate, stats: WeekStats): WeekCompliance {
-  return {
-    weekTemplate: template,
-    totalKmActual: stats.totalKm,
-    longRunKmActual: stats.longRunKm,
-    daysWithSessions: stats.totalSessions,
-    days: template.days.map((d) => ({ dow: d.dow, sessions: [] })),
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Session type metadata
@@ -300,7 +291,7 @@ function PatrolDashboard({
     const template = engine.renderWeek(params, wk);
     const zones = engine.derivePaceZones(params);
     const programPhase = deriveProgramPhase(activePlan, todayIso);
-    const compliance = buildMinimalCompliance(template, stats);
+    const compliance = evaluateWeek(template, asActivities(activities));
     const frameworkStats = getFrameworkStats({
       dojo: activePlan.dojo as Dojo,
       stats,

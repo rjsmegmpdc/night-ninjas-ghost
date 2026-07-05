@@ -1,5 +1,5 @@
 ## Branch
-feat/biometrics-card
+feat/compliance-and-pmc
 
 ## Session: 2026-07-05
 
@@ -44,16 +44,20 @@ feat/biometrics-card
 - calendar-blocks.ts, plans/index.ts, program-phase.ts, intensity-distribution.ts, framework-stats.ts
 - Engine snapshot tests (54) + framework-stats tests unblocked; 574 total passing
 
+**feat/compliance-and-pmc — in progress**
+
+- `PatrolPage.tsx`: replaced `buildMinimalCompliance()` shim with `evaluateWeek(template, asActivities(activities))` — real per-session flag evaluation (ok/fast/slow/short/none) now feeds `getFrameworkStats()`
+- `snapshot-builder.ts`: added CTL/ATL/TSB computation — queries last 56 days, uses `computeActivityLoad()` + `computeEwma()` + `classifyForm()` + `rollupConfidence()` (same pattern as StrikePage). `state` is now populated in AthleteSnapshot when ≥7 activities exist; null when insufficient history. PMC query runs in parallel with plan query.
+
 ### In progress
-- `feat/biometrics-card` — BiometricsCard on StrikePage (not yet merged)
+- `feat/compliance-and-pmc` (not yet merged)
 
 ### Blocked
 - Nothing
 
 ### Next session should
-1. Merge `feat/biometrics-card` to main (Matt's call)
-2. Wire `compliance.ts evaluateWeek()` into PatrolPage (replace minimal shim)
-3. Connect CTL/ATL/TSB to AI snapshot (`state: null` in snapshot-builder.ts)
+1. Merge `feat/compliance-and-pmc` to main (Matt's call)
+2. Consider Garmin Connect OAuth sync (daily_health_metrics schema exists)
 
 ## Key decisions
 

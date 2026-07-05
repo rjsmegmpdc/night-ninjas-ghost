@@ -1,6 +1,15 @@
 import { query } from '@/db/client';
 import { ENGINES, type Dojo } from '@/lib/plans/index';
 import type { AthleteSnapshot, BiometricsSnapshot, RecentActivitySnapshot } from './context-pure';
+import {
+  computeEwma,
+  classifyForm,
+  rollupConfidence,
+  CTL_TIME_CONSTANT,
+  ATL_TIME_CONSTANT,
+  WINDOW_DAYS,
+} from '@/lib/analysis/athlete-state-pure';
+import { computeActivityLoad, type LoadConfidence } from '@/lib/analysis/load';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,14 +56,70 @@ export async function buildAthleteSnapshot(): Promise<AthleteSnapshot> {
   const todayIso = localIso();
   const { startIso, endIso } = currentWeekBounds();
 
-  // -- Active plan ----------------------------------------------------------
-  const planRows = await query(
-    `SELECT p.dojo, p.params_json, pp.start_date
-     FROM plan_periods pp JOIN plans p ON p.id = pp.plan_id
-     WHERE pp.end_date IS NULL ORDER BY pp.start_date DESC LIMIT 1`,
-    []
-  );
+  // Cutoff for the PMC window (56 days)
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - WINDOW_DAYS);
+  const cutoffIso = localIso(cutoffDate);
 
+  // -- Run plan + PMC queries in parallel -----------------------------------
+  const [planRows, pmcRows] = await Promise.all([
+    query(
+      `SELECT p.dojo, p.params_json, pp.start_date
+       FROM plan_periods pp JOIN plans p ON p.id = pp.plan_id
+       WHERE pp.end_date IS NULL ORDER BY pp.start_date DESC LIMIT 1`,
+      []
+    ),
+    query(
+      `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed, name, type
+       FROM activities WHERE start_date >= ? AND start_date <= ? ORDER BY start_date`,
+      [cutoffIso, todayIso + 'T99:99:99']
+    ),
+  ]);
+
+  // -- Compute CTL/ATL/TSB from PMC rows ------------------------------------
+  const dailyLoads = new Map<string, number>();
+  let activityCount = 0;
+  const confCounts = { calibrated: 0, 'pace-only': 0, estimated: 0 };
+
+  for (const r of pmcRows) {
+    const dayKey = (r[0] as string).slice(0, 10);
+    const result = computeActivityLoad(
+      {
+        sportType: r[4] as string | null,
+        type:      r[7] as string,
+        name:      r[6] as string | null,
+        movingTimeS: (r[2] as number) ?? 0,
+        avgHr:     r[3] as number | null,
+        avgSpeedMs: r[5] as number | null,
+      },
+      {},
+    );
+    if (!result) continue;
+    activityCount++;
+    dailyLoads.set(dayKey, (dailyLoads.get(dayKey) ?? 0) + result.points);
+    const conf = result.confidence as LoadConfidence;
+    if (conf === 'calibrated') confCounts.calibrated++;
+    else if (conf === 'pace-only') confCounts['pace-only']++;
+    else confCounts.estimated++;
+  }
+
+  const ctlVal  = computeEwma(dailyLoads, todayIso, WINDOW_DAYS, CTL_TIME_CONSTANT);
+  const atlVal  = computeEwma(dailyLoads, todayIso, WINDOW_DAYS, ATL_TIME_CONSTANT);
+  const tsbVal  = ctlVal - atlVal;
+  const formClass  = classifyForm(tsbVal);
+  const confidence = rollupConfidence(confCounts, activityCount);
+
+  const athleteState = activityCount >= 7
+    ? {
+        ctl: Math.round(ctlVal * 10) / 10,
+        atl: Math.round(atlVal * 10) / 10,
+        tsb: Math.round(tsbVal * 10) / 10,
+        formClass,
+        confidence,
+      }
+    : null;
+
+  // -- Active plan ----------------------------------------------------------
   const hasPlan = planRows.length > 0;
   const dojo = hasPlan ? (planRows[0][0] as string) : 'custom';
   let level: 'beginner' | 'intermediate' | 'advanced' = 'intermediate';
@@ -187,7 +252,7 @@ export async function buildAthleteSnapshot(): Promise<AthleteSnapshot> {
     daysToRace,
     todaySession,
     week: { totalKm, longRunKm, avgPaceSpk, avgHr, sessions: weekRuns.length, targetKm },
-    state: null,
+    state: athleteState,
     biometrics,
     recentActivities,
     activeInjuries: [],
