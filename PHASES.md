@@ -35,10 +35,9 @@
 
 | Feature | Dependency | Notes |
 |---|---|---|
-| `compliance.ts evaluateWeek()` in PatrolPage | PatrolPage uses minimal shim | Wire real evaluator for accurate compliance matrix |
-| Garmin Connect OAuth sync | `daily_health_metrics` schema ✅ | Automated Garmin ingest (needs Cloudflare Worker + OAuth) |
+| Garmin Connect OAuth sync | `daily_health_metrics` schema ✅, mapper ✅ | Needs Garmin developer registration + Cloudflare Worker |
 | Ultra plan stub | `src/lib/plans/ultra.ts` | `status: 'stub'` — lowest priority |
-| CTL/ATL/TSB in AI snapshot | `snapshot-builder.ts state: null` | Connect athlete-state-pure to snapshot |
+| Patrol compliance flag display | ✅ Done (feat/patrol-compliance-flags) | FAST/SLOW/SHORT badges now shown on week grid |
 
 ---
 

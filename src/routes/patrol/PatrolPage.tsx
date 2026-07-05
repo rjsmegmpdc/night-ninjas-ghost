@@ -19,7 +19,7 @@ import type { WeekTemplate, DayPlan, PlanParams } from '@/lib/plans/types';
 import { getFrameworkStats, type FrameworkStat } from '@/lib/analysis/framework-stats';
 import type { Activity } from '@/lib/db/schema';
 import type { ProgramPhase } from '@/lib/plans/program-phase';
-import { evaluateWeek } from '@/lib/analysis/compliance';
+import { evaluateWeek, type WeekCompliance, type ComplianceFlag } from '@/lib/analysis/compliance';
 
 // ---------------------------------------------------------------------------
 // Date helpers
@@ -137,6 +137,13 @@ const SESSION_TYPE_BADGE: Record<string, { label: string; color: string }> = {
 };
 
 const DOW_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+// Compliance flag badge — only shown for actionable non-ok results on past days
+const COMPLIANCE_FLAG: Partial<Record<ComplianceFlag, { label: string; color: string }>> = {
+  fast:  { label: 'FAST',  color: 'text-signal-warn' },
+  slow:  { label: 'SLOW',  color: 'text-bone-mute' },
+  short: { label: 'SHORT', color: 'text-signal-warn' },
+};
 
 // ---------------------------------------------------------------------------
 // Compliance status per day
@@ -303,7 +310,7 @@ function PatrolDashboard({
       nsReport: null,
       vdot: null,
     });
-    return { engine, params, wk, template, zones, programPhase, frameworkStats };
+    return { engine, params, wk, template, zones, programPhase, frameworkStats, compliance };
   }, [activePlan, stats, activities, todayIso]);
 
   // Group activities by DOW for the week grid
@@ -372,6 +379,7 @@ function PatrolDashboard({
         {derived ? (
           <WeekPlanGrid
             template={derived.template}
+            compliance={derived.compliance}
             byDow={byDow}
             startIso={startIso}
             currentDow={currentDow}
@@ -464,9 +472,10 @@ function GenericStatsRow({ stats }: { stats: WeekStats }) {
 // ---------------------------------------------------------------------------
 
 function WeekPlanGrid({
-  template, byDow, startIso, currentDow,
+  template, compliance, byDow, startIso, currentDow,
 }: {
   template: WeekTemplate;
+  compliance: WeekCompliance;
   byDow: Map<number, GhostActivity[]>;
   startIso: string;
   currentDow: number;
@@ -493,6 +502,11 @@ function WeekPlanGrid({
             : 'upcoming';
           const isToday = dow === currentDow;
           const dateNum = weekDayDate(startIso, dow);
+          // Compliance flags for this day — only meaningful for past days with sessions
+          const complianceDay = compliance.days.find((cd) => cd.dow === dow);
+          const sessionFlags = complianceDay?.sessions
+            .map((sc) => COMPLIANCE_FLAG[sc.flag])
+            .filter(Boolean) ?? [];
 
           return (
             <div
@@ -542,6 +556,17 @@ function WeekPlanGrid({
                   <span className="font-mono text-xs text-bone-mute">
                     {status === 'upcoming' ? 'upcoming' : status === 'today-pending' ? 'pending' : 'nothing logged'}
                   </span>
+                )}
+
+                {/* Compliance flags — only shown for past done days with non-ok evaluations */}
+                {status === 'done' && sessionFlags.length > 0 && (
+                  <div className="flex gap-1.5 mt-0.5">
+                    {sessionFlags.map((f, fi) => (
+                      <span key={fi} className={`font-mono text-[10px] uppercase tracking-widest ${f!.color}`}>
+                        {f!.label}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
 
