@@ -17,14 +17,29 @@ export class RateLimitError extends Error {
 // OAuth
 // ---------------------------------------------------------------------------
 
+/**
+ * Per-user API app credentials included in token requests. When present, the
+ * worker uses these instead of its own baked-in secret — the worker is then
+ * just a CORS proxy (Strava blocks browser CORS on /oauth/token).
+ */
+export interface TokenCredentials {
+  clientId: string;
+  clientSecret: string;
+}
+
+function credentialFields(creds?: TokenCredentials | null): Record<string, string> {
+  return creds ? { client_id: creds.clientId, client_secret: creds.clientSecret } : {};
+}
+
 export async function exchangeCode(
   code: string,
   workerUrl: string,
+  creds?: TokenCredentials | null,
 ): Promise<StravaTokenResponse> {
   const res = await fetch(`${workerUrl}/exchange`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code }),
+    body: JSON.stringify({ code, ...credentialFields(creds) }),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -36,11 +51,12 @@ export async function exchangeCode(
 export async function refreshAccessToken(
   refreshToken: string,
   workerUrl: string,
+  creds?: TokenCredentials | null,
 ): Promise<StravaRefreshResponse> {
   const res = await fetch(`${workerUrl}/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken }),
+    body: JSON.stringify({ refresh_token: refreshToken, ...credentialFields(creds) }),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');

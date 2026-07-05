@@ -6,6 +6,7 @@ import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { fetchAthleteGear } from '@/lib/strava/client';
 import { getStoredTokens, storeTokens, setSetting, getSetting } from '@/lib/db/settings';
 import { refreshAccessToken } from '@/lib/strava/client';
+import { getTokenCredentials } from '@/lib/strava/credentials';
 
 const WORKER_URL = (import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined) ?? '';
 
@@ -183,7 +184,7 @@ async function ensureFreshAccessToken(): Promise<string> {
   if (!tokens) throw new Error('Not connected to Strava — reconnect in Settings');
   const nowSec = Math.floor(Date.now() / 1000);
   if (tokens.expiresAt > nowSec + 60) return tokens.accessToken;
-  const fresh = await refreshAccessToken(tokens.refreshToken, WORKER_URL);
+  const fresh = await refreshAccessToken(tokens.refreshToken, WORKER_URL, await getTokenCredentials());
   await storeTokens({ ...tokens, accessToken: fresh.access_token, refreshToken: fresh.refresh_token, expiresAt: fresh.expires_at });
   return fresh.access_token;
 }

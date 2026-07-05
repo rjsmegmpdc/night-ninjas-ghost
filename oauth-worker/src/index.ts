@@ -9,14 +9,19 @@
  *   POST /refresh   — exchange a refresh token for a new access token
  *   POST /revoke    — revoke an access token (deauthorise the app for this athlete)
  *
- * Secrets (set via `wrangler secret put`):
+ * Credential resolution: requests may carry their own client_id +
+ * client_secret (per-user API apps entered in the Setup wizard) — those win.
+ * The env secrets remain as a fallback for baked-in shared-app deployments,
+ * and are optional (a pure BYO deployment needs only ALLOWED_ORIGIN).
+ *
+ * Secrets (set via `wrangler secret put`, optional):
  *   STRAVA_CLIENT_ID
  *   STRAVA_CLIENT_SECRET
  */
 
 interface Env {
-  STRAVA_CLIENT_ID: string;
-  STRAVA_CLIENT_SECRET: string;
+  STRAVA_CLIENT_ID?: string;
+  STRAVA_CLIENT_SECRET?: string;
   ALLOWED_ORIGIN: string;
 }
 
@@ -47,7 +52,13 @@ export default {
     }
 
     const url  = new URL(request.url);
-    const body = await request.json<{ code?: string; refresh_token?: string; token?: string }>();
+    const body = await request.json<{
+      code?: string;
+      refresh_token?: string;
+      token?: string;
+      client_id?: string;
+      client_secret?: string;
+    }>();
 
     // -----------------------------------------------------------------------
     // POST /revoke — revoke access token (Strava deauthorisation)
@@ -68,19 +79,26 @@ export default {
     // -----------------------------------------------------------------------
     // POST /exchange or /refresh — token operations that need client_secret
     // -----------------------------------------------------------------------
+    // Per-user credentials from the request win; env secrets are the fallback.
+    const clientId     = body.client_id     ?? env.STRAVA_CLIENT_ID;
+    const clientSecret = body.client_secret ?? env.STRAVA_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      return new Response('No API credentials — supply client_id/client_secret or configure worker secrets', { status: 400 });
+    }
+
     let stravaPayload: Record<string, string>;
 
     if (url.pathname === '/exchange' && body.code) {
       stravaPayload = {
-        client_id:     env.STRAVA_CLIENT_ID,
-        client_secret: env.STRAVA_CLIENT_SECRET,
+        client_id:     clientId,
+        client_secret: clientSecret,
         code:          body.code,
         grant_type:    'authorization_code',
       };
     } else if (url.pathname === '/refresh' && body.refresh_token) {
       stravaPayload = {
-        client_id:     env.STRAVA_CLIENT_ID,
-        client_secret: env.STRAVA_CLIENT_SECRET,
+        client_id:     clientId,
+        client_secret: clientSecret,
         refresh_token: body.refresh_token,
         grant_type:    'refresh_token',
       };

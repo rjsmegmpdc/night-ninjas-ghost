@@ -1,5 +1,6 @@
 import { exec } from '@/db/client';
 import { fetchActivitiesPage, refreshAccessToken, RateLimitError } from '@/lib/strava/client';
+import { getTokenCredentials } from '@/lib/strava/credentials';
 import type { StravaActivity } from '@/lib/strava/types';
 import {
   getSetting,
@@ -36,7 +37,7 @@ async function ensureFreshToken(): Promise<string> {
   const nowSec = Math.floor(Date.now() / 1000);
   if (tokens.expiresAt > nowSec + 60) return tokens.accessToken;
 
-  const fresh = await refreshAccessToken(tokens.refreshToken, WORKER_URL);
+  const fresh = await refreshAccessToken(tokens.refreshToken, WORKER_URL, await getTokenCredentials());
   await storeTokens({
     accessToken:  fresh.access_token,
     refreshToken: fresh.refresh_token,

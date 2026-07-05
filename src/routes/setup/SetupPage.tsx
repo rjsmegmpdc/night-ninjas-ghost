@@ -19,15 +19,19 @@ import {
 } from '@/lib/db/settings';
 import { buildSettingsSnapshot, parseSettingsSnapshot } from '@/lib/db/settings-snapshot-pure';
 import { syncActivities, type SyncProgress } from '@/lib/db/sync';
+import {
+  getStravaCredentials,
+  getTokenCredentials,
+  saveStravaCredentials,
+} from '@/lib/strava/credentials';
 
-const CLIENT_ID  = import.meta.env.VITE_STRAVA_CLIENT_ID as string | undefined;
 const WORKER_URL = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
 
 // ---------------------------------------------------------------------------
 // OAuth helpers
 // ---------------------------------------------------------------------------
 
-function buildStravaAuthUrl(): string {
+function buildStravaAuthUrl(clientId: string): string {
   // CSRF: generate a random 32-hex-char state, store single-use in sessionStorage
   const stateBytes = new Uint8Array(16);
   crypto.getRandomValues(stateBytes);
@@ -36,7 +40,7 @@ function buildStravaAuthUrl(): string {
 
   const redirectUri = `${window.location.origin}/setup`;
   const params = new URLSearchParams({
-    client_id:       CLIENT_ID ?? '',
+    client_id:       clientId,
     redirect_uri:    redirectUri,
     response_type:   'code',
     approval_prompt: 'auto',
@@ -58,6 +62,7 @@ function parseGrantedScope(scopeParam: string): 'full' | 'partial' | 'none' {
 
 type SetupState =
   | { status: 'loading' }
+  | { status: 'needs-credentials' }
   | { status: 'not-connected' }
   | { status: 'exchanging'; code: string; partialScope: boolean }
   | { status: 'athlete-mismatch'; newTokens: StoredTokens; partialScope: boolean; existingName: string }
@@ -74,12 +79,15 @@ export default function SetupPage() {
   const [searchParams]  = useSearchParams();
   const navigate        = useNavigate();
   const [state, setState] = useState<SetupState>({ status: 'loading' });
+  const [clientId, setClientId] = useState<string | null>(null);
   const retryTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadState = useCallback(async () => {
+    const creds = await getStravaCredentials();
+    setClientId(creds?.clientId ?? null);
     const tokens = await getStoredTokens();
     if (!tokens) {
-      setState({ status: 'not-connected' });
+      setState(creds ? { status: 'not-connected' } : { status: 'needs-credentials' });
       return;
     }
     const [lastSync, scope] = await Promise.all([getLastSync(), getSetting('strava_scope')]);
@@ -94,6 +102,9 @@ export default function SetupPage() {
   // Initial load: handle OAuth callback or check existing connection
   useEffect(() => {
     if (!ready) return;
+
+    // Resolve the client ID for reconnect links regardless of entry path
+    void getStravaCredentials().then((c) => setClientId(c?.clientId ?? null));
 
     const code  = searchParams.get('code');
     const error = searchParams.get('error');
@@ -141,7 +152,7 @@ export default function SetupPage() {
 
       try {
         if (!WORKER_URL) throw new Error('VITE_STRAVA_OAUTH_WORKER is not configured');
-        const resp = await exchangeCode(code, WORKER_URL);
+        const resp = await exchangeCode(code, WORKER_URL, await getTokenCredentials());
 
         // Persist scope
         await setSetting('strava_scope', partialScope ? 'activity:read' : 'activity:read_all');
@@ -286,13 +297,13 @@ export default function SetupPage() {
         <h1 className="font-display text-4xl tracking-widest uppercase text-bone">Setup</h1>
       </header>
 
-      {!CLIENT_ID && (
+      {!WORKER_URL && (
         <div className="border border-signal-miss/40 p-4 space-y-1">
           <p className="font-mono text-xs text-signal-miss uppercase tracking-widest">
             Configuration missing
           </p>
           <p className="font-mono text-xs text-bone-dim leading-relaxed">
-            <code>VITE_STRAVA_CLIENT_ID</code> is not set. Add it to{' '}
+            <code>VITE_STRAVA_OAUTH_WORKER</code> is not set. Add it to{' '}
             <code>.env.local</code> (dev) and as a GitHub secret + deploy workflow env (prod).
           </p>
         </div>
@@ -300,9 +311,12 @@ export default function SetupPage() {
 
       <StravaSection
         state={state}
+        clientId={clientId}
         onSync={() => { if (state.status === 'connected') startSync(state.tokens); }}
         onDisconnect={handleDisconnect}
         onProceedWithNewAthlete={proceedWithNewAthlete}
+        onCredentialsSaved={() => { void loadState(); }}
+        onChangeCredentials={() => setState({ status: 'needs-credentials' })}
       />
 
       {/* Powered by Strava — required by brand guidelines */}
@@ -327,14 +341,20 @@ export default function SetupPage() {
 
 function StravaSection({
   state,
+  clientId,
   onSync,
   onDisconnect,
   onProceedWithNewAthlete,
+  onCredentialsSaved,
+  onChangeCredentials,
 }: {
   state: SetupState;
+  clientId: string | null;
   onSync: () => void;
   onDisconnect: () => void;
   onProceedWithNewAthlete: (tokens: StoredTokens, partialScope: boolean) => Promise<void>;
+  onCredentialsSaved: () => void;
+  onChangeCredentials: () => void;
 }) {
   return (
     <section className="border border-ink-line p-6 space-y-6">
@@ -350,7 +370,13 @@ function StravaSection({
         </div>
       )}
 
-      {state.status === 'not-connected' && <NotConnected />}
+      {state.status === 'needs-credentials' && (
+        <CredentialsWizard onSaved={onCredentialsSaved} />
+      )}
+
+      {state.status === 'not-connected' && (
+        <NotConnected clientId={clientId} onChangeCredentials={onChangeCredentials} />
+      )}
 
       {state.status === 'exchanging' && (
         <div className="flex items-center gap-2 font-mono text-xs text-bone-mute">
@@ -375,15 +401,171 @@ function StravaSection({
           lastSync={state.lastSync}
           partialScope={state.partialScope}
           welcomeBack={state.welcomeBack}
+          clientId={clientId}
           onSync={onSync}
           onDisconnect={onDisconnect}
         />
       )}
 
       {state.status === 'error' && (
-        <ErrorView message={state.message} onDisconnect={onDisconnect} />
+        <ErrorView message={state.message} clientId={clientId} onDisconnect={onDisconnect} />
       )}
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Credentials wizard — guided, per-user Strava API app setup.
+// Strava has no password login for apps: every user creates their own free
+// API app once, and GHOST stores its ID + secret locally on this device.
+// ---------------------------------------------------------------------------
+
+function CopyValue({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <span className="inline-flex items-center gap-2">
+      <code className="text-bone bg-ink px-2 py-0.5 border border-ink-line break-all">{value}</code>
+      <button
+        type="button"
+        onClick={() => {
+          void navigator.clipboard.writeText(value).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          });
+        }}
+        className="font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent transition-colors shrink-0"
+      >
+        {copied ? 'Copied ✓' : 'Copy'}
+      </button>
+    </span>
+  );
+}
+
+function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
+  const [id, setId] = useState('');
+  const [secret, setSecret] = useState('');
+  const [showSecret, setShowSecret] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const idOk = /^\d{4,}$/.test(id.trim());
+  const secretOk = secret.trim().length >= 20;
+
+  async function handleSave() {
+    if (!idOk || !secretOk) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await saveStravaCredentials(id, secret);
+      onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <p className="font-mono text-xs text-bone-dim leading-relaxed">
+        GHOST talks to Strava through your own free API app — a one-time,
+        two-minute setup. Your details are stored only on this device.
+      </p>
+
+      {/* Step 1 — create the app on Strava */}
+      <div className="space-y-3">
+        <p className="font-mono text-xs text-accent uppercase tracking-widest">Step 1 — create your API app</p>
+        <ol className="space-y-2.5 font-mono text-xs text-bone-dim leading-relaxed list-decimal list-inside">
+          <li>
+            Open{' '}
+            <a
+              href="https://www.strava.com/settings/api"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent hover:underline"
+            >
+              strava.com/settings/api
+            </a>{' '}
+            and log in if asked.
+          </li>
+          <li>
+            Fill in the form — any values work, but these are sensible:
+            <div className="mt-2 ml-1 grid grid-cols-1 gap-y-2 font-mono text-xs">
+              <div><span className="text-bone-mute">Application Name:</span> <code className="text-bone">GHOST</code></div>
+              <div><span className="text-bone-mute">Category:</span> <code className="text-bone">Data Importer</code></div>
+              <div className="flex flex-wrap items-center gap-x-2"><span className="text-bone-mute">Website:</span> <CopyValue value={window.location.origin} /></div>
+              <div className="flex flex-wrap items-center gap-x-2">
+                <span className="text-bone-mute">Authorization Callback Domain:</span>{' '}
+                <CopyValue value={window.location.hostname} />
+              </div>
+            </div>
+          </li>
+          <li>Upload any image as the app icon (Strava requires one — a photo of your shoes works).</li>
+          <li>After saving, Strava shows your <strong className="text-bone">Client ID</strong> and <strong className="text-bone">Client Secret</strong> — copy them into Step 2.</li>
+        </ol>
+      </div>
+
+      {/* Step 2 — paste the credentials */}
+      <div className="space-y-3">
+        <p className="font-mono text-xs text-accent uppercase tracking-widest">Step 2 — paste them here</p>
+
+        <div className="space-y-1 max-w-sm">
+          <label htmlFor="cred-client-id" className="font-mono text-[10px] uppercase tracking-widest text-bone-mute">Client ID</label>
+          <input
+            id="cred-client-id"
+            type="text"
+            inputMode="numeric"
+            value={id}
+            onChange={(e) => setId(e.target.value)}
+            placeholder="123456"
+            autoComplete="off"
+            spellCheck={false}
+            className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+          />
+        </div>
+
+        <div className="space-y-1 max-w-sm">
+          <label htmlFor="cred-client-secret" className="font-mono text-[10px] uppercase tracking-widest text-bone-mute">Client Secret</label>
+          <div className="relative">
+            <input
+              id="cred-client-secret"
+              type={showSecret ? 'text' : 'password'}
+              value={secret}
+              onChange={(e) => setSecret(e.target.value)}
+              placeholder="40-character secret"
+              autoComplete="off"
+              spellCheck={false}
+              className="w-full bg-ink-shadow border border-ink-line px-3 py-2 pr-12 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+            />
+            <button
+              type="button"
+              onClick={() => setShowSecret(!showSecret)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] text-bone-mute hover:text-bone"
+              tabIndex={-1}
+            >
+              {showSecret ? 'hide' : 'show'}
+            </button>
+          </div>
+        </div>
+
+        <p className="font-mono text-[10px] text-bone-mute leading-relaxed max-w-sm">
+          Both are saved to this device's private storage only. They identify your
+          API app, not your Strava account — you still approve access on strava.com next.
+        </p>
+
+        {error && (
+          <p className="font-mono text-xs text-signal-miss" role="alert">{error}</p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={!idOk || !secretOk || saving}
+          className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest px-5 py-2.5 border border-accent text-accent hover:bg-accent hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {saving ? 'Saving…' : 'Save & continue'}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -415,6 +597,13 @@ function PrivacyNotice({ onAcknowledge }: { onAcknowledge: () => void }) {
           <strong className="text-bone">In browser localStorage:</strong>{' '}
           Your display preferences (theme, font size) and your home page. These
           are lightweight settings, not your training data.
+        </p>
+        <p>
+          <strong className="text-bone">Your Strava API app details:</strong>{' '}
+          The Client ID and Secret you enter during setup are saved to this
+          device's private storage. They identify your API app to Strava —
+          they are not your Strava password, and GHOST never sees or stores
+          your password.
         </p>
         <p>
           <strong className="text-bone">Your Strava connection:</strong>{' '}
@@ -453,12 +642,18 @@ function PrivacyNotice({ onAcknowledge }: { onAcknowledge: () => void }) {
 // Official Strava brand: #FC4C02 orange, 48px height, white text.
 // ---------------------------------------------------------------------------
 
-function NotConnected() {
+function NotConnected({
+  clientId,
+  onChangeCredentials,
+}: {
+  clientId: string | null;
+  onChangeCredentials: () => void;
+}) {
   const [acknowledged, setAcknowledged] = useState<boolean>(
     () => localStorage.getItem('ghost.privacy_acknowledged') === 'true',
   );
   const redirectUri = `${window.location.origin}/setup`;
-  const authUrl = CLIENT_ID ? buildStravaAuthUrl() : '#';
+  const authUrl = clientId ? buildStravaAuthUrl(clientId) : '#';
 
   if (!acknowledged) {
     return (
@@ -482,10 +677,10 @@ function NotConnected() {
       <a
         href={authUrl}
         className={`inline-flex items-center gap-3 px-5 py-3 font-mono text-sm font-bold transition-opacity ${
-          CLIENT_ID ? 'cursor-pointer hover:opacity-90' : 'cursor-not-allowed opacity-50'
+          clientId ? 'cursor-pointer hover:opacity-90' : 'cursor-not-allowed opacity-50'
         }`}
         style={{ backgroundColor: '#FC4C02', color: '#fff', height: 48 }}
-        onClick={(e) => !CLIENT_ID && e.preventDefault()}
+        onClick={(e) => !clientId && e.preventDefault()}
         aria-label="Connect with Strava"
       >
         {/* Strava S-logo mark */}
@@ -502,8 +697,8 @@ function NotConnected() {
         <div className="px-4 pb-4 space-y-2">
           <div className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-1.5 font-mono text-xs">
             <span className="text-bone-mute">client_id</span>
-            <span className={CLIENT_ID ? 'text-accent' : 'text-signal-miss'}>
-              {CLIENT_ID ?? 'NOT SET — add VITE_STRAVA_CLIENT_ID secret'}
+            <span className={clientId ? 'text-accent' : 'text-signal-miss'}>
+              {clientId ?? 'NOT SET'}
             </span>
             <span className="text-bone-mute">redirect_uri</span>
             <span className="text-bone break-all">{redirectUri}</span>
@@ -514,6 +709,13 @@ function NotConnected() {
             Strava must have <strong className="text-bone">{window.location.hostname}</strong> set as
             the Authorization Callback Domain.
           </p>
+          <button
+            type="button"
+            onClick={onChangeCredentials}
+            className="font-mono text-xs text-bone-mute hover:text-accent transition-colors mt-2"
+          >
+            Change API credentials →
+          </button>
         </div>
       </details>
     </div>
@@ -575,6 +777,7 @@ function ConnectedView({
   lastSync,
   partialScope,
   welcomeBack,
+  clientId,
   onSync,
   onDisconnect,
 }: {
@@ -582,6 +785,7 @@ function ConnectedView({
   lastSync: string | null;
   partialScope: boolean;
   welcomeBack?: string;
+  clientId: string | null;
   onSync: () => void;
   onDisconnect: () => void;
 }) {
@@ -643,7 +847,7 @@ function ConnectedView({
             Private activities won't sync. Reconnect and tick the privacy checkbox to include them.
           </p>
           <a
-            href={CLIENT_ID ? buildStravaAuthUrl() : '#'}
+            href={clientId ? buildStravaAuthUrl(clientId) : '#'}
             className="font-mono text-xs text-accent hover:text-accent-hover transition-colors"
           >
             Reconnect with full access →
@@ -744,7 +948,7 @@ function SyncingView({ progress }: { progress: SyncProgress }) {
 // Error
 // ---------------------------------------------------------------------------
 
-function ErrorView({ message, onDisconnect }: { message: string; onDisconnect: () => void }) {
+function ErrorView({ message, clientId, onDisconnect }: { message: string; clientId: string | null; onDisconnect: () => void }) {
   return (
     <div className="space-y-4">
       <div className="flex items-start gap-2">
@@ -753,7 +957,7 @@ function ErrorView({ message, onDisconnect }: { message: string; onDisconnect: (
       </div>
       <div className="flex gap-3">
         <a
-          href={CLIENT_ID ? buildStravaAuthUrl() : '#'}
+          href={clientId ? buildStravaAuthUrl(clientId) : '#'}
           className="font-mono text-xs text-accent hover:text-accent-hover transition-colors"
         >
           Reconnect →
