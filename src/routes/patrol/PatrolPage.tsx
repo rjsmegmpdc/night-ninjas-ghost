@@ -651,10 +651,19 @@ function TonightMission({
             {doneRuns.map((a, i) => {
               const km = a.distanceM / 1000;
               const pace = a.movingTimeS > 0 && km > 0 ? a.movingTimeS / km : null;
-              return (
-                <p key={i} className="font-mono text-xs text-bone-mute">
-                  {a.name} · {km.toFixed(1)} km{pace ? ` · ${formatSpk(pace)}/km` : ''}
-                </p>
+              const line = `${a.name} · ${km.toFixed(1)} km${pace ? ` · ${formatSpk(pace)}/km` : ''}`;
+              return a.stravaId ? (
+                <a
+                  key={i}
+                  href={`https://www.strava.com/activities/${a.stravaId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block font-mono text-xs text-bone-dim hover:text-accent transition-colors"
+                >
+                  {line} ↗
+                </a>
+              ) : (
+                <p key={i} className="font-mono text-xs text-bone-dim">{line}</p>
               );
             })}
           </div>
@@ -691,6 +700,15 @@ function TonightMission({
               </p>
             )}
           </div>
+
+          {/* strava://record opens the app's record screen — the scheme only
+              resolves on phones with Strava installed, so mobile-only. */}
+          <a
+            href="strava://record"
+            className="sm:hidden inline-flex items-center gap-2 mt-1 px-4 py-2.5 border border-accent text-accent font-mono text-xs uppercase tracking-widest active:bg-accent active:text-ink transition-colors"
+          >
+            ▶ Record on Strava
+          </a>
         </>
       )}
     </div>
