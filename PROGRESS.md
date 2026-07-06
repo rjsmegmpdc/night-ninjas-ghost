@@ -101,10 +101,28 @@ main (feat/sync-e2e-encryption merged)
 ### Blocked
 - Nothing
 
+### In progress — Profile Sync verification (parked 2026-07-06)
+
+Cloudflare side is fully deployed and smoke-tested (worker bindings live;
+unauthenticated /sync/start 302s to Access login with correct AUD).
+End-to-end verify is parked on an Access OTP issue:
+
+- **Symptom**: "one-time PIN already used" on every attempt (×4) during restore
+- **Likely causes**: (a) reading an older email in Gmail's collapsed thread —
+  use the newest timestamp after Resend code; (b) a mail-scanner/link-checker
+  consuming the single-use token (Defender/SafeLinks/AV link protection) —
+  Cloudflare's fix is allowlisting noreply@notify.cloudflare.com
+- **Checks done**: Access app path corrected `sync` → `sync/start` (fixes
+  earlier "Failed to fetch" on /sync/profile — CORS preflight was being
+  bounced to the Access login); policy uses Everyone selector
+- **If OTP stays flaky**: add Google sign-in as a second login method in
+  Zero Trust (Integrations → Identity providers) — no email tokens to eat
+
 ### Next session should
 
-1. Garmin Connect OAuth sync (alternative to GDPR file import) — **blocked**: needs Garmin developer registration first (external dependency, Matt's action)
-2. Backlog is otherwise clear — next features are Matt's call
+1. Resume Profile Sync verification (above) — backup on desktop, restore on phone
+2. Club rollout prep: member-facing onboarding guide (in-app Help section or docs/ONBOARDING.md) — wizard walkthrough, profile sync, iOS home-screen storage caveat
+3. Garmin Connect OAuth sync — **blocked**: needs Garmin developer registration first (external dependency, Matt's action)
 
 ---
 
