@@ -120,9 +120,74 @@ End-to-end verify is parked on an Access OTP issue:
 
 ### Next session should
 
-1. Resume Profile Sync verification (above) — backup on desktop, restore on phone
-2. Club rollout prep: member-facing onboarding guide (in-app Help section or docs/ONBOARDING.md) — wizard walkthrough, profile sync, iOS home-screen storage caveat
+1. **Club page v2** (spec below) — start with the architecture decision, then build
+2. Resume Profile Sync verification (above) — backup on desktop, restore on phone
 3. Garmin Connect OAuth sync — **blocked**: needs Garmin developer registration first (external dependency, Matt's action)
+
+---
+
+## Planned — Club page v2: courses, leaderboards, Ninja Champs
+
+Replaces/extends the current personal ClubPage (weekly volume view).
+
+### Courses (tabs/sections on /club)
+
+| Course | Type | Notes |
+|---|---|---|
+| Ninja Champs | Annual event | Held at the Millwater Half Marathon; improvement-ranked (below) |
+| Road Relays | External link | Link card to another site — URL to come |
+| Parkrun | External link | Link card to another site — URL to come |
+| Ninja Loop | Leaderboard | Club course |
+| Waiwera | Leaderboard | Club course |
+
+### Leaderboards (per course)
+
+Strava-style filters, all combinable:
+- **Window**: last 12 months (rolling) / calendar year / all time
+- **Age group**: standard brackets (e.g. U20, 20–34, 35–39, 40–44, 45–49, 50–54, 55–59, 60+)
+- **Sex**: M / F / all
+- **Legend**: most efforts on the course (Strava "Local Legend" analogue — count of attempts, not speed)
+
+### Ninja Champs — improvement ranking
+
+- Once a year at the Millwater Half Marathon
+- **Entry model (key constraint)**: ONE person (race-day admin) typically
+  enters all the data on a phone; everyone else only views results. Not
+  per-athlete self-service.
+- **Entry form**: one simple mobile-first form — athlete name (type-ahead over
+  existing members, or add-new inline), sex, age group, best 21.1k / 10k / 5k
+  times over the rolling 12 months, then Millwater finish time. Big touch
+  targets, mm:ss / h:mm:ss inputs, one entry saved per tap — built for
+  standing-at-the-finish-line use.
+- **Results calculated on the fly**: the ranked table sits directly below the
+  form and re-ranks live as each entry is saved — no "publish" step
+- **Registration**: on the day; must be a Night Ninjas club member (the
+  admin adding an athlete to the form IS the registration act)
+- **Scoring**: simple best-time ÷ new-time division against the Millwater result:
+  `improvement = baselineHalfTimeS / millwaterActualTimeS` — > 1.0 means faster than baseline; rank descending
+- **Open question for Matt**: baseline = the entered 21.1k PB directly, or
+  predicted from the best of 5k/10k/21.1k (Riegel t2 = t1 × (d2/d1)^1.06)?
+  The 5k/10k inputs only matter if prediction is used — decide before build
+- **Past winners**: by-year table (admin-entered history)
+
+### Architecture decision (blocks build — decide first)
+
+Leaderboards are shared multi-athlete data; GHOST is local-first with no
+backend. The single-writer / many-readers model simplifies this. Proposal:
+extend the existing `ghost-strava-oauth` worker with **Cloudflare D1**
+(free tier) as the club datastore:
+
+- Tables: `members` (name, sex, dob/age-group), `results` (member, course,
+  date, time_s), `champs_entries` (member, year, pb_21k/10k/5k,
+  millwater_time_s), `champs_winners` (year, member, improvement)
+- **Writes**: admin-only — Access-JWT gated (same verified-email mechanism as
+  profile sync) with the admin's email(s) allowlisted in the worker config;
+  the race-day phone logs in once via the email code
+- **Reads**: public JSON endpoints — viewers need zero login; the /club page
+  fetches and renders leaderboards + live Champs standings for everyone
+- Alternative rejected: KV (no relational queries for filtered leaderboards)
+
+---
 
 ---
 
