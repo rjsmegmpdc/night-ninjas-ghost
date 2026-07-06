@@ -1161,6 +1161,24 @@ export default function SettingsPage() {
       {/* Section 1: Strava */}
       <StravaSection settings={settings} />
 
+      {/* Profile sync pointer — the feature lives on /setup */}
+      <section aria-labelledby="profile-sync-pointer" className="border border-ink-line p-6 space-y-2">
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">cross-device</p>
+        <h2 id="profile-sync-pointer" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
+          Profile Sync
+        </h2>
+        <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-xl">
+          Back up your API credentials and preferences, or restore them on
+          another device — encrypted with your passphrase.
+        </p>
+        <a
+          href="/setup"
+          className="inline-block font-mono text-xs uppercase tracking-widest px-4 py-2 border border-ink-line text-bone-dim hover:border-accent hover:text-accent transition-colors"
+        >
+          Open Profile Sync in Setup →
+        </a>
+      </section>
+
       {/* Section 2: Sync history */}
       <SyncHistorySection jobs={syncJobs} />
 
