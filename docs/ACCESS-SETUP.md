@@ -73,10 +73,14 @@ id      = "<the id wrangler printed>"
 4. Click **Next** to the policy step:
    - **Policy name**: `anyone-with-email`
    - **Action**: `Allow`
-   - **Include** rule: `Emails ending in` → `@` *(this allows any email —
-     each user only ever sees their own blob, keyed by their verified
-     email)*. To restrict to specific people instead, use `Emails` and
-     list them.
+   - **Include** rule: selector **Everyone** (it takes no value). The
+     One-time PIN still verifies email ownership, each user only ever
+     sees their own blob (keyed by verified email), and blobs are
+     E2E-encrypted. *(Do not try `Emails ending in` with a bare `@` —
+     the API rejects it: `invalid 'include' configuration`.)*
+   - To restrict to a closed group instead: use `Emails` with a list of
+     addresses, or `Emails ending in` with a real domain
+     (e.g. `@yourclub.nz`).
 5. **Next** through the setup step (defaults are fine) → **Add application**.
 6. Open the application you just created → **Overview** tab → copy the
    **Application Audience (AUD) Tag** — a 64-char hex string. You need it
