@@ -36,6 +36,10 @@ interface Env {
   ACCESS_TEAM_DOMAIN?: string;
   ACCESS_AUD?: string;
   SYNC_KV?: KVNamespace;
+  /** Club datastore (leaderboards, Ninja Champs). See docs/CLUB-SETUP.md. */
+  CLUB_DB?: D1Database;
+  /** Comma-separated emails allowed to write club data (race-day admins). */
+  ADMIN_EMAILS?: string;
 }
 
 const STRAVA_TOKEN_URL  = 'https://www.strava.com/oauth/token';
@@ -47,7 +51,7 @@ const MAX_PROFILE_BYTES = 8192;
 function cors(origin: string): Record<string, string> {
   return {
     'Access-Control-Allow-Origin':  origin,
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 }
@@ -206,6 +210,165 @@ async function handleSync(request: Request, env: Env, url: URL): Promise<Respons
   return new Response('Not found', { status: 404, headers: cors(allowed) });
 }
 
+// ---------------------------------------------------------------------------
+// /club/* — shared club datastore (single-admin writes, public reads)
+// ---------------------------------------------------------------------------
+
+function json(data: unknown, allowed: string, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...cors(allowed) },
+  });
+}
+
+/** Verifies the Bearer JWT AND that the email is an allowlisted admin. */
+async function requireAdmin(request: Request, env: Env): Promise<string | Response> {
+  const allowed = env.ALLOWED_ORIGIN;
+  if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD || !env.ADMIN_EMAILS) {
+    return new Response('Club admin not configured', { status: 501, headers: cors(allowed) });
+  }
+  const auth = request.headers.get('Authorization') ?? '';
+  if (!auth.startsWith('Bearer ')) {
+    return new Response('Missing bearer token', { status: 401, headers: cors(allowed) });
+  }
+  let email: string;
+  try {
+    email = await verifyAccessJwt(auth.slice(7), env.ACCESS_TEAM_DOMAIN, env.ACCESS_AUD);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'invalid token';
+    return new Response(`Unauthorized: ${msg}`, { status: 401, headers: cors(allowed) });
+  }
+  const admins = env.ADMIN_EMAILS.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (!admins.includes(email)) {
+    return new Response('Not a club admin', { status: 403, headers: cors(allowed) });
+  }
+  return email;
+}
+
+async function handleClub(request: Request, env: Env, url: URL): Promise<Response> {
+  const allowed = env.ALLOWED_ORIGIN;
+  const db = env.CLUB_DB;
+  if (!db) {
+    return new Response('Club datastore not configured on this deployment', {
+      status: 501, headers: cors(allowed),
+    });
+  }
+
+  // ---- Public read: everything the Club page needs, one fetch ----
+  if (url.pathname === '/club/data' && request.method === 'GET') {
+    const [members, results, entries, winners] = await Promise.all([
+      db.prepare('SELECT id, name, sex, yob FROM members ORDER BY name').all(),
+      db.prepare(
+        `SELECT r.id, r.member_id, r.course, r.date, r.time_s, m.name, m.sex, m.yob
+         FROM results r JOIN members m ON m.id = r.member_id
+         ORDER BY r.date DESC`,
+      ).all(),
+      db.prepare(
+        `SELECT e.id, e.member_id, e.year, e.pb5k_s, e.pb10k_s, e.pb21k_s, e.actual_s,
+                m.name, m.sex, m.yob
+         FROM champs_entries e JOIN members m ON m.id = e.member_id
+         ORDER BY e.year DESC, m.name`,
+      ).all(),
+      db.prepare('SELECT year, name, note FROM champs_winners ORDER BY year DESC').all(),
+    ]);
+    return json(
+      {
+        members: members.results,
+        results: results.results,
+        champsEntries: entries.results,
+        champsWinners: winners.results,
+      },
+      allowed,
+    );
+  }
+
+  // ---- Everything below is an admin write ----
+  const adminOrError = await requireAdmin(request, env);
+  if (adminOrError instanceof Response) return adminOrError;
+
+  if (request.method === 'POST') {
+    const body = await request.json<Record<string, unknown>>();
+
+    if (url.pathname === '/club/member') {
+      const { name, sex, yob } = body as { name?: string; sex?: string; yob?: number | null };
+      if (!name?.trim() || (sex !== 'M' && sex !== 'F')) {
+        return new Response('name and sex (M/F) required', { status: 400, headers: cors(allowed) });
+      }
+      const res = await db
+        .prepare('INSERT INTO members (name, sex, yob) VALUES (?, ?, ?)')
+        .bind(name.trim(), sex, yob ?? null)
+        .run();
+      return json({ id: res.meta.last_row_id }, allowed);
+    }
+
+    if (url.pathname === '/club/result') {
+      const { memberId, course, date, timeS } = body as {
+        memberId?: number; course?: string; date?: string; timeS?: number;
+      };
+      if (!memberId || !course || !date || !timeS || timeS <= 0) {
+        return new Response('memberId, course, date, timeS required', { status: 400, headers: cors(allowed) });
+      }
+      const res = await db
+        .prepare('INSERT INTO results (member_id, course, date, time_s) VALUES (?, ?, ?, ?)')
+        .bind(memberId, course, date, Math.round(timeS))
+        .run();
+      return json({ id: res.meta.last_row_id }, allowed);
+    }
+
+    if (url.pathname === '/club/champs-entry') {
+      const { memberId, year, pb5kS, pb10kS, pb21kS, actualS } = body as {
+        memberId?: number; year?: number;
+        pb5kS?: number | null; pb10kS?: number | null; pb21kS?: number | null; actualS?: number | null;
+      };
+      if (!memberId || !year) {
+        return new Response('memberId and year required', { status: 400, headers: cors(allowed) });
+      }
+      await db
+        .prepare(
+          `INSERT INTO champs_entries (member_id, year, pb5k_s, pb10k_s, pb21k_s, actual_s)
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON CONFLICT(member_id, year) DO UPDATE SET
+             pb5k_s = excluded.pb5k_s, pb10k_s = excluded.pb10k_s,
+             pb21k_s = excluded.pb21k_s, actual_s = excluded.actual_s`,
+        )
+        .bind(memberId, year, pb5kS ?? null, pb10kS ?? null, pb21kS ?? null, actualS ?? null)
+        .run();
+      return json({ ok: true }, allowed);
+    }
+
+    if (url.pathname === '/club/winner') {
+      const { year, name, note } = body as { year?: number; name?: string; note?: string | null };
+      if (!year || !name?.trim()) {
+        return new Response('year and name required', { status: 400, headers: cors(allowed) });
+      }
+      await db
+        .prepare(
+          `INSERT INTO champs_winners (year, name, note) VALUES (?, ?, ?)
+           ON CONFLICT(year) DO UPDATE SET name = excluded.name, note = excluded.note`,
+        )
+        .bind(year, name.trim(), note ?? null)
+        .run();
+      return json({ ok: true }, allowed);
+    }
+  }
+
+  if (request.method === 'DELETE') {
+    const id = Number(url.searchParams.get('id'));
+    if (!id) return new Response('id required', { status: 400, headers: cors(allowed) });
+
+    if (url.pathname === '/club/result') {
+      await db.prepare('DELETE FROM results WHERE id = ?').bind(id).run();
+      return json({ ok: true }, allowed);
+    }
+    if (url.pathname === '/club/champs-entry') {
+      await db.prepare('DELETE FROM champs_entries WHERE id = ?').bind(id).run();
+      return json({ ok: true }, allowed);
+    }
+  }
+
+  return new Response('Not found', { status: 404, headers: cors(allowed) });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin  = request.headers.get('Origin') ?? '';
@@ -224,6 +387,14 @@ export default {
         return new Response('Forbidden', { status: 403 });
       }
       return handleSync(request, env, url);
+    }
+
+    // Club datastore routes (public GET /club/data; admin-gated writes)
+    if (url.pathname.startsWith('/club/')) {
+      if (origin && origin !== allowed) {
+        return new Response('Forbidden', { status: 403 });
+      }
+      return handleClub(request, env, url);
     }
 
     // Only accept POST from the allowed origin

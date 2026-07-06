@@ -7,10 +7,17 @@ compatibility_flags = ["nodejs_compat"]
 ALLOWED_ORIGIN     = "https://night-ninjas-ghost.pages.dev"
 ACCESS_TEAM_DOMAIN = "night-ninjas.cloudflareaccess.com"
 ACCESS_AUD         = "508c862b77916f76e64fa96c4f82af4fcaa40824d9b5017f34af98ecb4765889"
+# Club admin allowlist — comma-separated emails allowed to write club data
+ADMIN_EMAILS       = "smharkness.nz@gmail.com"
 
 [[kv_namespaces]]
 binding = "SYNC_KV"
 id      = "9d5d124ac9d849eaa00644e0c4f65f1c"
+
+[[d1_databases]]
+binding       = "CLUB_DB"
+database_name = "ghost-club"
+database_id   = "d73cd23e-945c-4c66-9683-077dab5e9bde"
 
 # Secrets (set via `wrangler secret put`, never committed):
 #   STRAVA_CLIENT_ID     (optional — baked-in shared-app deployments only)
