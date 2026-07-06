@@ -40,14 +40,21 @@ id      = "<the id wrangler printed>"
 
 ## Part 3 — Enable the One-Time PIN login method
 
-1. In Zero Trust, go to **Settings → Authentication** (left sidebar).
-2. Under **Login methods**, click **Add new**.
+> Dashboard note: ignore any banner saying "Single Sign On management has
+> moved to Members > Settings" — that is about SSO for logging into the
+> Cloudflare dashboard itself, not about Access login methods.
+
+1. In Zero Trust, go to **Integrations → Identity providers** (left
+   sidebar). *(Older docs said Settings → Authentication — Cloudflare
+   renamed this section.)*
+2. Under **Your identity providers**, click **Add new identity provider**.
 3. Choose **One-time PIN**. That's it — no configuration. Users will get
    6-digit codes by email.
 
 ## Part 4 — Create the Access application for /sync
 
-1. In Zero Trust, go to **Access → Applications** → **Add an application**.
+1. In Zero Trust, go to **Access controls → Applications** → **Add an
+   application**. *(Previously Access → Applications.)*
 2. Choose **Self-hosted**.
 3. Fill in:
    - **Application name**: `GHOST profile sync`
