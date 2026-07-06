@@ -5,6 +5,14 @@ main (feat/sync-e2e-encryption merged)
 
 ### Completed
 
+**feat/member-onboarding — merged to main (134b7db)**
+
+- Help page: "Getting started" section (first on page) — 7 numbered steps for new club members: iOS home-screen-first rule, privacy card, API wizard, Connect, Profile Sync backup, personalisation
+- `docs/ONBOARDING.md`: standalone shareable member guide (club chat / print) + quick answers
+- Stale content fixed: Troubleshooting "Clear site data" advice removed (it deletes the OPFS DB!) → close-all-tabs recipe with warning; Shoes→Gear glossary/tasks; privacy section corrected (credentials wording, Profile Sync E2E, outbound calls)
+
+**plan: Club page v2 spec added (ead029e)** — courses, leaderboards, Ninja Champs; see "Planned" section below. Two decisions pending from Matt: baseline equation (21.1k PB direct vs Riegel prediction from best of 5k/10k/21.1k) and D1 datastore approval.
+
 **feat/sync-e2e-encryption — merged to main (44222b3)**
 
 - Profile Sync now offered to club members / third parties → backups end-to-end encrypted; account owner cannot read them
