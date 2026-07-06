@@ -2,6 +2,44 @@
 // HelpPage — static reference screen, no data fetching, no hooks
 // ---------------------------------------------------------------------------
 
+const GETTING_STARTED: { step: string; detail: string }[] = [
+  {
+    step: 'iPhone? Add to home screen FIRST',
+    detail:
+      'In Safari: Share button → "Add to Home Screen", then open GHOST from the new icon and do everything below inside it. iOS gives the installed app its own separate storage — setting up in the Safari tab first means doing it twice.',
+  },
+  {
+    step: 'Read the privacy card',
+    detail:
+      'First open shows what GHOST stores on your device — everything stays local, no accounts, no server. Tap "Got it — let\'s go".',
+  },
+  {
+    step: 'Create your Strava API app (once, ~2 min)',
+    detail:
+      'The Setup wizard walks you through it: open strava.com/settings/api, fill the form using the values shown (Copy buttons give you the exact Website and Callback Domain), upload any photo as the icon.',
+  },
+  {
+    step: 'Paste your Client ID and Secret',
+    detail:
+      'Strava shows both after saving. Paste them into Step 2 of the wizard — they\'re stored only on this device. They identify your API app, not your Strava account; GHOST never sees your password.',
+  },
+  {
+    step: 'Connect with Strava',
+    detail:
+      'Tap the orange button, approve on strava.com (tick the privacy checkbox to include private activities), and your last 90 days of activities sync automatically.',
+  },
+  {
+    step: 'Optional: back up your profile',
+    detail:
+      'Setup → Profile Sync → "Back up this device". Verify your email with a 6-digit code, choose a passphrase (no reset — remember it!). Any other device is then just Restore + Connect — no wizard, no copy-paste.',
+  },
+  {
+    step: 'Make it yours',
+    detail:
+      'Settings → Preferences: pick your home page (where the GHOST button goes), font size, and one of six themes. Then set a goal race in Calendar and pick a plan in Dojo.',
+  },
+];
+
 const GLOSSARY: { term: string; screen: string; meaning: string }[] = [
   { term: 'Patrol',    screen: '/patrol',    meaning: 'Dashboard — streak, weekly summary, compliance snapshot' },
   { term: 'Recon',     screen: '/recon',     meaning: 'Trend analysis — 6-month volume, zone distribution, CTL/ATL' },
@@ -12,7 +50,7 @@ const GLOSSARY: { term: string; screen: string; meaning: string }[] = [
   { term: 'Vo2max',    screen: '/vo2max',    meaning: 'Aerobic ceiling — test entry, trend, insights' },
   { term: 'Coach Log', screen: '/coach-log', meaning: 'Daily wellness log — sleep, energy, stress, resting HR' },
   { term: 'Journal',   screen: '/journal',   meaning: 'Training diary — 30-day calendar view with notes' },
-  { term: 'Shoes',     screen: '/shoes',     meaning: 'Gear tracking — distance, retirement thresholds' },
+  { term: 'Gear',      screen: '/gear',      meaning: 'Shoes with rotation analysis, clothing, hardware, food, deal watchlist' },
   { term: 'Club',      screen: '/club',      meaning: 'Share your training schedule with your running group' },
   { term: 'Profile',   screen: '/profile',   meaning: 'Athlete settings — zones, HR, strength preferences' },
   { term: 'Settings',  screen: '/settings',  meaning: 'App settings — Strava, data export' },
@@ -46,9 +84,14 @@ const TASKS: { title: string; description: string }[] = [
       'Go to Vo2max — choose Cooper, Rockport, or Lab — enter your result.',
   },
   {
-    title: 'Add a shoe',
+    title: 'Import your shoes',
     description:
-      'Go to Shoes — "Add shoe" — fill in brand and set a distance target.',
+      'Go to Gear — "Import from Strava" pulls your whole shoe inventory with mileage. Clothing, packs, and food are added manually.',
+  },
+  {
+    title: 'Move to a new device',
+    description:
+      'Old device: Setup — Profile Sync — "Back up this device". New device: "Restore to this device" — same email + passphrase — then Connect with Strava.',
   },
   {
     title: 'Log time off',
@@ -59,9 +102,9 @@ const TASKS: { title: string; description: string }[] = [
 
 const TROUBLESHOOTING: { title: string; description: string }[] = [
   {
-    title: 'Database not loading',
+    title: 'App looks outdated / new features missing',
     description:
-      'Try: clear site data in browser DevTools — Application — Storage — Clear site data, then hard-refresh. This resolves stale service worker conflicts.',
+      'Close ALL GHOST tabs, then reopen — the updated version activates on the next full load. Do NOT use "Clear site data": that deletes your entire local training database along with the cache.',
   },
   {
     title: 'Strava OAuth redirect fails',
@@ -121,6 +164,37 @@ export default function HelpPage() {
           Reference — how GHOST works
         </p>
       </header>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 0: Getting started — new club members                       */}
+      {/* ------------------------------------------------------------------ */}
+      <section id="getting-started" aria-labelledby="getting-started-heading">
+        <SectionLabel>New here?</SectionLabel>
+        <h2
+          id="getting-started-heading"
+          className="font-display text-2xl tracking-widest uppercase text-bone mb-2"
+        >
+          Getting started
+        </h2>
+        <p className="font-mono text-sm text-bone-dim leading-relaxed max-w-3xl mb-6">
+          One-time setup, about five minutes. After this, GHOST just works —
+          open it and your training is there.
+        </p>
+
+        <ol className="space-y-3">
+          {GETTING_STARTED.map(({ step, detail }, i) => (
+            <li key={step} className="border border-ink-line p-5 flex gap-4">
+              <span className="font-display tracking-widest text-2xl text-accent leading-none select-none">
+                {i + 1}
+              </span>
+              <div className="space-y-1.5 min-w-0">
+                <p className="font-mono text-sm text-bone font-bold">{step}</p>
+                <p className="font-mono text-sm text-bone-dim leading-relaxed">{detail}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       {/* ------------------------------------------------------------------ */}
       {/* Section 1: Glossary                                                 */}
@@ -281,17 +355,24 @@ export default function HelpPage() {
 
         <div className="border border-ink-line divide-y divide-ink-line">
           <div className="px-5 py-3 font-mono text-sm text-bone-dim leading-relaxed">
-            GHOST does not have a backend (except the Strava OAuth proxy worker).
+            GHOST does not have a backend (except the Strava OAuth proxy worker and the
+            optional Profile Sync store).
           </div>
           <div className="px-5 py-3 font-mono text-sm text-bone-dim leading-relaxed">
-            Your Strava tokens are stored in the browser (IndexedDB), encrypted.
+            Your Strava tokens and API app credentials are stored only in this browser's
+            private storage. GHOST never sees or stores your Strava password.
+          </div>
+          <div className="px-5 py-3 font-mono text-sm text-bone-dim leading-relaxed">
+            Profile Sync backups are encrypted on your device with your passphrase before
+            upload — nobody, including whoever runs this site, can read them.
           </div>
           <div className="px-5 py-3 font-mono text-sm text-bone-dim leading-relaxed">
             No analytics, no tracking, no telemetry.
           </div>
           <div className="px-5 py-3 font-mono text-sm text-bone-dim leading-relaxed">
-            The only outbound calls are: Strava API (for activity sync), the OAuth proxy worker
-            (for token exchange), and Open-Meteo (for race-day weather, no auth).
+            The only outbound calls are: Strava API (activity sync), the OAuth proxy worker
+            (token exchange), Profile Sync (only when you use it), and Open-Meteo
+            (race-day weather, no auth).
           </div>
         </div>
       </section>
