@@ -1,9 +1,20 @@
 ## Branch
 main (feat/sync-e2e-encryption merged)
 
-## Session: 2026-07-06 (continued)
+## Session: 2026-07-07
 
 ### Completed
+
+**feat/club-v2 — merged to main (bcbd20d), DEPLOYED LIVE**
+
+- Club page v2: 6 tabs — Ninja Champs / Ninja Loop / Waiwera / Parkrun (link card, URL TBC) / Road Relays (link card, URL TBC) / My Training (old page preserved)
+- Decisions taken (Matt, via AskUserQuestion): baseline = **Riegel prediction** from best of 5k/10k/21.1k PBs; datastore = **Cloudflare D1** approved
+- Pure logic + 18 tests (597 total): `champs-pure.ts` (Riegel, improvement ranking, age groups, time parse), `leaderboard-pure.ts` (window/sex/age filters, legend-by-efforts)
+- Worker `/club/*`: public `GET /club/data`; admin writes (member/result/champs-entry/winner + deletes) gated by Access JWT + `ADMIN_EMAILS` allowlist; admin auth reuses the /sync/start email-code handoff returning to /club
+- Race-day UX: one admin on a phone — member picker with inline add, PB fields pre-fill from existing entry, finish time → standings re-rank live; viewers need no login
+- **Infra provisioned live**: D1 `ghost-club` created (id d73cd23e…, region OC), schema applied (4 tables), `ADMIN_EMAILS=smharkness.nz@gmail.com`, worker deployed, `GET /club/data` smoke-tested 200; Pages deploy green
+- `docs/CLUB-SETUP.md`: setup + race-day flow + endpoint reference
+- **Still open**: Parkrun + Road Relays external URLs (constants `PARKRUN_URL`/`RELAYS_URL` in ClubPage.tsx); club admin writes untested end-to-end pending the Access OTP issue (same login flow as Profile Sync)
 
 **feat/member-onboarding — merged to main (134b7db)**
 
