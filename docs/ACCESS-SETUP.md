@@ -62,7 +62,15 @@ id      = "<the id wrangler printed>"
      seconds; short sessions are fine)
    - **Application domain**: click **Add public hostname** and enter
      - Subdomain/domain: `ghost-strava-oauth.<your-account>.workers.dev`
-     - Path: `sync`
+     - Path: `sync/start`
+
+   > **The path must be `sync/start`, not `sync`.** Only the login
+   > handoff needs Access. If you protect all of `/sync/`, the app's
+   > fetch() calls to `/sync/profile` get bounced to the Access login
+   > page (no cookie travels cross-origin) and fail with
+   > "Failed to fetch". `/sync/profile` is secured by the worker itself —
+   > it fully verifies the Cloudflare-signed JWT (signature, audience,
+   > issuer, expiry) on every call.
    > **If the dashboard refuses the workers.dev hostname** (older accounts
    > only see zones from your account): give the worker a custom domain
    > first — Cloudflare dashboard → **Workers & Pages →
@@ -118,10 +126,11 @@ secrets stay in `wrangler secret`.)
 
 ## How it works (for future reference)
 
-- `/sync/start` sits behind Access. After the PIN, Cloudflare injects a
-  signed JWT (`Cf-Access-Jwt-Assertion`); the worker bounces it back to
-  the app in a URL **fragment** — fragments never reach servers or logs,
-  and no third-party cookies are involved (mobile Safari safe).
+- `/sync/start` (and only that path) sits behind Access. After the PIN,
+  Cloudflare injects a signed JWT (`Cf-Access-Jwt-Assertion`); the worker
+  bounces it back to the app in a URL **fragment** — fragments never
+  reach servers or logs, and no third-party cookies are involved (mobile
+  Safari safe).
 - The app then calls `GET/PUT /sync/profile` with `Authorization: Bearer
   <jwt>`. The worker verifies the RS256 signature against
   `https://<team>.cloudflareaccess.com/cdn-cgi/access/certs`, checks
