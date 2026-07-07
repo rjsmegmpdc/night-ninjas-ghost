@@ -5,6 +5,13 @@ main (feat/sync-e2e-encryption merged)
 
 ### Completed
 
+**feat/m3-polish — merged to main (6cf9dc3), DEPLOYED**
+
+- Per-screen M3 polish pass, all 15 screens: seam-grids eliminated (gap-2 rounded surface-container tiles), one filled hero card per screen, M3 button roles (filled/tonal/text/error-container), unified filled text fields, container-colored chips, list hover states
+- `docs/M3-POLISH-GUIDE.md` committed — the recipes; PatrolPage is the hand-built reference
+- Executed by 4 parallel frontend-ui-developer agents over disjoint screen sets; verified tsc/tests(597)/build/zero seam-grids
+- **fix/m3-sweep-encoding (78f4ef8)**: the earlier sweep's PowerShell read (PS5.1 treats BOM-less UTF-8 as ANSI) had mangled 325 multibyte chars across 16 files, visible live — reversed losslessly (cp1252→UTF-8). **Lesson: never rewrite repo files via PS5.1 Get-Content/-Raw without -Encoding UTF8; use Read/Edit tools**
+
 **feat/m3-redesign — merged to main (6c2ed04), DEPLOYED**
 
 - Material 3 full-sweep redesign, all 15 screens (Matt's decisions: Material-first hybrid + full sweep in one go)
