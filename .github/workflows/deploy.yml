@@ -29,7 +29,11 @@ jobs:
         run: npm run build
         env:
           VITE_STRAVA_OAUTH_WORKER: ${{ secrets.STRAVA_OAUTH_WORKER_URL }}
-          VITE_STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          # VITE_STRAVA_CLIENT_ID deliberately NOT set: a baked-in client ID
+          # points every visitor at ONE Strava API app, and Strava caps an
+          # unapproved app at a single connected athlete — locking the app to
+          # the owner. Without it, each athlete gets the guided Setup wizard
+          # and connects via their own free API app (see docs/ONBOARDING.md).
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
