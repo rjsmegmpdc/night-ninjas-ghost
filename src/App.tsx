@@ -59,6 +59,7 @@ function useFirstRunRedirect(ready: boolean): boolean {
 function AppShell() {
   const { ready, error: dbError } = useDb();
   const redirectToSetup = useFirstRunRedirect(ready);
+  const location = useLocation();
 
   if (!ready) {
     return (
@@ -82,8 +83,10 @@ function AppShell() {
   return (
     <div className="min-h-screen bg-surface text-on-surface">
       <TopNav />
-      {/* Clear the mobile bottom nav bar and the desktop rail */}
+      {/* Clear the mobile bottom nav bar and the desktop rail.
+          Keyed wrapper re-runs the M3 fade-through entrance per route. */}
       <main className="pb-24 md:pb-0 md:pl-22">
+        <div key={location.pathname} className="m3-page-enter">
         <Suspense fallback={<PageSkeleton />}>
           <Routes>
             <Route path="/" element={<Navigate to={home} replace />} />
@@ -106,6 +109,7 @@ function AppShell() {
             <Route path="*"          element={<Navigate to="/patrol" replace />} />
           </Routes>
         </Suspense>
+        </div>
       </main>
     </div>
   );

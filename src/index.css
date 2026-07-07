@@ -69,6 +69,12 @@
   --color-signal-ok:   #26D0AE;
   --color-signal-warn: #EAB308;
 
+  /* M3 motion tokens — easing (ease-standard, ease-emphasized, …) */
+  --ease-standard:              cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized:            cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+
   /* Typography — Bebas for display numerals/headers (brand signature),
      Roboto-class for everything else. `--font-mono` is intentionally
      remapped: thousands of existing font-mono usages become body type. */
@@ -93,12 +99,52 @@
   body {
     font-family: var(--font-mono), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    /* Smooth theme switches */
+    transition: background-color 300ms var(--ease-standard);
   }
 
   ::selection {
     background: var(--m3-primary);
     color: var(--m3-on-primary);
   }
+
+  /* M3 press feedback — every real button compresses slightly on press.
+     Guarded by prefers-reduced-motion below. */
+  button:not(:disabled) {
+    transition: transform 100ms var(--ease-standard);
+  }
+  button:not(:disabled):active {
+    transform: scale(0.97);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * M3 motion — fade-through page transition (enter side)
+ * Outgoing content is replaced instantly; incoming fades in with the
+ * emphasized-decelerate curve and a slight lift, per the M3 fade-through
+ * pattern. Applied by App.tsx on a wrapper keyed to the route.
+ * ------------------------------------------------------------------------- */
+
+@keyframes m3-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@utility m3-page-enter {
+  animation: m3-page-in 260ms var(--ease-emphasized-decelerate) both;
+}
+
+/* Respect users who opt out of motion */
+@media (prefers-reduced-motion: reduce) {
+  .m3-page-enter { animation: none; }
+  button:not(:disabled):active { transform: none; }
+  body { transition: none; }
 }
 
 /* ---------------------------------------------------------------------------
