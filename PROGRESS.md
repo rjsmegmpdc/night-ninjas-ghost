@@ -1,6 +1,21 @@
 ## Branch
 main (feat/sync-e2e-encryption merged)
 
+## Session: 2026-07-08
+
+### Completed
+
+**feat/m3-motion — merged to main (42db7b2), DEPLOYED**
+
+- M3 motion tokens (ease-standard/emphasized/decelerate/accelerate) as Tailwind easings
+- Route fade-through enter (260ms emphasized-decelerate, keyed wrapper in App.tsx); button press feedback (scale 0.97); theme cross-fade; all off under prefers-reduced-motion
+
+**fix(deploy): unlock for other athletes (89c027f)**
+
+- Root cause of "app locked to Matt": deploy baked `VITE_STRAVA_CLIENT_ID` → all visitors hit Matt's API app, and Strava caps unapproved apps at ONE connected athlete
+- Removed from build env (with explanatory comment); deployed site is now wizard-first — every athlete creates their own free API app per docs/ONBOARDING.md; Matt's stored tokens keep refreshing via worker env-secret fallback
+- Matt liked the M3 look ✓
+
 ## Session: 2026-07-07
 
 ### Completed
