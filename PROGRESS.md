@@ -5,6 +5,17 @@ main (feat/sync-e2e-encryption merged)
 
 ### Completed
 
+**feat/m3-redesign — merged to main (6c2ed04), DEPLOYED**
+
+- Material 3 full-sweep redesign, all 15 screens (Matt's decisions: Material-first hybrid + full sweep in one go)
+- Color: `scripts/generate-m3-tokens.mjs` runs Google's material-color-utilities at dev time → `src/m3-tokens.css` (six M3 dynamic schemes from the #FF5F00 seed; `npm run tokens` regenerates; zero runtime deps). Ink surface is now a warm brown-black #1e100b
+- `index.css`: M3 roles as Tailwind utilities via `@theme inline`; ALL legacy tokens (ink/bone/accent/signal-miss) remapped to M3 roles — 15 screens re-theme live; `--font-mono` token → Roboto/system-ui (one-line app-wide typography switch); Bebas Neue stays for display; `--color-brand` = #FF5F00 for logotype
+- Navigation: mobile = M3 top app bar + fixed bottom nav bar (Patrol/Dojo/Calendar/Club/Gear, pill indicators, iOS safe-area); desktop = left navigation rail; Recon+Settings as app-bar actions / rail foot
+- Shape sweep: 191 `border border-ink-line` → `m3-card` (12px outlined cards); pills on buttons/chips; Settings swatches show real scheme values; PWA theme_color updated
+- Gotchas fixed: material-color-utilities ESM needs vite-node with deps.inline; PowerShell `>` writes UTF-16 (generator now writes UTF-8 itself); `.claude/worktrees/` added to .gitignore
+- 597 tests pass; production build verified; Pages deploy green
+- **Follow-up candidates**: per-screen polish pass (some dense tables/grids deserve bespoke M3 treatment); Riegel of remaining Bebas/brand accents; motion (M3 transitions)
+
 **feat/club-v2 — merged to main (bcbd20d), DEPLOYED LIVE**
 
 - Club page v2: 6 tabs — Ninja Champs / Ninja Loop / Waiwera / Parkrun (link card, URL TBC) / Road Relays (link card, URL TBC) / My Training (old page preserved)
