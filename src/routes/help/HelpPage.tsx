@@ -1,17 +1,17 @@
 // ---------------------------------------------------------------------------
-// HelpPage — static reference screen, no data fetching, no hooks
+// HelpPage â€” static reference screen, no data fetching, no hooks
 // ---------------------------------------------------------------------------
 
 const GETTING_STARTED: { step: string; detail: string }[] = [
   {
     step: 'iPhone? Add to home screen FIRST',
     detail:
-      'In Safari: Share button → "Add to Home Screen", then open GHOST from the new icon and do everything below inside it. iOS gives the installed app its own separate storage — setting up in the Safari tab first means doing it twice.',
+      'In Safari: Share button â†’ "Add to Home Screen", then open GHOST from the new icon and do everything below inside it. iOS gives the installed app its own separate storage â€” setting up in the Safari tab first means doing it twice.',
   },
   {
     step: 'Read the privacy card',
     detail:
-      'First open shows what GHOST stores on your device — everything stays local, no accounts, no server. Tap "Got it — let\'s go".',
+      'First open shows what GHOST stores on your device â€” everything stays local, no accounts, no server. Tap "Got it â€” let\'s go".',
   },
   {
     step: 'Create your Strava API app (once, ~2 min)',
@@ -21,7 +21,7 @@ const GETTING_STARTED: { step: string; detail: string }[] = [
   {
     step: 'Paste your Client ID and Secret',
     detail:
-      'Strava shows both after saving. Paste them into Step 2 of the wizard — they\'re stored only on this device. They identify your API app, not your Strava account; GHOST never sees your password.',
+      'Strava shows both after saving. Paste them into Step 2 of the wizard â€” they\'re stored only on this device. They identify your API app, not your Strava account; GHOST never sees your password.',
   },
   {
     step: 'Connect with Strava',
@@ -31,30 +31,30 @@ const GETTING_STARTED: { step: string; detail: string }[] = [
   {
     step: 'Optional: back up your profile',
     detail:
-      'Setup → Profile Sync → "Back up this device". Verify your email with a 6-digit code, choose a passphrase (no reset — remember it!). Any other device is then just Restore + Connect — no wizard, no copy-paste.',
+      'Setup â†’ Profile Sync â†’ "Back up this device". Verify your email with a 6-digit code, choose a passphrase (no reset â€” remember it!). Any other device is then just Restore + Connect â€” no wizard, no copy-paste.',
   },
   {
     step: 'Make it yours',
     detail:
-      'Settings → Preferences: pick your home page (where the GHOST button goes), font size, and one of six themes. Then set a goal race in Calendar and pick a plan in Dojo.',
+      'Settings â†’ Preferences: pick your home page (where the GHOST button goes), font size, and one of six themes. Then set a goal race in Calendar and pick a plan in Dojo.',
   },
 ];
 
 const GLOSSARY: { term: string; screen: string; meaning: string }[] = [
-  { term: 'Patrol',    screen: '/patrol',    meaning: 'Dashboard — streak, weekly summary, compliance snapshot' },
-  { term: 'Recon',     screen: '/recon',     meaning: 'Trend analysis — 6-month volume, zone distribution, CTL/ATL' },
-  { term: 'Strike',    screen: '/strike',    meaning: 'Athlete state — 8-week CTL/ATL/TSB and intensity breakdown' },
-  { term: 'Dojo',      screen: '/dojo',      meaning: 'Training methodology — pick your plan structure' },
+  { term: 'Patrol',    screen: '/patrol',    meaning: 'Dashboard â€” streak, weekly summary, compliance snapshot' },
+  { term: 'Recon',     screen: '/recon',     meaning: 'Trend analysis â€” 6-month volume, zone distribution, CTL/ATL' },
+  { term: 'Strike',    screen: '/strike',    meaning: 'Athlete state â€” 8-week CTL/ATL/TSB and intensity breakdown' },
+  { term: 'Dojo',      screen: '/dojo',      meaning: 'Training methodology â€” pick your plan structure' },
   { term: 'Calendar',  screen: '/calendar',  meaning: 'Race schedule, capacity caps, commitments' },
-  { term: 'Race',      screen: '/race',      meaning: 'Race-day tools — pace plan, fueling, carb-load, taper' },
-  { term: 'Vo2max',    screen: '/vo2max',    meaning: 'Aerobic ceiling — test entry, trend, insights' },
-  { term: 'Coach Log', screen: '/coach-log', meaning: 'Daily wellness log — sleep, energy, stress, resting HR' },
-  { term: 'Journal',   screen: '/journal',   meaning: 'Training diary — 30-day calendar view with notes' },
+  { term: 'Race',      screen: '/race',      meaning: 'Race-day tools â€” pace plan, fueling, carb-load, taper' },
+  { term: 'Vo2max',    screen: '/vo2max',    meaning: 'Aerobic ceiling â€” test entry, trend, insights' },
+  { term: 'Coach Log', screen: '/coach-log', meaning: 'Daily wellness log â€” sleep, energy, stress, resting HR' },
+  { term: 'Journal',   screen: '/journal',   meaning: 'Training diary â€” 30-day calendar view with notes' },
   { term: 'Gear',      screen: '/gear',      meaning: 'Shoes with rotation analysis, clothing, hardware, food, deal watchlist' },
   { term: 'Club',      screen: '/club',      meaning: 'Share your training schedule with your running group' },
-  { term: 'Profile',   screen: '/profile',   meaning: 'Athlete settings — zones, HR, strength preferences' },
-  { term: 'Settings',  screen: '/settings',  meaning: 'App settings — Strava, data export' },
-  { term: 'Setup',     screen: '/setup',     meaning: 'Initial configuration — Strava OAuth, first sync' },
+  { term: 'Profile',   screen: '/profile',   meaning: 'Athlete settings â€” zones, HR, strength preferences' },
+  { term: 'Settings',  screen: '/settings',  meaning: 'App settings â€” Strava, data export' },
+  { term: 'Setup',     screen: '/setup',     meaning: 'Initial configuration â€” Strava OAuth, first sync' },
 ];
 
 const TASKS: { title: string; description: string }[] = [
@@ -66,37 +66,37 @@ const TASKS: { title: string; description: string }[] = [
   {
     title: 'Set a goal race',
     description:
-      'Go to Calendar — Goal Race card — fill in race date, distance, and target time.',
+      'Go to Calendar â€” Goal Race card â€” fill in race date, distance, and target time.',
   },
   {
     title: 'Pick a training plan',
     description:
-      'Go to Dojo — choose a methodology — set your start date.',
+      'Go to Dojo â€” choose a methodology â€” set your start date.',
   },
   {
     title: 'Log wellness',
     description:
-      'Go to Coach Log — fill in today\'s sleep, energy, and stress ratings.',
+      'Go to Coach Log â€” fill in today\'s sleep, energy, and stress ratings.',
   },
   {
     title: 'Track a VO2 max test',
     description:
-      'Go to Vo2max — choose Cooper, Rockport, or Lab — enter your result.',
+      'Go to Vo2max â€” choose Cooper, Rockport, or Lab â€” enter your result.',
   },
   {
     title: 'Import your shoes',
     description:
-      'Go to Gear — "Import from Strava" pulls your whole shoe inventory with mileage. Clothing, packs, and food are added manually.',
+      'Go to Gear â€” "Import from Strava" pulls your whole shoe inventory with mileage. Clothing, packs, and food are added manually.',
   },
   {
     title: 'Move to a new device',
     description:
-      'Old device: Setup — Profile Sync — "Back up this device". New device: "Restore to this device" — same email + passphrase — then Connect with Strava.',
+      'Old device: Setup â€” Profile Sync â€” "Back up this device". New device: "Restore to this device" â€” same email + passphrase â€” then Connect with Strava.',
   },
   {
     title: 'Log time off',
     description:
-      'Go to Calendar — Commitments — add a sickness or travel event.',
+      'Go to Calendar â€” Commitments â€” add a sickness or travel event.',
   },
 ];
 
@@ -104,17 +104,17 @@ const TROUBLESHOOTING: { title: string; description: string }[] = [
   {
     title: 'App looks outdated / new features missing',
     description:
-      'Close ALL GHOST tabs, then reopen — the updated version activates on the next full load. Do NOT use "Clear site data": that deletes your entire local training database along with the cache.',
+      'Close ALL GHOST tabs, then reopen â€” the updated version activates on the next full load. Do NOT use "Clear site data": that deletes your entire local training database along with the cache.',
   },
   {
     title: 'Strava OAuth redirect fails',
     description:
-      'Ensure your Strava App\'s "Authorization Callback Domain" is set to the production domain (not localhost). Found at strava.com/settings/api — Edit.',
+      'Ensure your Strava App\'s "Authorization Callback Domain" is set to the production domain (not localhost). Found at strava.com/settings/api â€” Edit.',
   },
   {
     title: 'Activities not appearing after sync',
     description:
-      'Check Setup — sync status. If a job is stuck, it may be rate-limited. Wait a minute and try again.',
+      'Check Setup â€” sync status. If a job is stuck, it may be rate-limited. Wait a minute and try again.',
   },
   {
     title: 'Data shows "MemoryVFS"',
@@ -141,7 +141,7 @@ function SectionLabel({ children }: { children: string }) {
 
 function Card({ title, description }: { title: string; description: string }) {
   return (
-    <div className="border border-ink-line p-5 space-y-2">
+    <div className="m3-card p-5 space-y-2">
       <p className="font-mono text-sm text-bone font-bold">{title}</p>
       <p className="font-mono text-sm text-bone-dim leading-relaxed">{description}</p>
     </div>
@@ -161,12 +161,12 @@ export default function HelpPage() {
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">Ghost</p>
         <h1 className="font-display text-4xl tracking-widest uppercase text-bone">Help</h1>
         <p className="font-mono text-sm text-bone-dim leading-relaxed">
-          Reference — how GHOST works
+          Reference â€” how GHOST works
         </p>
       </header>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Section 0: Getting started — new club members                       */}
+      {/* Section 0: Getting started â€” new club members                       */}
       {/* ------------------------------------------------------------------ */}
       <section id="getting-started" aria-labelledby="getting-started-heading">
         <SectionLabel>New here?</SectionLabel>
@@ -177,13 +177,13 @@ export default function HelpPage() {
           Getting started
         </h2>
         <p className="font-mono text-sm text-bone-dim leading-relaxed max-w-3xl mb-6">
-          One-time setup, about five minutes. After this, GHOST just works —
+          One-time setup, about five minutes. After this, GHOST just works â€”
           open it and your training is there.
         </p>
 
         <ol className="space-y-3">
           {GETTING_STARTED.map(({ step, detail }, i) => (
-            <li key={step} className="border border-ink-line p-5 flex gap-4">
+            <li key={step} className="m3-card p-5 flex gap-4">
               <span className="font-display tracking-widest text-2xl text-accent leading-none select-none">
                 {i + 1}
               </span>
@@ -208,17 +208,17 @@ export default function HelpPage() {
           Glossary
         </h2>
 
-        <div className="border border-ink-line overflow-x-auto">
+        <div className="m3-card overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-ink-line">
-                <th className="font-mono text-xs text-bone-mute uppercase tracking-widest px-5 py-3 w-32">
+                <th className="font-mono text-xs text-bone-mute uppercase tracking-widest rounded-full px-5 py-3 w-32">
                   Term
                 </th>
-                <th className="font-mono text-xs text-bone-mute uppercase tracking-widest px-5 py-3 w-36">
+                <th className="font-mono text-xs text-bone-mute uppercase tracking-widest rounded-full px-5 py-3 w-36">
                   Screen
                 </th>
-                <th className="font-mono text-xs text-bone-mute uppercase tracking-widest px-5 py-3">
+                <th className="font-mono text-xs text-bone-mute uppercase tracking-widest rounded-full px-5 py-3">
                   What it means
                 </th>
               </tr>
@@ -285,17 +285,17 @@ export default function HelpPage() {
             <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-3">
               Storage location
             </p>
-            <div className="border border-ink-line divide-y divide-ink-line">
+            <div className="m3-card divide-y divide-ink-line">
               <div className="px-5 py-3 grid sm:grid-cols-[240px_1fr] gap-2">
                 <span className="font-mono text-sm text-bone">Browser (Chrome / Edge / Firefox)</span>
                 <span className="font-mono text-sm text-bone-dim leading-relaxed">
-                  OPFS — survives page refresh, lost on "Clear site data"
+                  OPFS â€” survives page refresh, lost on "Clear site data"
                 </span>
               </div>
               <div className="px-5 py-3 grid sm:grid-cols-[240px_1fr] gap-2">
                 <span className="font-mono text-sm text-bone">Safari / private browsing</span>
                 <span className="font-mono text-sm text-bone-dim leading-relaxed">
-                  MemoryVFS — lost on tab close
+                  MemoryVFS â€” lost on tab close
                 </span>
               </div>
               <div className="px-5 py-3 grid sm:grid-cols-[240px_1fr] gap-2">
@@ -312,9 +312,9 @@ export default function HelpPage() {
             <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-3">
               Export your data
             </p>
-            <div className="border border-ink-line px-5 py-4">
+            <div className="m3-card px-5 py-4">
               <p className="font-mono text-sm text-bone-dim leading-relaxed">
-                Settings — "Export data" downloads a full JSON snapshot of all your activities,
+                Settings â€” "Export data" downloads a full JSON snapshot of all your activities,
                 shoes, races, and journal entries.
               </p>
             </div>
@@ -353,7 +353,7 @@ export default function HelpPage() {
           Privacy
         </h2>
 
-        <div className="border border-ink-line divide-y divide-ink-line">
+        <div className="m3-card divide-y divide-ink-line">
           <div className="px-5 py-3 font-mono text-sm text-bone-dim leading-relaxed">
             GHOST does not have a backend (except the Strava OAuth proxy worker and the
             optional Profile Sync store).
@@ -364,7 +364,7 @@ export default function HelpPage() {
           </div>
           <div className="px-5 py-3 font-mono text-sm text-bone-dim leading-relaxed">
             Profile Sync backups are encrypted on your device with your passphrase before
-            upload — nobody, including whoever runs this site, can read them.
+            upload â€” nobody, including whoever runs this site, can read them.
           </div>
           <div className="px-5 py-3 font-mono text-sm text-bone-dim leading-relaxed">
             No analytics, no tracking, no telemetry.

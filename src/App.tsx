@@ -80,9 +80,10 @@ function AppShell() {
   const home = localStorage.getItem('ghost.home_page') ?? '/patrol';
 
   return (
-    <div className="min-h-screen bg-ink text-bone">
+    <div className="min-h-screen bg-surface text-on-surface">
       <TopNav />
-      <main>
+      {/* Clear the mobile bottom nav bar and the desktop rail */}
+      <main className="pb-24 md:pb-0 md:pl-22">
         <Suspense fallback={<PageSkeleton />}>
           <Routes>
             <Route path="/" element={<Navigate to={home} replace />} />

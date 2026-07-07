@@ -6,9 +6,9 @@ export function PageSkeleton() {
         <div className="h-8 w-56 bg-ink-line-bold rounded" />
       </div>
       <div className="space-y-6">
-        <div className="h-28 bg-ink-shadow border border-ink-line rounded-xl" />
-        <div className="h-40 bg-ink-shadow border border-ink-line rounded-xl" />
-        <div className="h-28 bg-ink-shadow border border-ink-line rounded-xl" />
+        <div className="h-28 bg-ink-shadow m3-card rounded-xl" />
+        <div className="h-40 bg-ink-shadow m3-card rounded-xl" />
+        <div className="h-28 bg-ink-shadow m3-card rounded-xl" />
       </div>
     </div>
   );

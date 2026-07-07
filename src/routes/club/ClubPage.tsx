@@ -131,13 +131,13 @@ function SavedBadge({ status }: { status: SaveStatus }) {
 }
 
 const INPUT_CLASS =
-  'w-full bg-ink-shadow border border-ink-line px-3 py-2.5 font-mono text-sm text-bone ' +
+  'w-full bg-ink-shadow m3-card px-3 py-2.5 font-mono text-sm text-bone ' +
   'placeholder:text-bone-mute focus:outline-none focus:border-accent transition-colors';
 
 const LABEL_CLASS = 'block font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-1';
 
 // ---------------------------------------------------------------------------
-// Courses — definitions
+// Courses â€” definitions
 // ---------------------------------------------------------------------------
 
 type CourseTab = 'champs' | 'ninja-loop' | 'waiwera' | 'parkrun' | 'relays' | 'mine';
@@ -151,7 +151,7 @@ const TABS: { key: CourseTab; label: string }[] = [
   { key: 'mine',       label: 'My Training' },
 ];
 
-// External sites — URLs to come; null renders a "coming soon" card
+// External sites â€” URLs to come; null renders a "coming soon" card
 const PARKRUN_URL: string | null = null;
 const RELAYS_URL: string | null = null;
 
@@ -163,7 +163,7 @@ function AdminBar({ isAdmin, onSignOut }: { isAdmin: boolean; onSignOut: () => v
   if (isAdmin) {
     return (
       <div className="flex items-center gap-3">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-signal-ok">● Admin mode</span>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-signal-ok">â— Admin mode</span>
         <button
           type="button"
           onClick={onSignOut}
@@ -180,13 +180,13 @@ function AdminBar({ isAdmin, onSignOut }: { isAdmin: boolean; onSignOut: () => v
       onClick={startClubAdminAuth}
       className="font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent transition-colors"
     >
-      Admin →
+      Admin â†’
     </button>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Member picker — select existing or add new inline (shared by both forms)
+// Member picker â€” select existing or add new inline (shared by both forms)
 // ---------------------------------------------------------------------------
 
 function MemberPicker({
@@ -232,15 +232,15 @@ function MemberPicker({
         onChange={(e) => onChange(e.target.value === 'new' ? 'new' : e.target.value === '' ? '' : Number(e.target.value))}
         className={INPUT_CLASS}
       >
-        <option value="">Select athlete…</option>
+        <option value="">Select athleteâ€¦</option>
         {members.map((m) => (
           <option key={m.id} value={m.id}>{m.name}</option>
         ))}
-        <option value="new">+ New member…</option>
+        <option value="new">+ New memberâ€¦</option>
       </select>
 
       {value === 'new' && (
-        <div className="border border-ink-line p-3 space-y-2">
+        <div className="m3-card p-3 space-y-2">
           <input
             type="text"
             value={newName}
@@ -267,9 +267,9 @@ function MemberPicker({
             type="button"
             onClick={() => void saveNew()}
             disabled={busy || !newName.trim()}
-            className="w-full font-mono text-xs uppercase tracking-widest px-4 py-2.5 border border-accent text-accent active:bg-accent active:text-ink disabled:opacity-40 transition-colors"
+            className="w-full font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2.5 m3-btn-outline text-accent active:bg-accent active:text-ink disabled:opacity-40 transition-colors"
           >
-            {busy ? 'Adding…' : 'Add member'}
+            {busy ? 'Addingâ€¦' : 'Add member'}
           </button>
         </div>
       )}
@@ -322,10 +322,10 @@ function LeaderboardView({
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <select value={win} onChange={(e) => setWin(e.target.value as WindowFilter)} className="bg-ink border border-ink-line px-2 py-1.5 font-mono text-xs text-bone focus:outline-none focus:border-accent">
+        <select value={win} onChange={(e) => setWin(e.target.value as WindowFilter)} className="bg-ink m3-card px-2 py-1.5 font-mono text-xs text-bone focus:outline-none focus:border-accent">
           {WINDOW_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-        <div className="flex border border-ink-line">
+        <div className="flex m3-card">
           {(['all', 'M', 'F'] as const).map((s) => (
             <button
               key={s}
@@ -337,7 +337,7 @@ function LeaderboardView({
             </button>
           ))}
         </div>
-        <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value as AgeGroup | 'all')} className="bg-ink border border-ink-line px-2 py-1.5 font-mono text-xs text-bone focus:outline-none focus:border-accent">
+        <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value as AgeGroup | 'all')} className="bg-ink m3-card px-2 py-1.5 font-mono text-xs text-bone focus:outline-none focus:border-accent">
           <option value="all">All ages</option>
           {AGE_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
         </select>
@@ -347,7 +347,7 @@ function LeaderboardView({
           className={`px-3 py-1.5 border font-mono text-xs uppercase tracking-widest transition-colors ${legend ? 'border-accent text-accent bg-accent/10' : 'border-ink-line text-bone-mute hover:text-bone'}`}
           title="Rank by number of efforts, like Strava's Local Legend"
         >
-          ★ Legend
+          â˜… Legend
         </button>
       </div>
 
@@ -355,7 +355,7 @@ function LeaderboardView({
       {board.length === 0 ? (
         <p className="font-mono text-sm text-bone-mute py-4">No efforts recorded{win !== 'all-time' ? ' in this window' : ''} yet.</p>
       ) : (
-        <div className="border border-ink-line divide-y divide-ink-line">
+        <div className="m3-card divide-y divide-ink-line">
           {board.map((row) => (
             <div key={row.memberId} className="px-3 sm:px-4 py-2.5 flex items-center gap-3">
               <span className={`font-display tracking-widest text-lg w-7 text-right shrink-0 ${row.rank <= 3 ? 'text-accent' : 'text-bone-mute'}`}>
@@ -364,7 +364,7 @@ function LeaderboardView({
               <div className="min-w-0 flex-1">
                 <p className="font-mono text-sm text-bone truncate">{row.name}</p>
                 <p className="font-mono text-[10px] text-bone-mute">
-                  {row.sex}{row.ageGroup ? ` · ${row.ageGroup}` : ''} · {formatShortDate(row.date)}
+                  {row.sex}{row.ageGroup ? ` Â· ${row.ageGroup}` : ''} Â· {formatShortDate(row.date)}
                 </p>
               </div>
               <div className="text-right shrink-0">
@@ -412,7 +412,7 @@ function AddResultForm({
     try {
       await addResult({ memberId: member as number, course, date, timeS: timeS! });
       setTime('');
-      setStatus({ type: 'ok', msg: 'Saved — leaderboard updated.' });
+      setStatus({ type: 'ok', msg: 'Saved â€” leaderboard updated.' });
       onSaved();
     } catch (e) {
       setStatus({ type: 'err', msg: e instanceof Error ? e.message : String(e) });
@@ -454,9 +454,9 @@ function AddResultForm({
         type="button"
         onClick={() => void save()}
         disabled={!canSave || busy}
-        className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest px-5 py-2.5 border border-accent text-accent active:bg-accent active:text-ink disabled:opacity-40 transition-colors"
+        className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 m3-btn-outline text-accent active:bg-accent active:text-ink disabled:opacity-40 transition-colors"
       >
-        {busy ? 'Saving…' : 'Save effort'}
+        {busy ? 'Savingâ€¦' : 'Save effort'}
       </button>
     </div>
   );
@@ -503,14 +503,14 @@ function ChampsView({
       <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-2xl">
         Once a year at the Millwater Half Marathon. Your baseline is a
         Riegel-predicted half time from your best 5k / 10k / 21.1k over the
-        last 12 months — the ranking rewards <strong className="text-bone">improvement</strong>,
+        last 12 months â€” the ranking rewards <strong className="text-bone">improvement</strong>,
         not raw speed. Registration happens on the day; Night Ninjas members only.
       </p>
 
       {/* Year selector */}
       <div className="flex items-center gap-2">
         <label className="font-mono text-[10px] uppercase tracking-widest text-bone-mute">Year</label>
-        <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="bg-ink border border-ink-line px-2 py-1.5 font-mono text-xs text-bone focus:outline-none focus:border-accent">
+        <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="bg-ink m3-card px-2 py-1.5 font-mono text-xs text-bone focus:outline-none focus:border-accent">
           {years.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
       </div>
@@ -519,11 +519,11 @@ function ChampsView({
       {ranked.length === 0 ? (
         <p className="font-mono text-sm text-bone-mute py-2">No entries for {year} yet.</p>
       ) : (
-        <div className="border border-ink-line divide-y divide-ink-line">
+        <div className="m3-card divide-y divide-ink-line">
           {ranked.map((e) => (
             <div key={e.id} className="px-3 sm:px-4 py-2.5 flex items-center gap-3">
               <span className={`font-display tracking-widest text-lg w-7 text-right shrink-0 ${e.rank === 1 ? 'text-accent' : e.rank ? 'text-bone-dim' : 'text-bone-mute'}`}>
-                {e.rank ?? '—'}
+                {e.rank ?? 'â€”'}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-mono text-sm text-bone truncate">{e.name}</p>
@@ -531,7 +531,7 @@ function ChampsView({
                   {e.baselineS
                     ? `baseline ${formatTimeS(e.baselineS)} (from ${e.baselineSource})`
                     : 'no PBs entered'}
-                  {e.sex ? ` · ${e.sex}` : ''}{ageGroupFor(e.yob, year) ? ` · ${ageGroupFor(e.yob, year)}` : ''}
+                  {e.sex ? ` Â· ${e.sex}` : ''}{ageGroupFor(e.yob, year) ? ` Â· ${ageGroupFor(e.yob, year)}` : ''}
                 </p>
               </div>
               <div className="text-right shrink-0">
@@ -561,7 +561,7 @@ function ChampsView({
         {data.champsWinners.length === 0 ? (
           <p className="font-mono text-sm text-bone-mute">No winners recorded yet.</p>
         ) : (
-          <div className="border border-ink-line divide-y divide-ink-line">
+          <div className="m3-card divide-y divide-ink-line">
             {data.champsWinners.map((w) => (
               <div key={w.year} className="px-4 py-2.5 flex items-center gap-4">
                 <span className="font-display tracking-widest text-lg text-accent shrink-0">{w.year}</span>
@@ -623,7 +623,7 @@ function ChampsEntryForm({
         memberId: member as number, year,
         pb5kS: p5.value, pb10kS: p10.value, pb21kS: p21.value, actualS: pAct.value,
       });
-      setStatus({ type: 'ok', msg: 'Saved — standings updated.' });
+      setStatus({ type: 'ok', msg: 'Saved â€” standings updated.' });
       onSaved();
     } catch (e) {
       setStatus({ type: 'err', msg: e instanceof Error ? e.message : String(e) });
@@ -635,7 +635,7 @@ function ChampsEntryForm({
   return (
     <div className="border border-accent/40 p-4 space-y-3">
       <p className="font-mono text-[10px] uppercase tracking-widest text-accent">
-        Register / update entry · {year}
+        Register / update entry Â· {year}
       </p>
       <MemberPicker
         members={data.members}
@@ -669,9 +669,9 @@ function ChampsEntryForm({
         type="button"
         onClick={() => void save()}
         disabled={!canSave || busy}
-        className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest px-5 py-2.5 border border-accent text-accent active:bg-accent active:text-ink disabled:opacity-40 transition-colors"
+        className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 m3-btn-outline text-accent active:bg-accent active:text-ink disabled:opacity-40 transition-colors"
       >
-        {busy ? 'Saving…' : 'Save entry'}
+        {busy ? 'Savingâ€¦' : 'Save entry'}
       </button>
     </div>
   );
@@ -702,7 +702,7 @@ function WinnerForm({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <div className="border border-ink-line p-4 space-y-2">
+    <div className="m3-card p-4 space-y-2">
       <p className="font-mono text-[10px] uppercase tracking-widest text-bone-mute">Record a past winner</p>
       <div className="grid grid-cols-[90px_1fr] gap-2">
         <input type="text" inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value)} placeholder="Year" className={INPUT_CLASS} />
@@ -714,9 +714,9 @@ function WinnerForm({ onSaved }: { onSaved: () => void }) {
         type="button"
         onClick={() => void save()}
         disabled={!canSave || busy}
-        className="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-ink-line text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
+        className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
       >
-        {busy ? 'Saving…' : 'Save winner'}
+        {busy ? 'Savingâ€¦' : 'Save winner'}
       </button>
     </div>
   );
@@ -728,7 +728,7 @@ function WinnerForm({ onSaved }: { onSaved: () => void }) {
 
 function ExternalCourseCard({ title, url, blurb }: { title: string; url: string | null; blurb: string }) {
   return (
-    <div className="border border-ink-line p-6 space-y-3">
+    <div className="m3-card p-6 space-y-3">
       <h3 className="font-display tracking-widest text-2xl uppercase text-bone">{title}</h3>
       <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-xl">{blurb}</p>
       {url ? (
@@ -736,12 +736,12 @@ function ExternalCourseCard({ title, url, blurb }: { title: string; url: string 
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest px-4 py-2.5 border border-accent text-accent hover:bg-accent hover:text-ink transition-colors"
+          className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2.5 m3-btn-outline text-accent hover:bg-accent hover:text-ink transition-colors"
         >
           Open results site <ExternalLink size={12} aria-hidden="true" />
         </a>
       ) : (
-        <p className="font-mono text-xs text-bone-mute border border-ink-line inline-block px-3 py-1.5">
+        <p className="font-mono text-xs text-bone-mute m3-card inline-block px-3 py-1.5">
           Results site coming soon
         </p>
       )}
@@ -789,9 +789,9 @@ function IdentitySection() {
   }
 
   return (
-    <section className="border border-ink-line p-6 space-y-4" aria-labelledby="club-identity">
+    <section className="m3-card p-6 space-y-4" aria-labelledby="club-identity">
       <div className="space-y-1 border-b border-ink-line pb-4">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">club · identity</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">club Â· identity</p>
         <h2 id="club-identity" className="font-display tracking-widest text-2xl uppercase text-bone">
           Your Details
         </h2>
@@ -858,7 +858,7 @@ function WeekBarChart({ weeks }: { weeks: WeekBucket[] }) {
         return (
           <div key={w.label} className="flex-1 flex flex-col items-center gap-1">
             <span className="font-mono text-[10px] text-bone-mute tabular-nums">
-              {w.km > 0 ? w.km.toFixed(0) : '—'}
+              {w.km > 0 ? w.km.toFixed(0) : 'â€”'}
             </span>
             <div className="w-full bg-accent/30 relative" style={{ height: `${BAR_MAX_PX}px` }} title={`${w.label}: ${w.km.toFixed(1)} km`}>
               <div className="absolute bottom-0 left-0 right-0 bg-accent transition-all" style={{ height: `${barH}px` }} />
@@ -893,9 +893,9 @@ function SummaryCard({ data }: { data: SummaryData }) {
   ];
 
   return (
-    <section className="border border-ink-line p-6 space-y-6" aria-labelledby="club-summary">
+    <section className="m3-card p-6 space-y-6" aria-labelledby="club-summary">
       <div className="space-y-1 border-b border-ink-line pb-4">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">club · last 4 weeks</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">club Â· last 4 weeks</p>
         <h2 id="club-summary" className="font-display tracking-widest text-2xl uppercase text-bone">
           Training Summary
         </h2>
@@ -948,17 +948,17 @@ function ShareCard({
       year: 'numeric',
     });
     const lines: string[] = [
-      `${name} · Training Summary`,
+      `${name} Â· Training Summary`,
       dateStr,
       '',
       'Last 4 weeks:',
-      `• ${summary.totalRuns} runs · ${summary.totalKm.toFixed(1)}km total`,
-      `• Longest run: ${summary.longestKm.toFixed(1)}km`,
-      `• Weekly avg: ${summary.avgKm.toFixed(1)}km`,
+      `â€¢ ${summary.totalRuns} runs Â· ${summary.totalKm.toFixed(1)}km total`,
+      `â€¢ Longest run: ${summary.longestKm.toFixed(1)}km`,
+      `â€¢ Weekly avg: ${summary.avgKm.toFixed(1)}km`,
     ];
     if (goalRace) {
       lines.push('');
-      lines.push(`Goal race: ${goalRace.name} · ${goalRace.date}`);
+      lines.push(`Goal race: ${goalRace.name} Â· ${goalRace.date}`);
     }
     if (parkrunId.trim()) {
       lines.push('');
@@ -980,9 +980,9 @@ function ShareCard({
   const previewText = hasEnoughData ? buildShareText() : '';
 
   return (
-    <section className="border border-ink-line p-6 space-y-4" aria-labelledby="club-share">
+    <section className="m3-card p-6 space-y-4" aria-labelledby="club-share">
       <div className="space-y-1 border-b border-ink-line pb-4">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">club · share</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">club Â· share</p>
         <h2 id="club-share" className="font-display tracking-widest text-2xl uppercase text-bone">
           Share Training
         </h2>
@@ -995,7 +995,7 @@ function ShareCard({
       ) : (
         <>
           <pre
-            className="bg-ink-shadow border border-ink-line px-4 py-3 font-mono text-xs text-bone-dim leading-relaxed whitespace-pre-wrap break-words"
+            className="bg-ink-shadow m3-card px-4 py-3 font-mono text-xs text-bone-dim leading-relaxed whitespace-pre-wrap break-words"
             aria-label="Share text preview"
           >
             {previewText}
@@ -1005,7 +1005,7 @@ function ShareCard({
             <button
               type="button"
               onClick={handleCopy}
-              className="px-4 py-2 border border-accent text-accent hover:bg-accent hover:text-ink font-mono text-xs uppercase tracking-widest transition-colors"
+              className="px-4 py-2 m3-btn-outline text-accent hover:bg-accent hover:text-ink font-mono text-xs uppercase tracking-widest transition-colors"
             >
               Copy training summary
             </button>
@@ -1025,10 +1025,10 @@ function RecentRunsSection({ runs }: { runs: RunRow[] }) {
   const recent = runs.slice(0, 10);
 
   return (
-    <section className="border border-ink-line p-6 space-y-4" aria-labelledby="club-recent">
+    <section className="m3-card p-6 space-y-4" aria-labelledby="club-recent">
       <div className="space-y-1 border-b border-ink-line pb-4">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          club · recent runs
+          club Â· recent runs
         </p>
         <h2 id="club-recent" className="font-display tracking-widest text-2xl uppercase text-bone">
           Recent Activity
@@ -1041,7 +1041,7 @@ function RecentRunsSection({ runs }: { runs: RunRow[] }) {
         <ul className="divide-y divide-ink-line" role="list">
           {recent.map((run, i) => {
             const km = run.distance_m / 1000;
-            const name = run.name.length > 40 ? run.name.slice(0, 40) + '…' : run.name;
+            const name = run.name.length > 40 ? run.name.slice(0, 40) + 'â€¦' : run.name;
             return (
               <li
                 key={`${run.start_date}-${i}`}
@@ -1220,13 +1220,13 @@ export default function ClubPage() {
             <h1 className="font-display tracking-widest text-4xl uppercase leading-none text-bone">
               Club
             </h1>
-            <p className="font-mono text-xs text-bone-mute">Night Ninjas — courses, leaderboards, Champs.</p>
+            <p className="font-mono text-xs text-bone-mute">Night Ninjas â€” courses, leaderboards, Champs.</p>
           </div>
           <AdminBar isAdmin={isAdmin} onSignOut={() => { endClubAdminSession(); setIsAdmin(false); }} />
         </div>
       </header>
 
-      {/* Course tabs — swipeable on mobile */}
+      {/* Course tabs â€” swipeable on mobile */}
       <nav className="flex gap-1 overflow-x-auto no-scrollbar -mx-1 px-1" aria-label="Club courses">
         {TABS.map((t) => (
           <button
@@ -1246,11 +1246,11 @@ export default function ClubPage() {
 
       {/* Shared-data tabs */}
       {needsClubData && clubError === 'not-configured' && (
-        <div className="border border-ink-line p-6 space-y-2">
+        <div className="m3-card p-6 space-y-2">
           <p className="font-mono text-xs text-bone uppercase tracking-widest">Not switched on yet</p>
           <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-xl">
             The club datastore hasn't been set up on this deployment. Admin: see{' '}
-            <code className="text-bone">docs/CLUB-SETUP.md</code> — one D1 database and two
+            <code className="text-bone">docs/CLUB-SETUP.md</code> â€” one D1 database and two
             config lines.
           </p>
         </div>
@@ -1259,7 +1259,7 @@ export default function ClubPage() {
         <div className="border border-signal-miss/40 p-4">
           <p className="font-mono text-xs text-signal-miss">Couldn't load club data: {clubError}</p>
           <button type="button" onClick={() => void loadClub()} className="font-mono text-xs text-bone-mute hover:text-bone mt-2">
-            Retry →
+            Retry â†’
           </button>
         </div>
       )}

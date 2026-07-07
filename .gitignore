@@ -41,3 +41,6 @@ Thumbs.db
 
 # Tauri icons placeholder — add real icons before first release
 src-tauri/icons/
+
+# Claude Code agent worktrees
+.claude/worktrees/

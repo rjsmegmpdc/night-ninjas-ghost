@@ -71,7 +71,7 @@ function severityColor(severity: string): string {
 }
 
 function severityBadge(severity: string): string {
-  const base = 'font-mono text-xs uppercase tracking-widest px-2 py-0.5 border ';
+  const base = 'font-mono text-xs uppercase tracking-widest rounded-full px-2 py-0.5 border ';
   if (severity === 'none') return base + 'border-signal-ok text-signal-ok';
   if (severity === 'mild') return base + 'border-signal-warn text-signal-warn';
   if (severity === 'moderate') return base + 'border-accent text-accent';
@@ -221,7 +221,7 @@ export default function RacePage() {
     <div className="px-4 sm:px-8 lg:px-12 py-8 max-w-7xl mx-auto space-y-6">
       {/* Page header */}
       <header className="border-b border-ink-line pb-6 space-y-1">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">ghost · race</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">ghost Â· race</p>
         <h1 className="font-display text-4xl tracking-widest uppercase text-bone">Race</h1>
       </header>
 
@@ -248,7 +248,7 @@ export default function RacePage() {
 
 function NoGoalRace() {
   return (
-    <div className="border border-ink-line p-6 space-y-3">
+    <div className="m3-card p-6 space-y-3">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">goal race</p>
       <p className="font-display text-2xl tracking-widest uppercase text-bone">No goal race set.</p>
       <p className="font-mono text-sm text-bone-dim leading-relaxed">
@@ -258,14 +258,14 @@ function NoGoalRace() {
         to="/calendar"
         className="inline-block font-mono text-xs uppercase tracking-widest text-accent hover:text-accent-hover transition-colors"
       >
-        Go to Calendar →
+        Go to Calendar â†’
       </Link>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Dashboard — assembled from cards
+// Dashboard â€” assembled from cards
 // ---------------------------------------------------------------------------
 
 interface DashboardProps {
@@ -340,7 +340,7 @@ function RaceHeaderCard({ race, daysToRace }: { race: GoalRace; daysToRace: numb
   const isPast = daysToRace < 0;
 
   return (
-    <div className="border border-ink-line p-6 space-y-4">
+    <div className="m3-card p-6 space-y-4">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">goal race</p>
       <h2 className="font-display text-3xl sm:text-4xl tracking-widest uppercase text-bone leading-none">
         {race.name}
@@ -385,7 +385,7 @@ function RaceHeaderCard({ race, daysToRace }: { race: GoalRace; daysToRace: numb
           day: 'numeric',
           timeZone: 'UTC',
         })}
-        {race.level && ` · ${race.level}`}
+        {race.level && ` Â· ${race.level}`}
       </p>
     </div>
   );
@@ -406,7 +406,7 @@ function WeatherCard({
 }) {
   if (loading) {
     return (
-      <div className="border border-ink-line p-6 animate-pulse space-y-2">
+      <div className="m3-card p-6 animate-pulse space-y-2">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">race day weather</p>
         <div className="h-6 w-48 bg-ink-line rounded" />
       </div>
@@ -415,7 +415,7 @@ function WeatherCard({
 
   if (!weather) {
     return (
-      <div className="border border-ink-line p-6 space-y-2">
+      <div className="m3-card p-6 space-y-2">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">race day weather</p>
         <p className="font-mono text-sm text-bone-mute">Weather data unavailable.</p>
       </div>
@@ -427,16 +427,16 @@ function WeatherCard({
   const adjustedSpk = applyHeatToPaceSpk(goalSpk, conditions);
 
   return (
-    <div className="border border-ink-line p-6 space-y-4">
+    <div className="m3-card p-6 space-y-4">
       <div className="flex items-center justify-between">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">race day weather</p>
         <span className={severityBadge(adjustment.severity)}>{adjustment.severity}</span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-px bg-ink-line border border-ink-line">
-        <WeatherStat label="max temp" value={`${weather.tempMaxC}°C`} />
-        <WeatherStat label="min temp" value={`${weather.tempMinC}°C`} />
-        <WeatherStat label="feels like" value={`${weather.apparentTempMaxC}°C`} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-px bg-ink-line m3-card">
+        <WeatherStat label="max temp" value={`${weather.tempMaxC}Â°C`} />
+        <WeatherStat label="min temp" value={`${weather.tempMinC}Â°C`} />
+        <WeatherStat label="feels like" value={`${weather.apparentTempMaxC}Â°C`} />
         <WeatherStat label="humidity" value={`${weather.humidityPct}%`} />
         <WeatherStat label="wind" value={`${Math.round(weather.windMaxKmh)} km/h`} />
       </div>
@@ -452,7 +452,7 @@ function WeatherCard({
       </p>
 
       {adjustment.severity !== 'none' && goalSpk > 0 && (
-        <div className="border border-ink-line p-4 space-y-1">
+        <div className="m3-card p-4 space-y-1">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">heat-adjusted pace</p>
           <div className="flex items-baseline gap-2">
             <span className="font-display text-3xl tracking-widest text-accent">
@@ -502,16 +502,16 @@ function PacePlanCard({
   const plan = plans[activeStrategy];
 
   return (
-    <div className="border border-ink-line p-6 space-y-4">
+    <div className="m3-card p-6 space-y-4">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">pace plan</p>
 
       {/* Strategy tabs */}
-      <div className="flex gap-0 border border-ink-line w-fit">
+      <div className="flex gap-0 m3-card w-fit">
         {STRATEGIES.map((s) => (
           <button
             key={s}
             onClick={() => setActiveStrategy(s)}
-            className={`font-mono text-xs uppercase tracking-widest px-4 py-2 transition-colors ${
+            className={`font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 transition-colors ${
               activeStrategy === s
                 ? 'bg-accent text-bone'
                 : 'text-bone-mute hover:text-bone hover:bg-ink-panel'
@@ -527,7 +527,7 @@ function PacePlanCard({
           {formatSpk(plan.goalPaceSpk)}
         </span>
         <span className="font-mono text-xs text-bone-mute">/km goal pace</span>
-        <span className="font-mono text-xs text-bone-mute">·</span>
+        <span className="font-mono text-xs text-bone-mute">Â·</span>
         <span className="font-mono text-sm text-bone">{formatDuration(plan.totalTimeS)}</span>
       </div>
 
@@ -546,7 +546,7 @@ function PacePlanCard({
             {plan.segments.map((seg, i) => (
               <tr key={i} className="hover:bg-ink-shadow transition-colors">
                 <td className="font-mono tabular-nums text-xs text-bone py-2 pr-4 whitespace-nowrap">
-                  {seg.fromKm}–{seg.toKm} km
+                  {seg.fromKm}â€“{seg.toKm} km
                 </td>
                 <td className="font-mono tabular-nums text-xs text-bone py-2 pr-4 whitespace-nowrap">
                   {formatSpk(seg.paceSpk)}/km
@@ -574,15 +574,15 @@ function FuelingCard({ targetTimeS }: { targetTimeS: number }) {
   const plan: FuelingPlan = fuelingPlan(targetTimeS);
 
   return (
-    <div className="border border-ink-line p-6 space-y-4">
+    <div className="m3-card p-6 space-y-4">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">race-day fueling</p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-ink-line border border-ink-line">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-ink-line m3-card">
         <FuelStat label="carbs/hr" value={`${plan.carbsPerHrG}g`} />
         <FuelStat label="fluid/hr" value={`${plan.fluidMlPerHr}ml`} />
         <FuelStat label="sodium/hr" value={`${plan.sodiumMgPerHr}mg`} />
         <FuelStat label="total carbs" value={`${plan.totalCarbsG}g`} />
-        <FuelStat label="gel count" value={`${plan.gelCount}`} unit="× 25g gels" />
+        <FuelStat label="gel count" value={`${plan.gelCount}`} unit="Ã— 25g gels" />
         <FuelStat label="gel interval" value={`${plan.gelIntervalMin}min`} unit="between gels" />
       </div>
     </div>
@@ -606,7 +606,7 @@ function FuelStat({ label, value, unit }: { label: string; value: string; unit?:
 function CarbLoadCard({ weightKg }: { weightKg: number | null }) {
   if (weightKg === null) {
     return (
-      <div className="border border-ink-line p-6 space-y-2">
+      <div className="m3-card p-6 space-y-2">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">carb load plan</p>
         <p className="font-mono text-sm text-bone-mute leading-relaxed">
           Add weight in Profile to see carb-load plan.
@@ -615,7 +615,7 @@ function CarbLoadCard({ weightKg }: { weightKg: number | null }) {
           to="/profile"
           className="inline-block font-mono text-xs text-bone-dim hover:text-accent transition-colors"
         >
-          Open Profile →
+          Open Profile â†’
         </Link>
       </div>
     );
@@ -624,10 +624,10 @@ function CarbLoadCard({ weightKg }: { weightKg: number | null }) {
   const plan: CarbLoadPlan = carbLoadPlan(weightKg);
 
   return (
-    <div className="border border-ink-line p-6 space-y-4">
+    <div className="m3-card p-6 space-y-4">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">carb load plan</p>
 
-      <div className="grid grid-cols-3 gap-px bg-ink-line border border-ink-line">
+      <div className="grid grid-cols-3 gap-px bg-ink-line m3-card">
         {plan.days.map((day) => (
           <div key={day.daysOut} className="bg-ink p-4 space-y-1">
             <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
@@ -656,7 +656,7 @@ function TaperCard({ daysToRace }: { daysToRace: number }) {
   const checklist: TaperChecklistItem[] = taperChecklist(daysToRace);
 
   return (
-    <div className="border border-ink-line p-6 space-y-4">
+    <div className="m3-card p-6 space-y-4">
       <div className="flex items-center justify-between">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">taper</p>
         <span className="font-mono text-xs text-accent uppercase tracking-widest">
@@ -713,7 +713,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
 
     const rpeNum = rpe ? parseInt(rpe, 10) : null;
     if (rpe && (isNaN(rpeNum!) || rpeNum! < 1 || rpeNum! > 10)) {
-      setSaveError('RPE must be 1–10');
+      setSaveError('RPE must be 1â€“10');
       return;
     }
 
@@ -754,7 +754,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
   }
 
   return (
-    <div className="border border-ink-line p-6 space-y-6">
+    <div className="m3-card p-6 space-y-6">
       <div className="flex items-center justify-between">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">post-race recovery</p>
         <span className="font-mono text-xs text-bone-mute">
@@ -777,7 +777,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
               <p className={`font-mono text-xs uppercase tracking-widest ${
                 phase.active ? 'text-accent' : 'text-bone-mute'
               }`}>
-                phase {phase.index}/{phase.totalPhases} · {phase.label}
+                phase {phase.index}/{phase.totalPhases} Â· {phase.label}
               </p>
               <p className="font-mono text-xs text-bone-mute">{phase.dayRange}</p>
             </div>
@@ -807,13 +807,13 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
                 placeholder="H:MM:SS"
                 value={finishTime}
                 onChange={(e) => setFinishTime(e.target.value)}
-                className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors"
               />
             </div>
 
             <div className="space-y-1">
               <label className="font-mono text-xs text-bone-mute uppercase tracking-widest block" htmlFor="rpe">
-                RPE (1–10)
+                RPE (1â€“10)
               </label>
               <input
                 id="rpe"
@@ -823,7 +823,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
                 placeholder="7"
                 value={rpe}
                 onChange={(e) => setRpe(e.target.value)}
-                className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors"
               />
             </div>
           </div>
@@ -838,7 +838,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
               placeholder="Hot and humid, headwind on return leg"
               value={conditions}
               onChange={(e) => setConditions(e.target.value)}
-              className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors"
             />
           </div>
 
@@ -852,7 +852,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
               placeholder="What worked, what to change next time..."
               value={lessons}
               onChange={(e) => setLessons(e.target.value)}
-              className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors resize-y"
+              className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors resize-y"
             />
           </div>
 
@@ -866,9 +866,9 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
           <button
             type="submit"
             disabled={saving}
-            className="font-mono text-xs uppercase tracking-widest px-6 py-2 border border-accent text-accent hover:bg-accent hover:text-bone transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-6 py-2 m3-btn-outline text-accent hover:bg-accent hover:text-bone transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? 'Saving…' : raceResult ? 'Update debrief' : 'Save debrief'}
+            {saving ? 'Savingâ€¦' : raceResult ? 'Update debrief' : 'Save debrief'}
           </button>
         </form>
       </div>
@@ -904,7 +904,7 @@ function MacrocycleCard({
   const label = distanceLabel(distanceKm);
 
   return (
-    <div className="border border-ink-line p-6 space-y-2">
+    <div className="m3-card p-6 space-y-2">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">macrocycle</p>
       <p className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
         {blockCount === 2 && '2nd'}

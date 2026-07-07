@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+﻿import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -12,11 +12,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'icons/*.png'],
       manifest: {
-        name: 'GHOST — Night Ninjas',
+        name: 'GHOST â€” Night Ninjas',
         short_name: 'GHOST',
         description: 'Training tracker. No server. Just you and the run.',
-        theme_color: '#0A0A0A',
-        background_color: '#0A0A0A',
+        theme_color: '#1e100b',
+        background_color: '#1e100b',
         display: 'standalone',
         orientation: 'portrait-primary',
         scope: '/',
@@ -44,7 +44,7 @@ export default defineConfig({
     alias: { '@': path.resolve(__dirname, './src') },
   },
 
-  // wa-sqlite ships WASM — tell Vite to serve it with correct MIME type
+  // wa-sqlite ships WASM â€” tell Vite to serve it with correct MIME type
   assetsInclude: ['**/*.wasm'],
 
   // Exclude wa-sqlite from optimisation; it uses dynamic imports internally

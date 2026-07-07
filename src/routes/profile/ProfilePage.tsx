@@ -121,7 +121,7 @@ function NumberInput({
       min={min}
       max={max}
       placeholder={placeholder}
-      className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone
+      className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                  placeholder:text-bone-mute focus:outline-none focus:border-accent transition-colors"
     />
   );
@@ -133,7 +133,7 @@ function SaveButton({ onClick, disabled }: { onClick: () => void; disabled?: boo
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="px-4 py-2 border border-accent text-accent hover:bg-accent hover:text-ink
+      className="px-4 py-2 m3-btn-outline text-accent hover:bg-accent hover:text-ink
                  font-mono text-xs uppercase tracking-widest transition-colors
                  disabled:opacity-40 disabled:cursor-not-allowed"
     >
@@ -170,10 +170,10 @@ function AthleteProfileCard({ initial }: { initial: AthleteForm }) {
   }
 
   return (
-    <section className="border border-ink-line p-6 space-y-4" aria-labelledby="card-athlete">
+    <section className="m3-card p-6 space-y-4" aria-labelledby="card-athlete">
       <div className="space-y-1 border-b border-ink-line pb-4">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          profile · biometrics
+          profile Â· biometrics
         </p>
         <h2
           id="card-athlete"
@@ -215,10 +215,10 @@ function AthleteProfileCard({ initial }: { initial: AthleteForm }) {
             id="sex"
             value={form.sex}
             onChange={(e) => setForm((f) => ({ ...f, sex: e.target.value as AthleteForm['sex'] }))}
-            className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone
+            className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                        focus:outline-none focus:border-accent transition-colors"
           >
-            <option value="">Select…</option>
+            <option value="">Selectâ€¦</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>
@@ -284,10 +284,10 @@ function HrZonesCard({ initial }: { initial: HrZoneForm }) {
   const isEstimated = !form.hr_measured;
 
   return (
-    <section className="border border-ink-line p-6 space-y-4" aria-labelledby="card-hr">
+    <section className="m3-card p-6 space-y-4" aria-labelledby="card-hr">
       <div className="space-y-1 border-b border-ink-line pb-4">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          profile · Norwegian Split
+          profile Â· Norwegian Split
         </p>
         <h2
           id="card-hr"
@@ -386,10 +386,10 @@ function StrengthCard({ initial }: { initial: StrengthForm }) {
   }
 
   return (
-    <section className="border border-ink-line p-6 space-y-4" aria-labelledby="card-strength">
+    <section className="m3-card p-6 space-y-4" aria-labelledby="card-strength">
       <div className="space-y-1 border-b border-ink-line pb-4">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          profile · cross-training
+          profile Â· cross-training
         </p>
         <h2
           id="card-strength"
@@ -408,10 +408,10 @@ function StrengthCard({ initial }: { initial: StrengthForm }) {
             onChange={(e) =>
               setForm((f) => ({ ...f, modality: e.target.value as StrengthForm['modality'] }))
             }
-            className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone
+            className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                        focus:outline-none focus:border-accent transition-colors"
           >
-            <option value="">Select…</option>
+            <option value="">Selectâ€¦</option>
             <option value="weights">Weights</option>
             <option value="pilates">Pilates</option>
             <option value="yoga">Yoga</option>
@@ -426,7 +426,7 @@ function StrengthCard({ initial }: { initial: StrengthForm }) {
             id="sessions_per_week"
             value={form.sessions_per_week}
             onChange={(e) => setForm((f) => ({ ...f, sessions_per_week: e.target.value }))}
-            className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone
+            className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                        focus:outline-none focus:border-accent transition-colors"
           >
             <option value="0">0</option>
@@ -477,10 +477,10 @@ function CheckinCard() {
   }
 
   return (
-    <section className="border border-ink-line p-6 space-y-4" aria-labelledby="card-checkin">
+    <section className="m3-card p-6 space-y-4" aria-labelledby="card-checkin">
       <div className="space-y-1 border-b border-ink-line pb-4">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          profile · daily log
+          profile Â· daily log
         </p>
         <h2
           id="card-checkin"
@@ -498,7 +498,7 @@ function CheckinCard() {
             type="date"
             value={form.date}
             onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-            className="bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone
+            className="bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                        focus:outline-none focus:border-accent transition-colors"
           />
         </div>

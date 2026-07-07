@@ -152,7 +152,7 @@ function RetireButton({ shoeId, onDone }: { shoeId: number; onDone: () => void }
           disabled={busy}
           className="font-mono text-xs text-signal-miss hover:underline disabled:opacity-50"
         >
-          {busy ? 'Retiring…' : 'Yes'}
+          {busy ? 'Retiringâ€¦' : 'Yes'}
         </button>
         <button
           onClick={() => setConfirming(false)}
@@ -194,7 +194,7 @@ function UnretireButton({ shoeId, onDone }: { shoeId: number; onDone: () => void
       disabled={busy}
       className="font-mono text-xs text-bone-mute hover:text-accent transition-colors uppercase tracking-widest disabled:opacity-50"
     >
-      {busy ? 'Unretiring…' : 'Unretire'}
+      {busy ? 'Unretiringâ€¦' : 'Unretire'}
     </button>
   );
 }
@@ -216,7 +216,7 @@ function ShoeCard({
   const subtitle = [shoe.brand, shoe.model].filter(Boolean).join(' ');
 
   return (
-    <div className="border border-ink-line p-4 space-y-3">
+    <div className="m3-card p-4 space-y-3">
       {/* Name row */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -325,7 +325,7 @@ function AddShoeForm({ onAdded }: { onAdded: () => void }) {
     <form
       onSubmit={(e) => void handleAdd(e)}
       aria-label="Add a shoe"
-      className="border border-ink-line p-4 space-y-3"
+      className="m3-card p-4 space-y-3"
     >
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
         Add shoe
@@ -344,7 +344,7 @@ function AddShoeForm({ onAdded }: { onAdded: () => void }) {
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Nike Alphafly 3"
             disabled={busy}
-            className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-sm px-3 py-2 placeholder:text-bone-mute focus:outline-none focus:border-accent disabled:opacity-50"
+            className="w-full bg-ink-shadow m3-card text-bone font-mono text-sm px-3 py-2 placeholder:text-bone-mute focus:outline-none focus:border-accent disabled:opacity-50"
           />
         </div>
 
@@ -360,16 +360,16 @@ function AddShoeForm({ onAdded }: { onAdded: () => void }) {
             value={targetKm}
             onChange={(e) => setTargetKm(Number(e.target.value))}
             disabled={busy}
-            className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-sm px-3 py-2 focus:outline-none focus:border-accent disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-full bg-ink-shadow m3-card text-bone font-mono text-sm px-3 py-2 focus:outline-none focus:border-accent disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
 
         <button
           type="submit"
           disabled={busy}
-          className="px-4 py-2 border border-accent text-accent hover:bg-accent hover:text-ink font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 m3-btn-outline text-accent hover:bg-accent hover:text-ink font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {busy ? 'Adding…' : 'Add'}
+          {busy ? 'Addingâ€¦' : 'Add'}
         </button>
       </div>
 
@@ -388,15 +388,15 @@ function AddShoeForm({ onAdded }: { onAdded: () => void }) {
 
 function NoShoesState() {
   return (
-    <div className="border border-ink-line p-8 space-y-3">
+    <div className="m3-card p-8 space-y-3">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-        shoes · no data yet
+        shoes Â· no data yet
       </p>
       <h2 className="font-display tracking-widest text-3xl uppercase text-bone">
         No shoes tracked
       </h2>
       <p className="font-mono text-sm text-bone-dim max-w-xl leading-relaxed">
-        Strava-tracked shoes appear here automatically on next sync — they are linked via gear ID on
+        Strava-tracked shoes appear here automatically on next sync â€” they are linked via gear ID on
         your activities. You can also add manual shoes using the form above.
       </p>
     </div>
@@ -446,7 +446,7 @@ export default function ShoesPage() {
       {/* Page header */}
       <header className="space-y-1 border-b border-ink-line pb-6">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          gear · footwear
+          gear Â· footwear
         </p>
         <h1 className="font-display text-4xl tracking-widest uppercase text-bone leading-none">
           Shoes
@@ -470,7 +470,7 @@ export default function ShoesPage() {
       {activeShoes.length > 0 && (
         <section aria-label="Active shoes">
           <h2 className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-4">
-            Active — {activeShoes.length} {activeShoes.length === 1 ? 'pair' : 'pairs'}
+            Active â€” {activeShoes.length} {activeShoes.length === 1 ? 'pair' : 'pairs'}
           </h2>
           <div className="space-y-3">
             {activeShoes.map((shoe) => (
@@ -486,12 +486,12 @@ export default function ShoesPage() {
         </section>
       )}
 
-      {/* Retired shoes — collapsible */}
+      {/* Retired shoes â€” collapsible */}
       {retiredShoes.length > 0 && (
         <section aria-label="Retired shoes">
           <details>
             <summary className="cursor-pointer font-mono text-xs text-bone-mute uppercase tracking-widest mb-4 select-none hover:text-bone transition-colors">
-              Retired — {retiredShoes.length} {retiredShoes.length === 1 ? 'pair' : 'pairs'}
+              Retired â€” {retiredShoes.length} {retiredShoes.length === 1 ? 'pair' : 'pairs'}
             </summary>
             <div className="space-y-3 mt-4">
               {retiredShoes.map((shoe) => (

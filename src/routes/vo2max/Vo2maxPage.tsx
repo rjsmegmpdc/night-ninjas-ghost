@@ -114,7 +114,7 @@ function TextInput({
       max={max}
       step={step}
       placeholder={placeholder}
-      className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone
+      className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                  placeholder:text-bone-mute focus:outline-none focus:border-accent transition-colors"
     />
   );
@@ -154,7 +154,7 @@ function SourceBadge({ source }: { source: string }) {
   const cls = SOURCE_BADGE_CLASS[source] ?? 'border-bone-mute text-bone-mute';
   const label = SOURCE_LABEL[source] ?? source;
   return (
-    <span className={`border font-mono text-[10px] uppercase tracking-widest px-1.5 py-0.5 ${cls}`}>
+    <span className={`border font-mono text-[10px] uppercase tracking-widest rounded-full px-1.5 py-0.5 ${cls}`}>
       {label}
     </span>
   );
@@ -244,10 +244,10 @@ function TrendCard({
     delta === null ? '' : delta > 0 ? 'text-signal-ok' : delta < 0 ? 'text-signal-warn' : 'text-bone-dim';
 
   return (
-    <section className="border border-ink-line p-6 space-y-4" aria-labelledby="vo2-trend-heading">
+    <section className="m3-card p-6 space-y-4" aria-labelledby="vo2-trend-heading">
       <div className="space-y-1 border-b border-ink-line pb-4">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          vo2 max · aerobic ceiling
+          vo2 max Â· aerobic ceiling
         </p>
         <h2 id="vo2-trend-heading" className="font-display tracking-widest text-2xl uppercase text-bone">
           Current Estimate
@@ -295,7 +295,7 @@ function TrendCard({
 
           {/* Disclaimer */}
           <p className="font-mono text-[10px] text-bone-mute border-t border-ink-line pt-3">
-            Observed only — does not affect training paces.
+            Observed only â€” does not affect training paces.
           </p>
         </div>
       )}
@@ -327,9 +327,9 @@ function InsightsCard({ series }: { series: Vo2Observation[] }) {
   if (!report.hasInsights) return null;
 
   return (
-    <section className="border border-ink-line p-6 space-y-4" aria-labelledby="vo2-insights-heading">
+    <section className="m3-card p-6 space-y-4" aria-labelledby="vo2-insights-heading">
       <div className="space-y-1 border-b border-ink-line pb-4">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max · analysis</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max Â· analysis</p>
         <h2 id="vo2-insights-heading" className="font-display tracking-widest text-2xl uppercase text-bone">
           Insights
         </h2>
@@ -339,7 +339,7 @@ function InsightsCard({ series }: { series: Vo2Observation[] }) {
         {report.insights.map((insight, i) => (
           <div
             key={i}
-            className={`p-3 border border-ink-line space-y-1 ${TONE_BG[insight.tone] ?? ''}`}
+            className={`p-3 m3-card space-y-1 ${TONE_BG[insight.tone] ?? ''}`}
           >
             <p className="font-mono text-xs text-bone font-bold">{insight.title}</p>
             <p className="font-mono text-xs text-bone-dim leading-relaxed">{insight.body}</p>
@@ -379,7 +379,7 @@ interface LabForm {
 function ComputedPreview({ label, value }: { label: string; value: number | null }) {
   if (value === null) return null;
   return (
-    <div className="border border-ink-line bg-ink-shadow px-4 py-3 flex items-center gap-3">
+    <div className="m3-card bg-ink-shadow px-4 py-3 flex items-center gap-3">
       <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">{label}</span>
       <span className="font-display text-2xl text-accent tracking-widest">{fmt1(value)}</span>
       <span className="font-mono text-xs text-bone-mute">ml/kg/min</span>
@@ -429,7 +429,7 @@ function CooperTab({
     }
   }
 
-  // suppress unused profile warning — profile available for future pre-fill
+  // suppress unused profile warning â€” profile available for future pre-fill
   void profile;
 
   const distM = parseFloat(form.distanceM);
@@ -474,7 +474,7 @@ function CooperTab({
 
       <div className="flex items-center gap-4">
         <ActionButton onClick={handleSubmit} disabled={saving || !canCompute || !form.date}>
-          {saving ? 'Saving…' : 'Save observation'}
+          {saving ? 'Savingâ€¦' : 'Save observation'}
         </ActionButton>
         {status === 'saved' && (
           <span className="font-mono text-xs text-signal-ok" role="status" aria-live="polite">Saved.</span>
@@ -621,10 +621,10 @@ function RockportTab({
             id="rp-sex"
             value={form.sex}
             onChange={(e) => { setForm((f) => ({ ...f, sex: e.target.value as RockportForm['sex'] })); setComputed(null); }}
-            className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone
+            className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                        focus:outline-none focus:border-accent transition-colors"
           >
-            <option value="">Select…</option>
+            <option value="">Selectâ€¦</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>
@@ -675,7 +675,7 @@ function RockportTab({
 
       <div className="flex items-center gap-4">
         <ActionButton onClick={handleSubmit} disabled={saving || !valid}>
-          {saving ? 'Saving…' : 'Save observation'}
+          {saving ? 'Savingâ€¦' : 'Save observation'}
         </ActionButton>
         {status === 'saved' && (
           <span className="font-mono text-xs text-signal-ok" role="status" aria-live="polite">Saved.</span>
@@ -754,7 +754,7 @@ function LabTab({ onAdded }: { onAdded: () => void }) {
             value={form.note}
             onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
             placeholder="e.g. Sports lab treadmill test"
-            className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone
+            className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                        placeholder:text-bone-mute focus:outline-none focus:border-accent transition-colors"
           />
         </div>
@@ -762,7 +762,7 @@ function LabTab({ onAdded }: { onAdded: () => void }) {
 
       <div className="flex items-center gap-4">
         <ActionButton onClick={handleSubmit} disabled={saving || !canSubmit}>
-          {saving ? 'Saving…' : 'Save observation'}
+          {saving ? 'Savingâ€¦' : 'Save observation'}
         </ActionButton>
         {status === 'saved' && (
           <span className="font-mono text-xs text-signal-ok" role="status" aria-live="polite">Saved.</span>
@@ -791,16 +791,16 @@ function AddObservationCard({
   ];
 
   return (
-    <section className="border border-ink-line p-6 space-y-4" aria-labelledby="vo2-add-heading">
+    <section className="m3-card p-6 space-y-4" aria-labelledby="vo2-add-heading">
       <div className="space-y-1 border-b border-ink-line pb-4">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max · log</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max Â· log</p>
         <h2 id="vo2-add-heading" className="font-display tracking-widest text-2xl uppercase text-bone">
           Add Observation
         </h2>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-0 border border-ink-line w-fit" role="tablist">
+      <div className="flex gap-0 m3-card w-fit" role="tablist">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -848,9 +848,9 @@ function HistoryCard({ rows, onDeleted }: { rows: ObsRow[]; onDeleted: () => voi
   const sorted = [...rows].sort((a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : 0));
 
   return (
-    <section className="border border-ink-line p-6 space-y-4" aria-labelledby="vo2-history-heading">
+    <section className="m3-card p-6 space-y-4" aria-labelledby="vo2-history-heading">
       <div className="space-y-1 border-b border-ink-line pb-4">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max · history</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max Â· history</p>
         <h2 id="vo2-history-heading" className="font-display tracking-widest text-2xl uppercase text-bone">
           All Observations
         </h2>
@@ -954,7 +954,7 @@ function ProfileQuickForm({ profile, onSaved }: { profile: Profile; onSaved: () 
   }
 
   return (
-    <section className="border border-ink-line" aria-labelledby="vo2-profile-heading">
+    <section className="m3-card" aria-labelledby="vo2-profile-heading">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -964,7 +964,7 @@ function ProfileQuickForm({ profile, onSaved }: { profile: Profile; onSaved: () 
                    text-bone-dim hover:text-bone transition-colors"
       >
         <span id="vo2-profile-heading">Edit profile</span>
-        <span aria-hidden="true">{open ? '▲' : '▼'}</span>
+        <span aria-hidden="true">{open ? 'â–²' : 'â–¼'}</span>
       </button>
 
       {open && (
@@ -1001,10 +1001,10 @@ function ProfileQuickForm({ profile, onSaved }: { profile: Profile; onSaved: () 
                 id="qp-sex"
                 value={form.sex}
                 onChange={(e) => setForm((f) => ({ ...f, sex: e.target.value as typeof form.sex }))}
-                className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-sm text-bone
+                className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                            focus:outline-none focus:border-accent transition-colors"
               >
-                <option value="">Select…</option>
+                <option value="">Selectâ€¦</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </select>
@@ -1121,7 +1121,7 @@ export default function Vo2maxPage() {
   useEffect(() => {
     if (!ready) return;
     loadData().catch(() => {
-      // silently ignore — error state shown via dbError from useDb()
+      // silently ignore â€” error state shown via dbError from useDb()
     });
   }, [ready, loadData]);
 
@@ -1144,7 +1144,7 @@ export default function Vo2maxPage() {
           VO2 Max
         </h1>
         <p className="font-mono text-xs text-bone-mute">
-          Aerobic ceiling — training reference
+          Aerobic ceiling â€” training reference
         </p>
       </header>
 

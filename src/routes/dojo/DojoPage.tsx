@@ -128,7 +128,7 @@ const PHASE_DOT_CLASS: Record<Phase, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Date helpers — UTC
+// Date helpers â€” UTC
 // ---------------------------------------------------------------------------
 
 function todayIso(): string {
@@ -168,7 +168,7 @@ function parseGoalTime(t: string | null): number | null {
 }
 
 // ---------------------------------------------------------------------------
-// Session type badges — same palette as PatrolPage
+// Session type badges â€” same palette as PatrolPage
 // ---------------------------------------------------------------------------
 
 const SESSION_BADGE: Record<string, { label: string; color: string }> = {
@@ -180,16 +180,16 @@ const SESSION_BADGE: Record<string, { label: string; color: string }> = {
   repetition: { label: 'RP', color: 'text-red-400' },
   cross:      { label: 'X',  color: 'text-bone-mute' },
   strength:   { label: 'S',  color: 'text-bone-mute' },
-  rest:       { label: '—',  color: 'text-bone-dim' },
+  rest:       { label: 'â€”',  color: 'text-bone-dim' },
 };
 
 const EVENT_ICON: Record<string, string> = {
-  sickness:   '✕',
-  holiday:    '✈',
-  work_trip:  '✈',
-  commitment: '●',
-  birthday:   '★',
-  other:      '·',
+  sickness:   'âœ•',
+  holiday:    'âœˆ',
+  work_trip:  'âœˆ',
+  commitment: 'â—',
+  birthday:   'â˜…',
+  other:      'Â·',
 };
 
 // ---------------------------------------------------------------------------
@@ -324,7 +324,7 @@ function DojoCard({ dojo, isSelected, onSelect }: { dojo: DojoMeta; isSelected: 
         type="button"
         onClick={onSelect}
         aria-pressed={isSelected}
-        className={['flex items-center gap-2 font-mono text-xs uppercase tracking-widest px-4 py-2 border transition-colors', isSelected ? 'border-accent text-accent bg-accent/10 cursor-default' : 'border-ink-line text-bone-dim hover:border-accent hover:text-accent'].join(' ')}
+        className={['flex items-center gap-2 font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 border transition-colors', isSelected ? 'border-accent text-accent bg-accent/10 cursor-default' : 'border-ink-line text-bone-dim hover:border-accent hover:text-accent'].join(' ')}
       >
         {isSelected ? <><Check size={12} aria-hidden="true" />Active</> : 'Select'}
       </button>
@@ -333,7 +333,7 @@ function DojoCard({ dojo, isSelected, onSelect }: { dojo: DojoMeta; isSelected: 
 }
 
 // ---------------------------------------------------------------------------
-// ActivePlanBar — compact header shown when a plan is active
+// ActivePlanBar â€” compact header shown when a plan is active
 // ---------------------------------------------------------------------------
 
 function ActivePlanBar({
@@ -361,7 +361,7 @@ function ActivePlanBar({
   }
 
   return (
-    <div className="border border-ink-line">
+    <div className="m3-card">
       <div className="flex items-center gap-0 flex-wrap divide-x divide-ink-line">
         {/* Dojo name */}
         <div className="px-5 py-4 min-w-[140px]">
@@ -374,7 +374,7 @@ function ActivePlanBar({
           <div className="px-5 py-4">
             <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-0.5">Phase</p>
             <p className={`font-display text-sm uppercase tracking-widest ${PHASE_TEXT_CLASS[phase]}`}>
-              {PHASE_LABELS[phase]} · W{weekNum}/{programWeeks}
+              {PHASE_LABELS[phase]} Â· W{weekNum}/{programWeeks}
             </p>
           </div>
         )}
@@ -396,7 +396,7 @@ function ActivePlanBar({
           <div className="px-5 py-4">
             <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-0.5">Goal race</p>
             <p className="font-mono text-xs text-bone">{goalRace.name}</p>
-            <p className="font-mono text-[10px] text-bone-mute">{formatShortDate(goalRace.date)} · {goalRace.distance_km}km</p>
+            <p className="font-mono text-[10px] text-bone-mute">{formatShortDate(goalRace.date)} Â· {goalRace.distance_km}km</p>
           </div>
         )}
 
@@ -419,7 +419,7 @@ function ActivePlanBar({
             onClick={handleSave}
             className="font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent transition-colors pb-px"
           >
-            {saved ? 'Saved ✓' : 'Save'}
+            {saved ? 'Saved âœ“' : 'Save'}
           </button>
         </div>
 
@@ -428,7 +428,7 @@ function ActivePlanBar({
           <button
             type="button"
             onClick={onChangePlan}
-            className="font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent border border-ink-line hover:border-accent px-3 py-2 transition-colors"
+            className="font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent m3-card hover:border-accent px-3 py-2 transition-colors"
           >
             Change plan
           </button>
@@ -497,10 +497,10 @@ function DayCell({
         </>
       )}
 
-      {/* Life event marker — shows beneath session if it doesn't affect the session display */}
+      {/* Life event marker â€” shows beneath session if it doesn't affect the session display */}
       {lifeEvent && !isGoalRaceDay && (
         <span className="font-mono text-[8px] text-amber-400 leading-tight truncate" title={lifeEvent.title}>
-          {EVENT_ICON[lifeEvent.type] ?? '·'} {lifeEvent.title.slice(0, 7)}
+          {EVENT_ICON[lifeEvent.type] ?? 'Â·'} {lifeEvent.title.slice(0, 7)}
         </span>
       )}
     </div>
@@ -544,7 +544,7 @@ function WeekRow({
         </span>
         <span className="font-mono text-[10px] text-bone-mute ml-auto">{template.totalKmTarget}km</span>
         {isCurrent && (
-          <span className="font-mono text-[10px] text-accent uppercase tracking-widest">← now</span>
+          <span className="font-mono text-[10px] text-accent uppercase tracking-widest">â† now</span>
         )}
       </div>
 
@@ -553,7 +553,7 @@ function WeekRow({
         <div className="flex items-center gap-2 px-3 py-1 bg-accent/8 border-b border-accent/20">
           <span className="font-mono text-[10px] text-accent uppercase tracking-widest">Goal race</span>
           <span className="font-mono text-[10px] text-accent opacity-80">
-            {goalRace.name} · {formatShortDate(goalRace.date)}
+            {goalRace.name} Â· {formatShortDate(goalRace.date)}
           </span>
         </div>
       )}
@@ -666,7 +666,7 @@ function TrainingCalendar({
 
   if (!engine) {
     return (
-      <div className="border border-ink-line p-6">
+      <div className="m3-card p-6">
         <p className="font-mono text-xs text-bone-mute">Plan engine not found for dojo "{plan.dojo}".</p>
       </div>
     );
@@ -675,9 +675,9 @@ function TrainingCalendar({
   return (
     <section aria-label="Training calendar">
       {/* Macrocycle overview bar */}
-      <div className="border border-ink-line p-4 mb-6 space-y-3">
+      <div className="m3-card p-4 mb-6 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest">Macrocycle · {programWeeks} weeks</p>
+          <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest">Macrocycle Â· {programWeeks} weeks</p>
           <div className="flex gap-3 flex-wrap">
             {(['base', 'build', 'peak', 'taper'] as Phase[]).map(p => (
               <div key={p} className="flex items-center gap-1.5">
@@ -694,7 +694,7 @@ function TrainingCalendar({
             return (
               <div
                 key={i}
-                title={`W${i + 1} — ${PHASE_LABELS[ph]}`}
+                title={`W${i + 1} â€” ${PHASE_LABELS[ph]}`}
                 className={['flex-1 h-5 border transition-opacity', PHASE_CELL_CLASS[ph], isCur ? 'opacity-100 ring-1 ring-bone/50' : 'opacity-60'].join(' ')}
               />
             );
@@ -702,7 +702,7 @@ function TrainingCalendar({
         </div>
         {!goalRace && (
           <p className="font-mono text-[10px] text-amber-400">
-            No goal race set — calendar adapts once you add one in the Calendar page.
+            No goal race set â€” calendar adapts once you add one in the Calendar page.
           </p>
         )}
       </div>
@@ -712,7 +712,7 @@ function TrainingCalendar({
         {months.map(month => (
           <div key={month.key}>
             <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-2">{month.label}</p>
-            <div className="border border-ink-line divide-y divide-ink-line overflow-x-auto">
+            <div className="m3-card divide-y divide-ink-line overflow-x-auto">
               <div style={{ minWidth: '480px' }}>
                 {month.weeks.map(w => (
                   <WeekRow
@@ -767,7 +767,7 @@ export default function DojoPage() {
       if (settings.dojo) setActiveDojo(settings.dojo);
       if (settings.level) setLevel(settings.level);
       if (plan) setActivePlan(plan);
-      // No active plan → open picker immediately
+      // No active plan â†’ open picker immediately
       if (!plan) setShowPicker(true);
       setGoalRace(calData.goalRace);
       setTuneupRaces(calData.tuneupRaces);
@@ -814,7 +814,7 @@ export default function DojoPage() {
         <h1 className="font-display text-4xl tracking-widest uppercase text-bone leading-none">Dojo</h1>
       </header>
 
-      {/* ── Calendar view ── */}
+      {/* â”€â”€ Calendar view â”€â”€ */}
       {showCalendar && (
         <>
           <ActivePlanBar
@@ -835,11 +835,11 @@ export default function DojoPage() {
         </>
       )}
 
-      {/* ── Methodology picker ── */}
+      {/* â”€â”€ Methodology picker â”€â”€ */}
       {showPicker && (
         <section aria-labelledby="dojo-picker-heading">
 
-          {/* Back button — only when a plan is already active */}
+          {/* Back button â€” only when a plan is already active */}
           {activePlan && (
             <button
               type="button"
@@ -857,7 +857,7 @@ export default function DojoPage() {
             </h2>
 
             {/* Level toggle */}
-            <div className="flex border border-ink-line" role="group" aria-label="Training level">
+            <div className="flex m3-card" role="group" aria-label="Training level">
               {(['beginner', 'intermediate', 'advanced'] as Level[]).map((l) => (
                 <button
                   key={l}
@@ -913,15 +913,15 @@ export default function DojoPage() {
 
           {selecting && (
             <p className="font-mono text-xs text-bone-mute mt-4 animate-pulse" role="status" aria-live="polite">
-              Activating {DOJOS.find(d => d.slug === selecting)?.name}…
+              Activating {DOJOS.find(d => d.slug === selecting)?.name}â€¦
             </p>
           )}
         </section>
       )}
 
-      {/* Empty state — no plan yet, picker hasn't loaded */}
+      {/* Empty state â€” no plan yet, picker hasn't loaded */}
       {!showPicker && !showCalendar && (
-        <div className="border border-ink-line p-6 space-y-2">
+        <div className="m3-card p-6 space-y-2">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">no active plan</p>
           <p className="font-mono text-sm text-bone-dim leading-relaxed">
             Select a methodology above to activate a training plan.

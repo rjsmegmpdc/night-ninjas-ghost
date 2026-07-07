@@ -60,7 +60,7 @@ type GearCategory = 'clothing' | 'backpack' | 'hardware' | 'food';
 // ---------------------------------------------------------------------------
 
 function speedToMinKm(ms: number | null): string {
-  if (!ms || ms <= 0) return '—';
+  if (!ms || ms <= 0) return 'â€”';
   const minKm = 1000 / ms / 60;
   const min = Math.floor(minKm);
   const sec = Math.round((minKm - min) * 60);
@@ -99,11 +99,11 @@ function rotationAdvice(shoe: ShoeRow, allActive: ShoeRow[]): { badge: string; c
   const isRaceFocused = shoe.race_count > 0 && shoe.race_count >= shoe.session_count * 0.3;
   const pct = shoe.target_km > 0 ? shoe.total_km / shoe.target_km : 0;
 
-  if (pct >= 0.9) return { badge: 'Near limit', color: 'text-signal-miss', tip: 'Consider replacing — close to km target.' };
+  if (pct >= 0.9) return { badge: 'Near limit', color: 'text-signal-miss', tip: 'Consider replacing â€” close to km target.' };
   if (isFastest && shoe.best_speed_ms && shoe.best_speed_ms > 0)
     return { badge: 'Race shoe', color: 'text-accent', tip: `Fastest in rotation (best ${speedToMinKm(shoe.best_speed_ms)}). Use for tempo runs, races, and PB attempts.` };
-  if (isTrailFocused) return { badge: 'Trail', color: 'text-amber-400', tip: `${shoe.trail_count} trail runs — your trail specialist.` };
-  if (isRaceFocused) return { badge: 'Racer', color: 'text-accent', tip: 'Frequently used in races — protect km for race day.' };
+  if (isTrailFocused) return { badge: 'Trail', color: 'text-amber-400', tip: `${shoe.trail_count} trail runs â€” your trail specialist.` };
+  if (isRaceFocused) return { badge: 'Racer', color: 'text-accent', tip: 'Frequently used in races â€” protect km for race day.' };
   return { badge: 'Daily trainer', color: 'text-signal-ok', tip: 'Regular workhorse. Good for easy and long runs.' };
 }
 
@@ -181,7 +181,7 @@ async function loadGearItems(): Promise<GearItem[]> {
 
 async function ensureFreshAccessToken(): Promise<string> {
   const tokens = await getStoredTokens();
-  if (!tokens) throw new Error('Not connected to Strava — reconnect in Settings');
+  if (!tokens) throw new Error('Not connected to Strava â€” reconnect in Settings');
   const nowSec = Math.floor(Date.now() / 1000);
   if (tokens.expiresAt > nowSec + 60) return tokens.accessToken;
   const fresh = await refreshAccessToken(tokens.refreshToken, WORKER_URL, await getTokenCredentials());
@@ -258,7 +258,7 @@ function ShoeCard({ shoe, allActive, onRefresh }: { shoe: ShoeRow; allActive: Sh
   }
 
   return (
-    <div className="border border-ink-line p-4 space-y-3">
+    <div className="m3-card p-4 space-y-3">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -269,7 +269,7 @@ function ShoeCard({ shoe, allActive, onRefresh }: { shoe: ShoeRow; allActive: Sh
               </span>
             )}
             {shoe.size && (
-              <span className="font-mono text-[10px] text-bone-mute border border-ink-line px-1.5 py-0.5">
+              <span className="font-mono text-[10px] text-bone-mute m3-card px-1.5 py-0.5">
                 {shoe.size}
               </span>
             )}
@@ -283,7 +283,7 @@ function ShoeCard({ shoe, allActive, onRefresh }: { shoe: ShoeRow; allActive: Sh
             href={dealSearchUrl(shoe.brand, shoe.model, shoe.name)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent border border-ink-line hover:border-accent px-2 py-1 transition-colors"
+            className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent m3-card hover:border-accent px-2 py-1 transition-colors"
           >
             Find deals <ExternalLink size={10} aria-hidden="true" />
           </a>
@@ -293,7 +293,7 @@ function ShoeCard({ shoe, allActive, onRefresh }: { shoe: ShoeRow; allActive: Sh
             disabled={busyRetire}
             className="font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-signal-warn transition-colors disabled:opacity-50"
           >
-            {busyRetire ? '…' : shoe.retired ? 'Unretire' : 'Retire'}
+            {busyRetire ? 'â€¦' : shoe.retired ? 'Unretire' : 'Retire'}
           </button>
         </div>
       </div>
@@ -325,13 +325,13 @@ function GearItemCard({ item, onDelete }: { item: GearItem; onDelete: () => void
   const subtitle = [item.brand, item.model].filter(Boolean).join(' ');
 
   return (
-    <div className="border border-ink-line p-4 space-y-2">
+    <div className="m3-card p-4 space-y-2">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-mono text-sm text-bone">{item.name}</p>
-            {item.size && <span className="font-mono text-[10px] text-bone-mute border border-ink-line px-1.5 py-0.5">{item.size}</span>}
-            {item.quantity > 1 && <span className="font-mono text-[10px] text-bone-mute">×{item.quantity}</span>}
+            {item.size && <span className="font-mono text-[10px] text-bone-mute m3-card px-1.5 py-0.5">{item.size}</span>}
+            {item.quantity > 1 && <span className="font-mono text-[10px] text-bone-mute">Ã—{item.quantity}</span>}
           </div>
           {subtitle && <p className="font-mono text-xs text-bone-dim">{subtitle}</p>}
           {item.is_watchlist === 1 && item.target_price && (
@@ -344,9 +344,9 @@ function GearItemCard({ item, onDelete }: { item: GearItem; onDelete: () => void
             href={item.url ?? dealSearchUrl(item.brand, item.model, item.name)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent border border-ink-line hover:border-accent px-2 py-1 transition-colors"
+            className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent m3-card hover:border-accent px-2 py-1 transition-colors"
           >
-            {item.url ? 'View ↗' : 'Find deals'} <ExternalLink size={10} aria-hidden="true" />
+            {item.url ? 'View â†—' : 'Find deals'} <ExternalLink size={10} aria-hidden="true" />
           </a>
           <button
             type="button"
@@ -375,7 +375,7 @@ const CATEGORY_LABELS: Record<GearCategory | 'watchlist', string> = {
   watchlist: 'Watchlist',
 };
 
-/** Food is measured in volume/weight, packs in capacity — not "size". */
+/** Food is measured in volume/weight, packs in capacity â€” not "size". */
 const SIZE_FIELD: Record<GearCategory, { label: string; placeholder: string }> = {
   clothing: { label: 'Size',     placeholder: 'M / XL / EU 42' },
   backpack: { label: 'Capacity', placeholder: '12L / 2L bladder' },
@@ -384,7 +384,7 @@ const SIZE_FIELD: Record<GearCategory, { label: string; placeholder: string }> =
 };
 
 // ---------------------------------------------------------------------------
-// Gear profile — the athlete's own sizes, remembered per category in
+// Gear profile â€” the athlete's own sizes, remembered per category in
 // localStorage so every later add is pre-filled with their measurements.
 // ---------------------------------------------------------------------------
 
@@ -464,22 +464,22 @@ function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean
   const sizeField = SIZE_FIELD[category];
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="border border-ink-line p-4 space-y-3">
+    <form onSubmit={(e) => void handleSubmit(e)} className="m3-card p-4 space-y-3">
       <div className="flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-widest text-bone-mute">Add gear</p>
         <button type="button" onClick={() => setOpen(false)} className="text-bone-mute hover:text-bone"><X size={14} /></button>
       </div>
 
-      {/* Single column on mobile — one field per row, thumb-friendly */}
+      {/* Single column on mobile â€” one field per row, thumb-friendly */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="sm:col-span-3 space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Name *</label>
-          <input type="text" required value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Arc'teryx Norvan vest" className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-sm px-3 py-2 placeholder:text-bone-mute focus:outline-none focus:border-accent" />
+          <input type="text" required value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Arc'teryx Norvan vest" className="w-full bg-ink-shadow m3-card text-bone font-mono text-sm px-3 py-2 placeholder:text-bone-mute focus:outline-none focus:border-accent" />
         </div>
 
         <div className="space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Category</label>
-          <select value={category} onChange={e => handleCategoryChange(e.target.value as GearCategory)} className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent">
+          <select value={category} onChange={e => handleCategoryChange(e.target.value as GearCategory)} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent">
             {(['clothing','backpack','hardware','food'] as GearCategory[]).map(c => (
               <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
             ))}
@@ -488,17 +488,17 @@ function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean
 
         <div className="space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Brand</label>
-          <input type="text" value={form.brand} onChange={e => set('brand', e.target.value)} className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
+          <input type="text" value={form.brand} onChange={e => set('brand', e.target.value)} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
         </div>
 
         <div className="space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Model</label>
-          <input type="text" value={form.model} onChange={e => set('model', e.target.value)} className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
+          <input type="text" value={form.model} onChange={e => set('model', e.target.value)} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
         </div>
 
         <div className="space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">{sizeField.label}</label>
-          <input type="text" value={form.size} onChange={e => set('size', e.target.value)} placeholder={sizeField.placeholder} className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 placeholder:text-bone-mute focus:outline-none focus:border-accent" />
+          <input type="text" value={form.size} onChange={e => set('size', e.target.value)} placeholder={sizeField.placeholder} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 placeholder:text-bone-mute focus:outline-none focus:border-accent" />
         </div>
 
         <div className="flex items-center gap-2 sm:col-span-2">
@@ -510,23 +510,23 @@ function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean
           <>
             <div className="space-y-1">
               <label className="font-mono text-[10px] uppercase text-bone-mute">Target price (NZD)</label>
-              <input type="number" step="0.01" value={form.target_price} onChange={e => set('target_price', e.target.value)} className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
+              <input type="number" step="0.01" value={form.target_price} onChange={e => set('target_price', e.target.value)} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
             </div>
             <div className="sm:col-span-2 space-y-1">
               <label className="font-mono text-[10px] uppercase text-bone-mute">Product URL (optional)</label>
-              <input type="url" value={form.url} onChange={e => set('url', e.target.value)} placeholder="https://..." className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
+              <input type="url" value={form.url} onChange={e => set('url', e.target.value)} placeholder="https://..." className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
             </div>
           </>
         )}
 
         <div className="sm:col-span-3 space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Notes</label>
-          <input type="text" value={form.notes} onChange={e => set('notes', e.target.value)} className="w-full bg-ink-shadow border border-ink-line text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
+          <input type="text" value={form.notes} onChange={e => set('notes', e.target.value)} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
         </div>
       </div>
 
-      <button type="submit" disabled={busy || !form.name.trim()} className="w-full sm:w-auto px-4 py-2.5 border border-accent text-accent hover:bg-accent hover:text-ink font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50">
-        {busy ? 'Adding…' : 'Add'}
+      <button type="submit" disabled={busy || !form.name.trim()} className="w-full sm:w-auto px-4 py-2.5 m3-btn-outline text-accent hover:bg-accent hover:text-ink font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50">
+        {busy ? 'Addingâ€¦' : 'Add'}
       </button>
     </form>
   );
@@ -561,7 +561,7 @@ function ImportBanner({ onImported }: { onImported: () => void }) {
   }
 
   return (
-    <div className="border border-ink-line p-4 flex items-center gap-4 flex-wrap">
+    <div className="m3-card p-4 flex items-center gap-4 flex-wrap">
       <div className="flex-1">
         <p className="font-mono text-[10px] uppercase tracking-widest text-bone-mute">Strava gear sync</p>
         {lastImported && lastImported.length > 0 && (
@@ -579,10 +579,10 @@ function ImportBanner({ onImported }: { onImported: () => void }) {
         type="button"
         onClick={() => void handleImport()}
         disabled={busy}
-        className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-bone-mute hover:text-accent border border-ink-line hover:border-accent px-3 py-2 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-bone-mute hover:text-accent m3-card hover:border-accent px-3 py-2 transition-colors disabled:opacity-50"
       >
         <RefreshCw size={12} className={busy ? 'animate-spin' : ''} />
-        {busy ? 'Importing…' : 'Import from Strava'}
+        {busy ? 'Importingâ€¦' : 'Import from Strava'}
       </button>
     </div>
   );
@@ -632,27 +632,27 @@ export default function GearPage() {
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">athlete inventory</p>
         <h1 className="font-display text-4xl tracking-widest uppercase text-bone leading-none">Gear</h1>
         <p className="font-mono text-xs text-bone-mute leading-relaxed max-w-xl">
-          Track what you run in, research deals, and monitor shoe rotation health. No purchases happen here — all links go to the originator's site or search.
+          Track what you run in, research deals, and monitor shoe rotation health. No purchases happen here â€” all links go to the originator's site or search.
         </p>
       </header>
 
       {/* Strava import */}
       <ImportBanner onImported={() => void refresh()} />
 
-      {/* ── Shoes ── */}
+      {/* â”€â”€ Shoes â”€â”€ */}
       <section aria-label="Shoes">
         <div className="flex items-baseline justify-between mb-4">
           <div>
             <h2 className="font-display text-2xl tracking-widest uppercase text-bone">Shoes</h2>
             <p className="font-mono text-[10px] text-bone-mute mt-0.5">
-              {activeShoes.length} active · {retiredShoes.length} retired · Rotation analysis below each shoe
+              {activeShoes.length} active Â· {retiredShoes.length} retired Â· Rotation analysis below each shoe
             </p>
           </div>
         </div>
 
         {activeShoes.length === 0 ? (
-          <div className="border border-ink-line p-6">
-            <p className="font-mono text-xs text-bone-mute">No active shoes — import from Strava above or add manually.</p>
+          <div className="m3-card p-6">
+            <p className="font-mono text-xs text-bone-mute">No active shoes â€” import from Strava above or add manually.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -662,7 +662,7 @@ export default function GearPage() {
           </div>
         )}
 
-        {/* Retired — collapsible */}
+        {/* Retired â€” collapsible */}
         {retiredShoes.length > 0 && (
           <div className="mt-4">
             <button
@@ -671,7 +671,7 @@ export default function GearPage() {
               className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-bone-mute hover:text-bone transition-colors"
             >
               {showRetired ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              Retired — {retiredShoes.length} pairs
+              Retired â€” {retiredShoes.length} pairs
             </button>
             {showRetired && (
               <div className="space-y-3 mt-4">
@@ -684,7 +684,7 @@ export default function GearPage() {
         )}
       </section>
 
-      {/* ── Clothing / Backpacks / Hardware / Food ── */}
+      {/* â”€â”€ Clothing / Backpacks / Hardware / Food â”€â”€ */}
       {GEAR_CATEGORIES.map(cat => {
         const items = regularGear.filter(g => g.category === cat.key);
         return (
@@ -708,19 +708,19 @@ export default function GearPage() {
         );
       })}
 
-      {/* ── Watchlist ── */}
+      {/* â”€â”€ Watchlist â”€â”€ */}
       <section aria-label="Watchlist">
         <div className="flex items-baseline justify-between mb-3">
           <div>
             <h2 className="font-display text-xl tracking-widest uppercase text-bone">Watchlist</h2>
-            <p className="font-mono text-[10px] text-bone-mute">Items you want to buy — tracking for price drops, restocks, or returns</p>
+            <p className="font-mono text-[10px] text-bone-mute">Items you want to buy â€” tracking for price drops, restocks, or returns</p>
           </div>
           <span className="font-mono text-[10px] text-bone-mute">{watchlist.length} items</span>
         </div>
 
         {watchlist.length === 0 && (
-          <div className="border border-ink-line p-4 mb-4">
-            <p className="font-mono text-xs text-bone-mute">Nothing on the watchlist yet. Add gear you're waiting to buy — track target price and size so you're ready when a sale drops.</p>
+          <div className="m3-card p-4 mb-4">
+            <p className="font-mono text-xs text-bone-mute">Nothing on the watchlist yet. Add gear you're waiting to buy â€” track target price and size so you're ready when a sale drops.</p>
           </div>
         )}
 

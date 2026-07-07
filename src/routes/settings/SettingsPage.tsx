@@ -18,7 +18,7 @@ import type { GarminDailySnapshot } from '@/lib/garmin/types';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function formatShort(isoDate: string | null | undefined): string {
-  if (!isoDate) return '—';
+  if (!isoDate) return 'â€”';
   // Handle ISO datetime strings (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DD)
   const datePart = isoDate.slice(0, 10);
   const d = new Date(datePart + 'T00:00:00Z');
@@ -29,7 +29,7 @@ function formatShort(isoDate: string | null | undefined): string {
 }
 
 function relativeTime(isoStr: string | null | undefined): string {
-  if (!isoStr) return '—';
+  if (!isoStr) return 'â€”';
   const then = new Date(isoStr).getTime();
   if (isNaN(then)) return isoStr;
   const diffMs = Date.now() - then;
@@ -49,7 +49,7 @@ function relativeTime(isoStr: string | null | undefined): string {
 }
 
 function formatDateTime(isoStr: string | null | undefined): string {
-  if (!isoStr) return '—';
+  if (!isoStr) return 'â€”';
   const d = new Date(isoStr);
   if (isNaN(d.getTime())) return isoStr;
   const day = d.getUTCDate();
@@ -101,7 +101,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ---------------------------------------------------------------------------
-// Section 0: Display preferences (localStorage — no DB, instant effect)
+// Section 0: Display preferences (localStorage â€” no DB, instant effect)
 // ---------------------------------------------------------------------------
 
 const HOME_OPTIONS = [
@@ -120,13 +120,14 @@ const FONT_OPTIONS = [
   { value: '1.3',  label: 'X-Large'  },
 ] as const;
 
+// Swatch previews mirror the generated M3 schemes (src/m3-tokens.css)
 const PRESET_OPTIONS = [
-  { value: 'ink',           label: 'Ink',            bg: '#0A0A0A', fg: '#F5F5F0', spot: '#FF5F00' },
-  { value: 'dusk',          label: 'Dusk',           bg: '#0E0B08', fg: '#F0EDE6', spot: '#FF5F00' },
-  { value: 'oled',          label: 'OLED',           bg: '#000000', fg: '#F5F5F0', spot: '#FF5F00' },
-  { value: 'storm',         label: 'Storm',          bg: '#09090F', fg: '#EDF2F8', spot: '#FF5F00' },
-  { value: 'dawn',          label: 'Dawn',           bg: '#F5F5F3', fg: '#111110', spot: '#CC4400' },
-  { value: 'high-contrast', label: 'Hi-Contrast',    bg: '#000000', fg: '#FFFFFF', spot: '#FFB347' },
+  { value: 'ink',           label: 'Ink',            bg: '#1e100b', fg: '#f9ddd3', spot: '#ffb599' },
+  { value: 'dusk',          label: 'Dusk',           bg: '#1a120d', fg: '#f0dfd8', spot: '#ffb68f' },
+  { value: 'oled',          label: 'OLED',           bg: '#000000', fg: '#fff2ee', spot: '#ffb599' },
+  { value: 'storm',         label: 'Storm',          bg: '#101418', fg: '#e0e2e8', spot: '#98ccf9' },
+  { value: 'dawn',          label: 'Dawn',           bg: '#fff8f6', fg: '#271812', spot: '#a63b00' },
+  { value: 'high-contrast', label: 'Hi-Contrast',    bg: '#1e100b', fg: '#ffffff', spot: '#ffece6' },
 ] as const;
 
 type PresetValue = typeof PRESET_OPTIONS[number]['value'];
@@ -167,7 +168,7 @@ function DisplaySection() {
   }
 
   return (
-    <section aria-labelledby="display-heading" className="border border-ink-line p-6 space-y-6">
+    <section aria-labelledby="display-heading" className="m3-card p-6 space-y-6">
       <div className="space-y-1">
         <SectionLabel>display</SectionLabel>
         <h2 id="display-heading" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
@@ -184,7 +185,7 @@ function DisplaySection() {
         <select
           value={homePage}
           onChange={(e) => handleHome(e.target.value)}
-          className="bg-ink border border-ink-line px-3 py-2 font-mono text-xs text-bone focus:outline-none focus:border-accent"
+          className="bg-ink m3-card px-3 py-2 font-mono text-xs text-bone focus:outline-none focus:border-accent"
         >
           {HOME_OPTIONS.map((o) => (
             <option key={o.to} value={o.to}>{o.label}</option>
@@ -267,7 +268,7 @@ function StravaSection({ settings }: { settings: SettingsMap }) {
   const connected = Boolean(clientId && clientId.trim() !== '');
 
   return (
-    <section aria-labelledby="strava-heading" className="border border-ink-line p-6 space-y-4">
+    <section aria-labelledby="strava-heading" className="m3-card p-6 space-y-4">
       <SectionLabel>strava</SectionLabel>
       <h2 id="strava-heading" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
         Connection
@@ -300,7 +301,7 @@ function StravaSection({ settings }: { settings: SettingsMap }) {
             {lastSync ? (
               <span title={lastSync}>{relativeTime(lastSync)}</span>
             ) : (
-              '—'
+              'â€”'
             )}
           </span>
         </div>
@@ -310,7 +311,7 @@ function StravaSection({ settings }: { settings: SettingsMap }) {
       {!connected && (
         <a
           href="/setup"
-          className="inline-block font-mono text-xs uppercase tracking-widest px-4 py-2 border border-ink-line text-bone-dim hover:border-accent hover:text-accent transition-colors"
+          className="inline-block font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent transition-colors"
         >
           Go to Setup
         </a>
@@ -332,9 +333,9 @@ function StravaSection({ settings }: { settings: SettingsMap }) {
 // ---------------------------------------------------------------------------
 
 function statusIcon(status: string): string {
-  if (status === 'completed') return '✓';
-  if (status === 'failed') return '✗';
-  return '⟳';
+  if (status === 'completed') return 'âœ“';
+  if (status === 'failed') return 'âœ—';
+  return 'âŸ³';
 }
 
 function statusClass(status: string): string {
@@ -345,7 +346,7 @@ function statusClass(status: string): string {
 
 function SyncHistorySection({ jobs }: { jobs: SyncJob[] }) {
   return (
-    <section aria-labelledby="sync-heading" className="border border-ink-line p-6 space-y-4">
+    <section aria-labelledby="sync-heading" className="m3-card p-6 space-y-4">
       <SectionLabel>sync history</SectionLabel>
       <h2 id="sync-heading" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
         Recent Syncs
@@ -378,10 +379,10 @@ function SyncHistorySection({ jobs }: { jobs: SyncJob[] }) {
                     {job.status}
                   </td>
                   <td className="font-mono text-xs text-bone-dim py-2 pr-4 text-right">
-                    {job.fetched != null ? job.fetched : '—'}
+                    {job.fetched != null ? job.fetched : 'â€”'}
                   </td>
                   <td className="font-mono text-xs text-signal-miss py-2 max-w-[160px] truncate" title={job.error ?? undefined}>
-                    {job.error ? job.error.slice(0, 60) + (job.error.length > 60 ? '…' : '') : ''}
+                    {job.error ? job.error.slice(0, 60) + (job.error.length > 60 ? 'â€¦' : '') : ''}
                   </td>
                 </tr>
               ))}
@@ -399,7 +400,7 @@ function SyncHistorySection({ jobs }: { jobs: SyncJob[] }) {
 
 function StatCell({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="border border-ink-line p-4 space-y-1">
+    <div className="m3-card p-4 space-y-1">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">{label}</p>
       <p className="font-display text-2xl tracking-widest text-bone leading-none">{value}</p>
     </div>
@@ -409,11 +410,11 @@ function StatCell({ label, value }: { label: string; value: React.ReactNode }) {
 function DataStatsSection({ stats }: { stats: Stats }) {
   const dateRange =
     stats.oldest && stats.newest
-      ? `${formatShort(stats.oldest)} – ${formatShort(stats.newest)}`
-      : '—';
+      ? `${formatShort(stats.oldest)} â€“ ${formatShort(stats.newest)}`
+      : 'â€”';
 
   return (
-    <section aria-labelledby="stats-heading" className="border border-ink-line p-6 space-y-4">
+    <section aria-labelledby="stats-heading" className="m3-card p-6 space-y-4">
       <SectionLabel>data stats</SectionLabel>
       <h2 id="stats-heading" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
         Database
@@ -524,9 +525,9 @@ function DataManagementSection() {
             type="button"
             onClick={() => { void handleExport(); }}
             disabled={exporting}
-            className="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-ink-line text-bone-dim hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {exporting ? 'Exporting…' : 'Export data'}
+            {exporting ? 'Exportingâ€¦' : 'Export data'}
           </button>
           {exportDone && (
             <span
@@ -550,7 +551,7 @@ function DataManagementSection() {
           <button
             type="button"
             onClick={() => setWipeStep('confirm')}
-            className="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-signal-miss/40 text-signal-miss hover:bg-signal-miss/10 transition-colors"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 border border-signal-miss/40 text-signal-miss hover:bg-signal-miss/10 transition-colors"
           >
             Clear all data
           </button>
@@ -568,7 +569,7 @@ function DataManagementSection() {
                 id="wipe-warning-title"
                 className="font-mono text-xs text-signal-miss uppercase tracking-widest"
               >
-                Danger — irreversible action
+                Danger â€” irreversible action
               </p>
               <p id="wipe-warning-desc" className="font-mono text-xs text-bone-dim leading-relaxed">
                 This will delete all activities, settings, races, shoes, and journal entries.
@@ -589,15 +590,15 @@ function DataManagementSection() {
                 autoComplete="off"
                 spellCheck={false}
                 disabled={wiping}
-                className="bg-ink-panel border border-ink-line px-3 py-1.5 font-mono text-xs text-bone placeholder:text-bone-mute focus:outline-none focus:border-signal-miss transition-colors w-32 disabled:opacity-50"
+                className="bg-ink-panel m3-card px-3 py-1.5 font-mono text-xs text-bone placeholder:text-bone-mute focus:outline-none focus:border-signal-miss transition-colors w-32 disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={() => { void handleWipe(); }}
                 disabled={wipeInput !== 'CLEAR' || wiping}
-                className="font-mono text-xs uppercase tracking-widest px-4 py-1.5 border border-signal-miss text-signal-miss hover:bg-signal-miss/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-1.5 border border-signal-miss text-signal-miss hover:bg-signal-miss/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
-                {wiping ? 'Clearing…' : 'Confirm clear'}
+                {wiping ? 'Clearingâ€¦' : 'Confirm clear'}
               </button>
               <button
                 type="button"
@@ -616,7 +617,7 @@ function DataManagementSection() {
 }
 
 // ---------------------------------------------------------------------------
-// Section 5: AI Coach — BYOK
+// Section 5: AI Coach â€” BYOK
 // ---------------------------------------------------------------------------
 
 function AiCoachSection() {
@@ -662,17 +663,17 @@ function AiCoachSection() {
     setTimeout(() => setStatus('idle'), 2500);
   }
 
-  const maskedKey = savedKey ? `sk-ant-…${savedKey.slice(-4)}` : null;
+  const maskedKey = savedKey ? `sk-ant-â€¦${savedKey.slice(-4)}` : null;
 
   return (
-    <section aria-labelledby="ai-coach-heading" className="border border-ink-line p-6 space-y-4">
+    <section aria-labelledby="ai-coach-heading" className="m3-card p-6 space-y-4">
       <SectionLabel>ai coach</SectionLabel>
       <h2 id="ai-coach-heading" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
         Anthropic API Key
       </h2>
 
       <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-xl">
-        Enter your Anthropic API key to enable the AI coach in Coach Log. Your key is stored locally — it never leaves your device.
+        Enter your Anthropic API key to enable the AI coach in Coach Log. Your key is stored locally â€” it never leaves your device.
       </p>
 
       {maskedKey && (
@@ -697,8 +698,8 @@ function AiCoachSection() {
               value={inputKey}
               onChange={(e) => setInputKey(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') void handleSave(); }}
-              placeholder="sk-ant-api03-…"
-              className="w-full bg-ink-shadow border border-ink-line px-3 py-2 font-mono text-xs text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent pr-10"
+              placeholder="sk-ant-api03-â€¦"
+              className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-xs text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent pr-10"
               autoComplete="off"
               spellCheck={false}
             />
@@ -715,9 +716,9 @@ function AiCoachSection() {
             type="button"
             onClick={() => { void handleSave(); }}
             disabled={saving || !inputKey.trim()}
-            className="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-ink-line text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
-            {saving ? 'Saving…' : 'Save key'}
+            {saving ? 'Savingâ€¦' : 'Save key'}
           </button>
         </div>
       )}
@@ -739,7 +740,7 @@ function AiCoachSection() {
         >
           console.anthropic.com
         </a>
-        . BYOK — your usage costs, your control.
+        . BYOK â€” your usage costs, your control.
       </p>
     </section>
   );
@@ -954,7 +955,7 @@ function GarminImportSection() {
   }
 
   return (
-    <section aria-labelledby="garmin-heading" className="border border-ink-line p-6 space-y-4">
+    <section aria-labelledby="garmin-heading" className="m3-card p-6 space-y-4">
       <SectionLabel>garmin</SectionLabel>
       <h2 id="garmin-heading" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
         GDPR Export Import
@@ -968,7 +969,7 @@ function GarminImportSection() {
           rel="noopener noreferrer"
           className="text-accent hover:underline"
         >
-          garmin.com → Data Export
+          garmin.com â†’ Data Export
         </a>
         , request your data. Unzip the archive, open the <span className="text-bone">DI_CONNECT</span> folder,
         then select all the JSON files below. GHOST reads RHR, HRV, sleep, stress, body battery, VO2 max, and weight.
@@ -979,7 +980,7 @@ function GarminImportSection() {
           <span className="w-2 h-2 rounded-full bg-signal-ok flex-shrink-0" aria-hidden="true" />
           <span className="font-mono text-xs text-signal-ok">
             Last imported {relativeTime(lastImported)}
-            {' '}·{' '}
+            {' '}Â·{' '}
             <span className="text-bone-mute">{formatDateTime(lastImported)}</span>
           </span>
         </div>
@@ -1005,7 +1006,7 @@ function GarminImportSection() {
       {/* Parsing indicator */}
       {parsing && (
         <p className="font-mono text-xs text-bone-mute" role="status" aria-live="polite">
-          Parsing files…
+          Parsing filesâ€¦
         </p>
       )}
 
@@ -1018,7 +1019,7 @@ function GarminImportSection() {
 
       {/* Preview */}
       {preview && (
-        <div className="border border-ink-line bg-ink-shadow p-4 space-y-3">
+        <div className="m3-card bg-ink-shadow p-4 space-y-3">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">Ready to import</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div>
@@ -1038,7 +1039,7 @@ function GarminImportSection() {
             <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-1">Metrics found</p>
             <div className="flex flex-wrap gap-1">
               {preview.metrics.map((m) => (
-                <span key={m} className="font-mono text-[10px] px-2 py-0.5 border border-ink-line text-bone-dim">
+                <span key={m} className="font-mono text-[10px] px-2 py-0.5 m3-card text-bone-dim">
                   {m}
                 </span>
               ))}
@@ -1048,9 +1049,9 @@ function GarminImportSection() {
             type="button"
             onClick={() => { void handleImport(); }}
             disabled={importing}
-            className="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-accent text-accent hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-btn-outline text-accent hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {importing ? 'Importing…' : `Import ${preview.rows.length} days`}
+            {importing ? 'Importingâ€¦' : `Import ${preview.rows.length} days`}
           </button>
         </div>
       )}
@@ -1094,7 +1095,7 @@ export default function SettingsPage() {
       .then(([statsRows, settingsRows, syncRows]) => {
         if (cancelled) return;
 
-        // Stats — column index access
+        // Stats â€” column index access
         const sr = statsRows[0] ?? [];
         setStats({
           actCount: (sr[0] as number) ?? 0,
@@ -1161,21 +1162,21 @@ export default function SettingsPage() {
       {/* Section 1: Strava */}
       <StravaSection settings={settings} />
 
-      {/* Profile sync pointer — the feature lives on /setup */}
-      <section aria-labelledby="profile-sync-pointer" className="border border-ink-line p-6 space-y-2">
+      {/* Profile sync pointer â€” the feature lives on /setup */}
+      <section aria-labelledby="profile-sync-pointer" className="m3-card p-6 space-y-2">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">cross-device</p>
         <h2 id="profile-sync-pointer" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
           Profile Sync
         </h2>
         <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-xl">
           Back up your API credentials and preferences, or restore them on
-          another device — encrypted with your passphrase.
+          another device â€” encrypted with your passphrase.
         </p>
         <a
           href="/setup"
-          className="inline-block font-mono text-xs uppercase tracking-widest px-4 py-2 border border-ink-line text-bone-dim hover:border-accent hover:text-accent transition-colors"
+          className="inline-block font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent transition-colors"
         >
-          Open Profile Sync in Setup →
+          Open Profile Sync in Setup â†’
         </a>
       </section>
 
@@ -1186,12 +1187,12 @@ export default function SettingsPage() {
       {stats ? (
         <DataStatsSection stats={stats} />
       ) : (
-        <div className="border border-ink-line p-6 space-y-4 animate-pulse">
+        <div className="m3-card p-6 space-y-4 animate-pulse">
           <div className="h-3 w-20 bg-ink-line rounded" />
           <div className="h-6 w-32 bg-ink-line-bold rounded" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="border border-ink-line p-4 h-20 bg-ink-shadow" />
+              <div key={i} className="m3-card p-4 h-20 bg-ink-shadow" />
             ))}
           </div>
         </div>

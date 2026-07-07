@@ -227,7 +227,7 @@ interface RacesSectionProps {
 
 function RacesSection({ goalRace, tuneupRaces, onRefresh }: RacesSectionProps) {
   return (
-    <section className="border border-ink-line p-6 space-y-4">
+    <section className="m3-card p-6 space-y-4">
       <SectionLabel>races</SectionLabel>
 
       <GoalRaceBlock goalRace={goalRace} onRefresh={onRefresh} />
@@ -315,11 +315,11 @@ function NzRaceSearch({
         onChange={(e) => { onTextChange(e.target.value); setOpen(true); }}
         onFocus={() => { if (value.length >= 2) setOpen(true); }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder="Search NZ races or type manually…"
-        className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+        placeholder="Search NZ races or type manuallyâ€¦"
+        className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
       />
       {open && results.length > 0 && (
-        <ul className="absolute z-50 left-0 right-0 top-full border border-ink-line border-t-0 bg-ink-shadow max-h-52 overflow-y-auto">
+        <ul className="absolute z-50 left-0 right-0 top-full m3-card border-t-0 bg-ink-shadow max-h-52 overflow-y-auto">
           {results.map((race) => (
             <li key={`${race.name}-${race.date}`}>
               <button
@@ -579,14 +579,14 @@ function TuneupRacesBlock({ tuneupRaces, onRefresh }: { tuneupRaces: Race[]; onR
       )}
 
       {tuneupRaces.length > 0 && (
-        <div className="divide-y divide-ink-line border border-ink-line">
+        <div className="divide-y divide-ink-line m3-card">
           {tuneupRaces.map((r) => (
             <div key={r.id} className="px-4 py-3 flex items-center justify-between gap-4">
               <div className="space-y-0.5 min-w-0">
                 <p className="font-mono text-sm text-bone truncate">{r.name}</p>
                 <p className="font-mono text-xs text-bone-dim">
-                  {formatDisplayDate(r.date)} · {distanceLabelFromKm(r.distance_km)}
-                  {r.goal_time && ` · ${r.goal_time}`}
+                  {formatDisplayDate(r.date)} Â· {distanceLabelFromKm(r.distance_km)}
+                  {r.goal_time && ` Â· ${r.goal_time}`}
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -655,7 +655,7 @@ function RaceForm({
   }
 
   return (
-    <div className="border border-ink-line bg-ink-shadow p-4 space-y-3">
+    <div className="m3-card bg-ink-shadow p-4 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Date */}
         <div className="space-y-1">
@@ -664,11 +664,11 @@ function RaceForm({
             type="date"
             value={form.date}
             onChange={(e) => onChange({ ...form, date: e.target.value })}
-            className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
+            className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
           />
         </div>
 
-        {/* Name — NZ race search combobox */}
+        {/* Name â€” NZ race search combobox */}
         <div className="space-y-1">
           <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Race Name *</label>
           <NzRaceSearch
@@ -676,7 +676,7 @@ function RaceForm({
             onTextChange={(name) => onChange({ ...form, name, raceUrl: null, raceSearchUrl: null })}
             onSelect={handleNzSelect}
           />
-          {/* Originator link — shown after selecting a NZ race */}
+          {/* Originator link â€” shown after selecting a NZ race */}
           {form.raceUrl && (
             <div className="flex items-center gap-2 flex-wrap pt-0.5">
               <a
@@ -689,7 +689,7 @@ function RaceForm({
               </a>
               {form.raceSearchUrl && (
                 <>
-                  <span className="font-mono text-[10px] text-bone-mute">·</span>
+                  <span className="font-mono text-[10px] text-bone-mute">Â·</span>
                   <a
                     href={form.raceSearchUrl}
                     target="_blank"
@@ -710,7 +710,7 @@ function RaceForm({
           <select
             value={form.distanceLabel}
             onChange={(e) => onDistanceChange(e.target.value)}
-            className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
+            className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
           >
             {DISTANCE_OPTIONS.map((o) => (
               <option key={o.label} value={o.label}>{o.label}</option>
@@ -729,7 +729,7 @@ function RaceForm({
               value={form.distance_km}
               onChange={(e) => onChange({ ...form, distance_km: e.target.value })}
               placeholder="e.g. 60"
-              className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+              className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
             />
           </div>
         )}
@@ -742,7 +742,7 @@ function RaceForm({
             value={form.goal_time}
             onChange={(e) => onChange({ ...form, goal_time: e.target.value })}
             placeholder="H:MM:SS"
-            className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+            className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
           />
         </div>
 
@@ -753,7 +753,7 @@ function RaceForm({
             <select
               value={form.level}
               onChange={(e) => onChange({ ...form, level: e.target.value as Level })}
-              className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
+              className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
             >
               {LEVEL_OPTIONS.map((l) => (
                 <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>
@@ -767,14 +767,14 @@ function RaceForm({
         <button
           onClick={onSave}
           disabled={saving || !form.date || !form.name || !form.distance_km}
-          className="font-mono text-xs uppercase tracking-widest px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {saving ? 'Saving…' : submitLabel}
+          {saving ? 'Savingâ€¦' : submitLabel}
         </button>
         <button
           onClick={onCancel}
           disabled={saving}
-          className="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-ink-line text-bone-mute hover:text-bone transition-colors"
+          className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-mute hover:text-bone transition-colors"
         >
           Cancel
         </button>
@@ -827,7 +827,7 @@ function CapacitySection({ capacity, onRefresh }: CapacitySectionProps) {
   const longRunDisplay  = capacity.long_run_cap_km ? `${capacity.long_run_cap_km} km` : 'not set';
 
   return (
-    <section className="border border-ink-line p-6 space-y-4">
+    <section className="m3-card p-6 space-y-4">
       <SectionLabel>capacity caps</SectionLabel>
 
       <div className="grid grid-cols-2 gap-4 text-sm font-mono text-bone-dim mb-2">
@@ -853,7 +853,7 @@ function CapacitySection({ capacity, onRefresh }: CapacitySectionProps) {
             value={weekly}
             onChange={(e) => setWeekly(e.target.value)}
             placeholder="e.g. 80"
-            className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+            className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
           />
         </div>
 
@@ -868,7 +868,7 @@ function CapacitySection({ capacity, onRefresh }: CapacitySectionProps) {
             value={longRun}
             onChange={(e) => setLongRun(e.target.value)}
             placeholder="e.g. 32"
-            className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+            className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
           />
         </div>
       </div>
@@ -877,9 +877,9 @@ function CapacitySection({ capacity, onRefresh }: CapacitySectionProps) {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="font-mono text-xs uppercase tracking-widest px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {saving ? 'Saving…' : 'Save Caps'}
+          {saving ? 'Savingâ€¦' : 'Save Caps'}
         </button>
         {saved && (
           <span className="font-mono text-xs text-signal-ok">Saved.</span>
@@ -941,7 +941,7 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
   }
 
   return (
-    <section className="border border-ink-line p-6 space-y-4">
+    <section className="m3-card p-6 space-y-4">
       <SectionLabel>commitments</SectionLabel>
 
       <div className="flex items-center justify-between gap-4">
@@ -963,7 +963,7 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
       )}
 
       {events.length > 0 && (
-        <div className="divide-y divide-ink-line border border-ink-line">
+        <div className="divide-y divide-ink-line m3-card">
           {events.map((ev) => (
             <div key={ev.id} className="px-4 py-3 flex items-start justify-between gap-4">
               <div className="space-y-1 min-w-0">
@@ -995,7 +995,7 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
       )}
 
       {adding && (
-        <div className="border border-ink-line bg-ink-shadow p-4 space-y-3">
+        <div className="m3-card bg-ink-shadow p-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Date */}
             <div className="space-y-1">
@@ -1004,7 +1004,7 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
+                className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
               />
             </div>
 
@@ -1016,7 +1016,7 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="e.g. Christmas Day"
-                className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+                className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
               />
             </div>
 
@@ -1026,7 +1026,7 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as EventType })}
-                className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
+                className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
               >
                 {EVENT_TYPES.map((t) => (
                   <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>
@@ -1042,7 +1042,7 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 placeholder="Optional details"
-                className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+                className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
               />
             </div>
           </div>
@@ -1051,14 +1051,14 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
             <button
               onClick={handleAdd}
               disabled={saving || !form.date || !form.title}
-              className="font-mono text-xs uppercase tracking-widest px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {saving ? 'Saving…' : 'Add Event'}
+              {saving ? 'Savingâ€¦' : 'Add Event'}
             </button>
             <button
               onClick={() => { setAdding(false); setForm(BLANK_EVENT_FORM); }}
               disabled={saving}
-              className="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-ink-line text-bone-mute hover:text-bone transition-colors"
+              className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-mute hover:text-bone transition-colors"
             >
               Cancel
             </button>

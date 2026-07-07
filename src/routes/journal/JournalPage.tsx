@@ -61,7 +61,7 @@ function addDays(iso: string, n: number): string {
 /** Return YYYY-MM-DD for last Monday (or today if today is Monday). */
 function lastMonday(iso: string): string {
   const d = new Date(iso + 'T00:00:00Z');
-  const dow = d.getUTCDay(); // 0=Sun, 1=Mon … 6=Sat
+  const dow = d.getUTCDay(); // 0=Sun, 1=Mon â€¦ 6=Sat
   const daysBack = dow === 0 ? 6 : dow - 1;
   d.setUTCDate(d.getUTCDate() - daysBack);
   return d.toISOString().slice(0, 10);
@@ -130,7 +130,7 @@ function isRunSport(sportType: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Wellness badge colour (1–5 scale)
+// Wellness badge colour (1â€“5 scale)
 // ---------------------------------------------------------------------------
 
 function badgeClass(value: number | null): string {
@@ -263,7 +263,7 @@ function DayCell({
       aria-label={`${iso}${isToday ? ' (today)' : ''}${acts && acts.length ? `, ${acts.length} activity` : ''}${journal ? ', wellness logged' : ''}`}
       aria-pressed={selected}
       className={[
-        'relative flex flex-col justify-between border border-ink-line/50 p-1 text-left transition-colors',
+        'relative flex flex-col justify-between m3-card/50 p-1 text-left transition-colors',
         'hover:bg-ink-line/30 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-accent',
         'h-14 sm:h-16',
         selected   ? 'bg-ink-line/50'  : '',
@@ -301,7 +301,7 @@ function DayCell({
         </div>
       )}
 
-      {/* Wellness energy bar — 3px at bottom */}
+      {/* Wellness energy bar â€” 3px at bottom */}
       {journal && journal.energy !== null && (
         <span
           aria-hidden="true"
@@ -364,7 +364,7 @@ function DayDetail({
   return (
     <section
       aria-labelledby="day-detail-heading"
-      className="border border-ink-line p-6 mt-4 space-y-6"
+      className="m3-card p-6 mt-4 space-y-6"
     >
       {/* Header row */}
       <div className="flex items-start justify-between gap-4">
@@ -395,10 +395,10 @@ function DayDetail({
           activities
         </p>
         {acts && acts.length > 0 ? (
-          <ul className="divide-y divide-ink-line border border-ink-line" role="list">
+          <ul className="divide-y divide-ink-line m3-card" role="list">
             {acts.map((a, i) => (
               <li key={i} className="px-4 py-3 flex items-center gap-3">
-                <span className="font-mono text-xs text-bone-dim bg-ink-panel border border-ink-line px-2 py-0.5 flex-shrink-0">
+                <span className="font-mono text-xs text-bone-dim bg-ink-panel m3-card px-2 py-0.5 flex-shrink-0">
                   {sportIcon(a.sportType)}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -497,16 +497,16 @@ function DayDetail({
           value={notesValue}
           onChange={(e) => setNotesValue(e.target.value)}
           placeholder="How did training feel today?"
-          className="w-full bg-ink border border-ink-line px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent resize-none"
+          className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent resize-none"
         />
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="font-mono text-xs uppercase tracking-widest px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? 'Savingâ€¦' : 'Save'}
           </button>
           {savedMsg && (
             <span
@@ -538,7 +538,7 @@ function WeekSummaries({ summaries }: { summaries: WeekSummary[] }) {
       >
         weekly summaries
       </p>
-      <div className="border border-ink-line divide-y divide-ink-line">
+      <div className="m3-card divide-y divide-ink-line">
         {/* Column headers */}
         <div
           className="grid gap-2 px-4 py-2 text-xs font-mono text-bone-mute uppercase tracking-widest"
@@ -560,19 +560,19 @@ function WeekSummaries({ summaries }: { summaries: WeekSummary[] }) {
           >
             <span className="text-bone-dim">{wk.label}</span>
             <span className="text-right w-16 text-bone">
-              {wk.totalRunKm > 0 ? `${wk.totalRunKm.toFixed(1)}` : '—'}
+              {wk.totalRunKm > 0 ? `${wk.totalRunKm.toFixed(1)}` : 'â€”'}
             </span>
             <span className="text-right w-12 text-bone-mute">
-              {wk.runCount > 0 ? wk.runCount : '—'}
+              {wk.runCount > 0 ? wk.runCount : 'â€”'}
             </span>
             <span className="text-right w-16 text-bone-mute">
-              {wk.wellnessDays > 0 ? `${wk.wellnessDays}d` : '—'}
+              {wk.wellnessDays > 0 ? `${wk.wellnessDays}d` : 'â€”'}
             </span>
             <span className="text-right w-16 text-bone-mute">
-              {wk.avgEnergy !== null ? wk.avgEnergy.toFixed(1) : '—'}
+              {wk.avgEnergy !== null ? wk.avgEnergy.toFixed(1) : 'â€”'}
             </span>
             <span className="text-right w-16 text-bone-mute">
-              {wk.avgHrv !== null ? `${wk.avgHrv}ms` : '—'}
+              {wk.avgHrv !== null ? `${wk.avgHrv}ms` : 'â€”'}
             </span>
           </div>
         ))}
@@ -684,7 +684,7 @@ export default function JournalPage() {
       <header className="border-b border-ink-line pb-6">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-2">Ghost</p>
         <h1 className="font-display text-4xl tracking-widest uppercase text-bone">Journal</h1>
-        <p className="font-mono text-xs text-bone-mute mt-1">Training diary — last 5 weeks</p>
+        <p className="font-mono text-xs text-bone-mute mt-1">Training diary â€” last 5 weeks</p>
       </header>
 
       {/* Section 1: Calendar grid */}
@@ -710,7 +710,7 @@ export default function JournalPage() {
           ))}
         </div>
 
-        {/* Calendar grid — 5 rows × 7 columns */}
+        {/* Calendar grid â€” 5 rows Ã— 7 columns */}
         <div
           className="grid grid-cols-7 gap-px bg-ink-line/30"
           role="grid"
