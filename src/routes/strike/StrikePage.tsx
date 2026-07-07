@@ -805,11 +805,11 @@ function BiometricsCard({ days }: { days: ResolvedDayMetrics[] }) {
         <span className="font-mono text-xs text-bone-dim">manual + garmin</span>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-ink-line">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         {metrics.map((m) => {
           const arrow = trendArrow(m.trend, m.lowerIsBetter);
           return (
-            <div key={m.label} className="bg-ink p-6 space-y-1">
+            <div key={m.label} className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
               <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">{m.label}</p>
               {m.value != null ? (
                 <>
@@ -884,21 +884,21 @@ function AthleteStateCard({ state }: { state: AthleteStateData }) {
   const paceOnlyCount = activityCount - hrCount;
 
   return (
-    <section className="m3-card" aria-label="Athlete State">
+    <section className="rounded-2xl bg-primary-container/40 p-5 space-y-4" aria-label="Athlete State">
       {/* Card header */}
-      <div className="px-6 py-4 border-b border-ink-line flex items-center justify-between">
-        <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">
           athlete state · CTL / ATL / TSB
         </span>
-        <span className={`font-mono text-xs uppercase tracking-widest ${FORM_COLOR[formClass]}`}>
+        <span className={`rounded-full px-3 py-1 text-[11px] font-medium bg-secondary-container text-on-secondary-container`}>
           {FORM_LABEL[formClass]}
         </span>
       </div>
 
       {/* Metric grid */}
-      <div className="grid grid-cols-3 gap-px bg-ink-line">
+      <div className="grid grid-cols-3 gap-2">
         {/* CTL */}
-        <div className="bg-ink p-6 space-y-1">
+        <div className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">CTL</p>
           <p className="font-display tracking-widest text-4xl leading-none text-bone">
             {ctl.toFixed(1)}
@@ -907,7 +907,7 @@ function AthleteStateCard({ state }: { state: AthleteStateData }) {
         </div>
 
         {/* ATL */}
-        <div className="bg-ink p-6 space-y-1">
+        <div className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">ATL</p>
           <p className="font-display tracking-widest text-4xl leading-none text-bone">
             {atl.toFixed(1)}
@@ -916,7 +916,7 @@ function AthleteStateCard({ state }: { state: AthleteStateData }) {
         </div>
 
         {/* TSB */}
-        <div className="bg-ink p-6 space-y-1">
+        <div className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">TSB</p>
           <p className={`font-display tracking-widest text-4xl leading-none ${FORM_COLOR[formClass]}`}>
             {signedStr(tsb)}
@@ -928,7 +928,7 @@ function AthleteStateCard({ state }: { state: AthleteStateData }) {
       </div>
 
       {/* Footer: activity count + confidence */}
-      <div className="px-6 py-3 border-t border-ink-line flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4 pt-1">
         <span className="font-mono text-xs text-bone-mute">
           {activityCount} {activityCount === 1 ? 'activity' : 'activities'} in window
         </span>
@@ -1266,8 +1266,8 @@ function LongRunCard({ data }: { data: LongRunData }) {
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-px bg-ink-line">
-        <div className="bg-ink p-6 space-y-1">
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">Distance</p>
           <div className="flex items-baseline gap-1.5">
             <span className="font-display tracking-widest text-4xl leading-none text-bone">
@@ -1277,7 +1277,7 @@ function LongRunCard({ data }: { data: LongRunData }) {
           </div>
         </div>
 
-        <div className="bg-ink p-6 space-y-1">
+        <div className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">% of week</p>
           <div className="flex items-baseline gap-1.5">
             <span className="font-display tracking-widest text-4xl leading-none text-bone">
@@ -1288,7 +1288,7 @@ function LongRunCard({ data }: { data: LongRunData }) {
           <p className="font-mono text-xs text-bone-mute">of {weekTotalKm.toFixed(1)} km total</p>
         </div>
 
-        <div className="bg-ink p-6 space-y-1">
+        <div className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vs 2 weeks ago</p>
           {delta !== null ? (
             <>

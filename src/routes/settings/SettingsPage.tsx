@@ -185,7 +185,7 @@ function DisplaySection() {
         <select
           value={homePage}
           onChange={(e) => handleHome(e.target.value)}
-          className="bg-ink m3-card px-3 py-2 font-mono text-xs text-bone focus:outline-none focus:border-accent"
+          className="bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-xs text-on-surface focus:outline-none focus:border-primary transition-colors"
         >
           {HOME_OPTIONS.map((o) => (
             <option key={o.to} value={o.to}>{o.label}</option>
@@ -205,10 +205,10 @@ function DisplaySection() {
                 type="button"
                 onClick={() => handleFont(o.value)}
                 className={[
-                  'px-4 py-1.5 font-mono text-xs uppercase tracking-widest border transition-colors',
+                  'rounded-full px-4 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors',
                   active
-                    ? 'border-accent text-accent bg-accent/10'
-                    : 'border-ink-line text-bone-mute hover:border-bone-mute hover:text-bone',
+                    ? 'bg-secondary-container text-on-secondary-container'
+                    : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high',
                 ].join(' ')}
               >
                 {o.label}
@@ -311,7 +311,7 @@ function StravaSection({ settings }: { settings: SettingsMap }) {
       {!connected && (
         <a
           href="/setup"
-          className="inline-block font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent transition-colors"
+          className="inline-block font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 bg-secondary-container text-on-secondary-container hover:shadow-sm transition-all"
         >
           Go to Setup
         </a>
@@ -319,7 +319,7 @@ function StravaSection({ settings }: { settings: SettingsMap }) {
       {connected && (
         <a
           href="/setup"
-          className="inline-block font-mono text-xs uppercase tracking-widest text-bone-mute hover:text-bone transition-colors"
+          className="inline-block font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 text-primary hover:bg-primary/8 transition-colors"
         >
           Reconfigure in Setup &rarr;
         </a>
@@ -400,9 +400,9 @@ function SyncHistorySection({ jobs }: { jobs: SyncJob[] }) {
 
 function StatCell({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="m3-card p-4 space-y-1">
-      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">{label}</p>
-      <p className="font-display text-2xl tracking-widest text-bone leading-none">{value}</p>
+    <div className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
+      <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">{label}</p>
+      <p className="font-display text-2xl tracking-widest text-on-surface leading-none">{value}</p>
     </div>
   );
 }
@@ -506,7 +506,7 @@ function DataManagementSection() {
   return (
     <section
       aria-labelledby="data-mgmt-heading"
-      className="border border-signal-miss/30 p-6 space-y-6"
+      className="rounded-2xl bg-error-container/20 border border-error/20 p-6 space-y-6"
     >
       <div className="space-y-1">
         <SectionLabel>data management</SectionLabel>
@@ -525,7 +525,7 @@ function DataManagementSection() {
             type="button"
             onClick={() => { void handleExport(); }}
             disabled={exporting}
-            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 bg-secondary-container text-on-secondary-container hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {exporting ? 'Exporting…' : 'Export data'}
           </button>
@@ -551,7 +551,7 @@ function DataManagementSection() {
           <button
             type="button"
             onClick={() => setWipeStep('confirm')}
-            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 border border-signal-miss/40 text-signal-miss hover:bg-signal-miss/10 transition-colors"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 text-error hover:bg-error/8 transition-colors"
           >
             Clear all data
           </button>
@@ -559,7 +559,7 @@ function DataManagementSection() {
 
         {(wipeStep === 'confirm' || wipeStep === 'wiping') && (
           <div
-            className="border border-signal-miss/40 bg-signal-miss/5 p-5 space-y-4"
+            className="rounded-xl bg-error-container/30 border border-error/30 p-5 space-y-4"
             role="alertdialog"
             aria-labelledby="wipe-warning-title"
             aria-describedby="wipe-warning-desc"
@@ -590,13 +590,13 @@ function DataManagementSection() {
                 autoComplete="off"
                 spellCheck={false}
                 disabled={wiping}
-                className="bg-ink-panel m3-card px-3 py-1.5 font-mono text-xs text-bone placeholder:text-bone-mute focus:outline-none focus:border-signal-miss transition-colors w-32 disabled:opacity-50"
+                className="bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-xs text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-error transition-colors w-32 disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={() => { void handleWipe(); }}
                 disabled={wipeInput !== 'CLEAR' || wiping}
-                className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-1.5 border border-signal-miss text-signal-miss hover:bg-signal-miss/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-1.5 bg-error-container text-on-error-container hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 {wiping ? 'Clearing…' : 'Confirm clear'}
               </button>
@@ -699,7 +699,7 @@ function AiCoachSection() {
               onChange={(e) => setInputKey(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') void handleSave(); }}
               placeholder="sk-ant-api03-…"
-              className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-xs text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent pr-10"
+              className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-xs text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors pr-10"
               autoComplete="off"
               spellCheck={false}
             />
@@ -716,7 +716,7 @@ function AiCoachSection() {
             type="button"
             onClick={() => { void handleSave(); }}
             disabled={saving || !inputKey.trim()}
-            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 bg-secondary-container text-on-secondary-container hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
           >
             {saving ? 'Saving…' : 'Save key'}
           </button>
@@ -1012,34 +1012,34 @@ function GarminImportSection() {
 
       {/* Parse error */}
       {parseError && (
-        <div className="border border-signal-miss/40 bg-signal-miss/5 p-3" role="alert">
-          <p className="font-mono text-xs text-signal-miss">{parseError}</p>
+        <div className="rounded-xl bg-error-container/30 border border-error/30 p-3" role="alert">
+          <p className="font-mono text-xs text-on-error-container">{parseError}</p>
         </div>
       )}
 
       {/* Preview */}
       {preview && (
-        <div className="m3-card bg-ink-shadow p-4 space-y-3">
-          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">Ready to import</p>
+        <div className="bg-surface-container rounded-xl p-4 space-y-3">
+          <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">Ready to import</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div>
-              <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest">Days</p>
-              <p className="font-display text-2xl tracking-widest text-bone">{preview.rows.length}</p>
+              <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest">Days</p>
+              <p className="font-display text-2xl tracking-widest text-on-surface">{preview.rows.length}</p>
             </div>
             <div>
-              <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest">From</p>
-              <p className="font-mono text-xs text-bone">{formatShort(preview.oldest)}</p>
+              <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest">From</p>
+              <p className="font-mono text-xs text-on-surface">{formatShort(preview.oldest)}</p>
             </div>
             <div>
-              <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest">To</p>
-              <p className="font-mono text-xs text-bone">{formatShort(preview.newest)}</p>
+              <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest">To</p>
+              <p className="font-mono text-xs text-on-surface">{formatShort(preview.newest)}</p>
             </div>
           </div>
           <div>
-            <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-1">Metrics found</p>
+            <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest mb-1">Metrics found</p>
             <div className="flex flex-wrap gap-1">
               {preview.metrics.map((m) => (
-                <span key={m} className="font-mono text-[10px] px-2 py-0.5 m3-card text-bone-dim">
+                <span key={m} className="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-secondary-container text-on-secondary-container">
                   {m}
                 </span>
               ))}
@@ -1049,7 +1049,7 @@ function GarminImportSection() {
             type="button"
             onClick={() => { void handleImport(); }}
             disabled={importing}
-            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-btn-outline text-accent hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 bg-primary text-on-primary hover:shadow-md active:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             {importing ? 'Importing…' : `Import ${preview.rows.length} days`}
           </button>
@@ -1147,10 +1147,10 @@ export default function SettingsPage() {
       {/* Load error */}
       {loadError && (
         <div
-          className="border border-signal-miss/40 bg-signal-miss/5 p-4"
+          className="rounded-xl bg-error-container/30 border border-error/30 p-4"
           role="alert"
         >
-          <p className="font-mono text-xs text-signal-miss">
+          <p className="font-mono text-xs text-on-error-container">
             Failed to load settings data: {loadError}
           </p>
         </div>
@@ -1174,7 +1174,7 @@ export default function SettingsPage() {
         </p>
         <a
           href="/setup"
-          className="inline-block font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent transition-colors"
+          className="inline-block font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 bg-secondary-container text-on-secondary-container hover:shadow-sm transition-all"
         >
           Open Profile Sync in Setup →
         </a>

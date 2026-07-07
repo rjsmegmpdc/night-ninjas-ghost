@@ -121,8 +121,7 @@ function NumberInput({
       min={min}
       max={max}
       placeholder={placeholder}
-      className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
-                 placeholder:text-bone-mute focus:outline-none focus:border-accent transition-colors"
+      className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
     />
   );
 }
@@ -133,9 +132,7 @@ function SaveButton({ onClick, disabled }: { onClick: () => void; disabled?: boo
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="px-4 py-2 m3-btn-outline text-accent hover:bg-accent hover:text-ink
-                 font-mono text-xs uppercase tracking-widest transition-colors
-                 disabled:opacity-40 disabled:cursor-not-allowed"
+      className="rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold font-mono text-xs uppercase tracking-widest hover:shadow-md active:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
     >
       Save
     </button>
@@ -215,8 +212,7 @@ function AthleteProfileCard({ initial }: { initial: AthleteForm }) {
             id="sex"
             value={form.sex}
             onChange={(e) => setForm((f) => ({ ...f, sex: e.target.value as AthleteForm['sex'] }))}
-            className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
-                       focus:outline-none focus:border-accent transition-colors"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
           >
             <option value="">Select…</option>
             <option value="male">Male</option>
@@ -299,7 +295,7 @@ function HrZonesCard({ initial }: { initial: HrZoneForm }) {
 
       {isEstimated && (
         <div
-          className="border border-signal-warn/40 bg-signal-warn/5 px-4 py-3 space-y-1"
+          className="rounded-xl bg-surface-container-high border border-signal-warn/40 px-4 py-3 space-y-1"
           role="alert"
         >
           <p className="font-mono text-xs text-signal-warn uppercase tracking-widest">
@@ -408,8 +404,7 @@ function StrengthCard({ initial }: { initial: StrengthForm }) {
             onChange={(e) =>
               setForm((f) => ({ ...f, modality: e.target.value as StrengthForm['modality'] }))
             }
-            className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
-                       focus:outline-none focus:border-accent transition-colors"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
           >
             <option value="">Select…</option>
             <option value="weights">Weights</option>
@@ -426,8 +421,7 @@ function StrengthCard({ initial }: { initial: StrengthForm }) {
             id="sessions_per_week"
             value={form.sessions_per_week}
             onChange={(e) => setForm((f) => ({ ...f, sessions_per_week: e.target.value }))}
-            className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
-                       focus:outline-none focus:border-accent transition-colors"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
           >
             <option value="0">0</option>
             <option value="1">1</option>
@@ -498,8 +492,7 @@ function CheckinCard() {
             type="date"
             value={form.date}
             onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-            className="bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
-                       focus:outline-none focus:border-accent transition-colors"
+            className="bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 

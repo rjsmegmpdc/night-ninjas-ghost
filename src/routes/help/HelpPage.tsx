@@ -141,9 +141,9 @@ function SectionLabel({ children }: { children: string }) {
 
 function Card({ title, description }: { title: string; description: string }) {
   return (
-    <div className="m3-card p-5 space-y-2">
-      <p className="font-mono text-sm text-bone font-bold">{title}</p>
-      <p className="font-mono text-sm text-bone-dim leading-relaxed">{description}</p>
+    <div className="bg-surface-container-low rounded-xl p-5 space-y-2">
+      <p className="font-mono text-sm text-on-surface font-bold">{title}</p>
+      <p className="font-mono text-sm text-on-surface-variant leading-relaxed">{description}</p>
     </div>
   );
 }
@@ -183,7 +183,7 @@ export default function HelpPage() {
 
         <ol className="space-y-3">
           {GETTING_STARTED.map(({ step, detail }, i) => (
-            <li key={step} className="m3-card p-5 flex gap-4">
+            <li key={step} className="bg-surface-container-low rounded-xl p-5 flex gap-4">
               <span className="font-display tracking-widest text-2xl text-accent leading-none select-none">
                 {i + 1}
               </span>

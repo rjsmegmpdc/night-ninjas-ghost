@@ -350,7 +350,7 @@ function PatrolDashboard({
           <div className="flex items-center gap-2 flex-shrink-0">
             <Link
               to="/setup"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 m3-card hover:border-accent text-bone-mute hover:text-accent font-mono text-xs uppercase tracking-widest transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 bg-secondary-container text-on-secondary-container hover:shadow-sm font-mono text-xs uppercase tracking-widest transition-all"
               title="Sync Strava activities"
             >
               <RefreshCw size={12} />
@@ -435,9 +435,9 @@ function FrameworkStatsRow({ stats }: { stats: FrameworkStat[] }) {
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-ink-line m3-card">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
       {stats.map((s, i) => (
-        <div key={i} className="bg-ink p-6">
+        <div key={i} className="bg-surface-container rounded-xl p-4 sm:p-5">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-2">{s.label}</p>
           <div className="flex items-baseline gap-1.5">
             <span className={`font-display tracking-widest text-4xl leading-none ${statusColor(s.status)}`}>
@@ -458,7 +458,7 @@ function FrameworkStatsRow({ stats }: { stats: FrameworkStat[] }) {
 
 function GenericStatsRow({ stats }: { stats: WeekStats }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-ink-line m3-card">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
       <StatBox label="this week" value={stats.totalKm > 0 ? stats.totalKm.toFixed(1) : '0.0'} unit="km" accent={stats.totalKm > 0} sub={`${stats.totalSessions} session${stats.totalSessions === 1 ? '' : 's'}`} />
       <StatBox label="long run" value={stats.longRunKm > 0 ? stats.longRunKm.toFixed(1) : '—'} unit={stats.longRunKm > 0 ? 'km' : ''} sub={stats.longRunKm > 0 ? 'longest run' : 'pending'} />
       <StatBox label="avg pace" value={stats.avgPaceSpk ? formatSpk(stats.avgPaceSpk) : '—:—'} unit={stats.avgPaceSpk ? '/km' : ''} sub="running pace" />
@@ -622,7 +622,7 @@ function TonightMission({
 }) {
   if (!template || !activePlan) {
     return (
-      <div className="border border-accent/40 p-5 space-y-3">
+      <div className="rounded-2xl bg-primary-container/40 p-5 space-y-3">
         <p className="font-mono text-xs text-accent uppercase tracking-widest">tonight's mission</p>
         <div className="font-display tracking-widest text-2xl uppercase text-bone">No plan set</div>
         <p className="font-mono text-xs text-bone-mute leading-relaxed">
@@ -641,7 +641,7 @@ function TonightMission({
   const isDone = doneRuns.length > 0;
 
   return (
-    <div className={`border p-5 space-y-3 ${isDone ? 'border-signal-ok/40' : 'border-accent/40'}`}>
+    <div className={`rounded-2xl p-5 space-y-3 ${isDone ? 'bg-signal-ok/10' : 'bg-primary-container/40'}`}>
       <p className="font-mono text-xs text-accent uppercase tracking-widest">tonight's mission</p>
 
       {isDone ? (
@@ -705,7 +705,7 @@ function TonightMission({
               resolves on phones with Strava installed, so mobile-only. */}
           <a
             href="strava://record"
-            className="sm:hidden inline-flex items-center gap-2 mt-1 px-4 py-2.5 m3-btn-outline text-accent font-mono text-xs uppercase tracking-widest active:bg-accent active:text-ink transition-colors"
+            className="sm:hidden inline-flex items-center gap-2 mt-1 rounded-full px-6 py-2.5 bg-primary text-on-primary font-bold font-mono text-xs uppercase tracking-widest active:opacity-90 transition-all"
           >
             ▶ Record on Strava
           </a>
@@ -721,7 +721,7 @@ function TonightMission({
 
 function StatBox({ label, value, unit, accent, sub }: { label: string; value: string; unit: string; accent?: boolean; sub?: string }) {
   return (
-    <div className="bg-ink p-6">
+    <div className="bg-surface-container rounded-xl p-4 sm:p-5">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-2">{label}</p>
       <div className="flex items-baseline gap-1.5">
         <span className={`font-display tracking-widest text-4xl leading-none ${accent ? 'text-accent' : 'text-bone'}`}>
@@ -777,7 +777,7 @@ function RaceCountdown({ race }: { race: { date: string; name: string; distanceK
     <div className="flex items-center gap-3">
       <span className="font-display tracking-widest text-xl uppercase text-accent">{days}d</span>
       <span className="font-mono text-xs text-bone-mute">until {race.name} · {distLabel}</span>
-      <Link to="/race" className="font-mono text-xs text-bone-mute hover:text-accent transition-colors m3-card hover:border-accent px-2 py-0.5">
+      <Link to="/race" className="font-mono text-xs rounded-full px-3 py-1 bg-secondary-container text-on-secondary-container hover:shadow-sm transition-all">
         Race plan →
       </Link>
     </div>

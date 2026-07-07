@@ -340,37 +340,37 @@ function RaceHeaderCard({ race, daysToRace }: { race: GoalRace; daysToRace: numb
   const isPast = daysToRace < 0;
 
   return (
-    <div className="m3-card p-6 space-y-4">
-      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">goal race</p>
-      <h2 className="font-display text-3xl sm:text-4xl tracking-widest uppercase text-bone leading-none">
+    <div className="rounded-2xl bg-primary-container/40 p-5 space-y-4">
+      <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">goal race</p>
+      <h2 className="font-display text-3xl sm:text-4xl tracking-widest uppercase text-on-surface leading-none">
         {race.name}
       </h2>
-      <p className="font-mono text-sm text-bone-dim">
+      <p className="font-mono text-sm text-on-surface-variant">
         {race.distanceKm}km &middot; {race.goalTime}
       </p>
 
       <div className="pt-2">
         {isRaceDay && (
-          <p className="font-display text-5xl tracking-widest uppercase text-accent leading-none">
+          <p className="font-display text-5xl tracking-widest uppercase text-brand leading-none">
             Race day!
           </p>
         )}
         {isFuture && (
           <div className="flex items-baseline gap-3">
-            <span className="font-display text-6xl tracking-widest leading-none text-accent">
+            <span className="font-display text-6xl tracking-widest leading-none text-brand">
               {daysToRace}
             </span>
-            <span className="font-mono text-sm text-bone-mute uppercase tracking-widest">
+            <span className="font-mono text-sm text-on-surface-variant uppercase tracking-widest">
               days to go
             </span>
           </div>
         )}
         {isPast && (
           <div className="flex items-baseline gap-3">
-            <span className="font-display text-5xl tracking-widest leading-none text-bone-dim">
+            <span className="font-display text-5xl tracking-widest leading-none text-on-surface-variant">
               {Math.abs(daysToRace)}
             </span>
-            <span className="font-mono text-sm text-bone-mute uppercase tracking-widest">
+            <span className="font-mono text-sm text-on-surface-variant uppercase tracking-widest">
               days since race
             </span>
           </div>
@@ -433,7 +433,7 @@ function WeatherCard({
         <span className={severityBadge(adjustment.severity)}>{adjustment.severity}</span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-px bg-ink-line m3-card">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
         <WeatherStat label="max temp" value={`${weather.tempMaxC}°C`} />
         <WeatherStat label="min temp" value={`${weather.tempMinC}°C`} />
         <WeatherStat label="feels like" value={`${weather.apparentTempMaxC}°C`} />
@@ -471,7 +471,7 @@ function WeatherCard({
 
 function WeatherStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-ink p-4 space-y-1">
+    <div className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">{label}</p>
       <p className="font-mono text-sm text-bone">{value}</p>
     </div>
@@ -506,15 +506,15 @@ function PacePlanCard({
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">pace plan</p>
 
       {/* Strategy tabs */}
-      <div className="flex gap-0 m3-card w-fit">
+      <div className="flex gap-1">
         {STRATEGIES.map((s) => (
           <button
             key={s}
             onClick={() => setActiveStrategy(s)}
-            className={`font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 transition-colors ${
+            className={`font-mono text-xs uppercase tracking-widest rounded-full px-4 py-1.5 transition-colors ${
               activeStrategy === s
-                ? 'bg-accent text-bone'
-                : 'text-bone-mute hover:text-bone hover:bg-ink-panel'
+                ? 'bg-secondary-container text-on-secondary-container'
+                : 'text-on-surface-variant hover:text-on-surface'
             }`}
           >
             {s}
@@ -577,7 +577,7 @@ function FuelingCard({ targetTimeS }: { targetTimeS: number }) {
     <div className="m3-card p-6 space-y-4">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">race-day fueling</p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-ink-line m3-card">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <FuelStat label="carbs/hr" value={`${plan.carbsPerHrG}g`} />
         <FuelStat label="fluid/hr" value={`${plan.fluidMlPerHr}ml`} />
         <FuelStat label="sodium/hr" value={`${plan.sodiumMgPerHr}mg`} />
@@ -591,7 +591,7 @@ function FuelingCard({ targetTimeS }: { targetTimeS: number }) {
 
 function FuelStat({ label, value, unit }: { label: string; value: string; unit?: string }) {
   return (
-    <div className="bg-ink p-4 space-y-1">
+    <div className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">{label}</p>
       <p className="font-display text-2xl tracking-widest text-bone leading-none">{value}</p>
       {unit && <p className="font-mono text-xs text-bone-mute">{unit}</p>}
@@ -627,9 +627,9 @@ function CarbLoadCard({ weightKg }: { weightKg: number | null }) {
     <div className="m3-card p-6 space-y-4">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">carb load plan</p>
 
-      <div className="grid grid-cols-3 gap-px bg-ink-line m3-card">
+      <div className="grid grid-cols-3 gap-2">
         {plan.days.map((day) => (
-          <div key={day.daysOut} className="bg-ink p-4 space-y-1">
+          <div key={day.daysOut} className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
             <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
               {day.daysOut} out
             </p>
@@ -767,10 +767,10 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
         {protocol.phases.map((phase) => (
           <div
             key={phase.index}
-            className={`border p-4 space-y-1 transition-colors ${
+            className={`rounded-lg p-4 space-y-1 transition-colors ${
               phase.active
-                ? 'border-accent bg-ink-shadow'
-                : 'border-ink-line'
+                ? 'bg-primary-container/40'
+                : 'bg-surface-container'
             }`}
           >
             <div className="flex items-center justify-between">
@@ -807,7 +807,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
                 placeholder="H:MM:SS"
                 value={finishTime}
                 onChange={(e) => setFinishTime(e.target.value)}
-                className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
               />
             </div>
 
@@ -823,7 +823,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
                 placeholder="7"
                 value={rpe}
                 onChange={(e) => setRpe(e.target.value)}
-                className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
               />
             </div>
           </div>
@@ -838,7 +838,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
               placeholder="Hot and humid, headwind on return leg"
               value={conditions}
               onChange={(e) => setConditions(e.target.value)}
-              className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
             />
           </div>
 
@@ -852,7 +852,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
               placeholder="What worked, what to change next time..."
               value={lessons}
               onChange={(e) => setLessons(e.target.value)}
-              className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent transition-colors resize-y"
+              className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors resize-y"
             />
           </div>
 
@@ -866,7 +866,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
           <button
             type="submit"
             disabled={saving}
-            className="font-mono text-xs uppercase tracking-widest rounded-full px-6 py-2 m3-btn-outline text-accent hover:bg-accent hover:text-bone transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving…' : raceResult ? 'Update debrief' : 'Save debrief'}
           </button>

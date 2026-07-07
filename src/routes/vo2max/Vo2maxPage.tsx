@@ -56,10 +56,10 @@ const SOURCE_LABEL: Record<string, string> = {
 };
 
 const SOURCE_BADGE_CLASS: Record<string, string> = {
-  'manual-lab': 'border-signal-ok text-signal-ok',
-  cooper: 'border-accent text-accent',
-  rockport: 'border-bone-dim text-bone-dim',
-  device: 'border-bone-mute text-bone-mute',
+  'manual-lab': 'bg-tertiary-container text-on-tertiary-container',
+  cooper: 'bg-primary-container text-on-primary-container',
+  rockport: 'bg-secondary-container text-on-secondary-container',
+  device: 'bg-surface-container-high text-on-surface-variant',
 };
 
 const BAND_CLASS: Record<string, string> = {
@@ -78,7 +78,7 @@ function FieldLabel({ htmlFor, children }: { htmlFor: string; children: React.Re
   return (
     <label
       htmlFor={htmlFor}
-      className="block font-mono text-xs text-bone-mute uppercase tracking-widest mb-1"
+      className="block text-[11px] font-medium text-on-surface-variant tracking-wide mb-1"
     >
       {children}
     </label>
@@ -114,8 +114,8 @@ function TextInput({
       max={max}
       step={step}
       placeholder={placeholder}
-      className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
-                 placeholder:text-bone-mute focus:outline-none focus:border-accent transition-colors"
+      className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-bone
+                 placeholder:text-bone-mute focus:outline-none focus:border-primary transition-colors"
     />
   );
 }
@@ -133,16 +133,16 @@ function ActionButton({
 }) {
   const cls =
     variant === 'danger'
-      ? 'border-signal-miss text-signal-miss hover:bg-signal-miss hover:text-ink'
+      ? 'rounded-full px-4 py-2 text-error hover:bg-error/8'
       : variant === 'ghost'
-        ? 'border-ink-line text-bone-dim hover:border-bone-dim hover:text-bone'
-        : 'border-accent text-accent hover:bg-accent hover:text-ink';
+        ? 'rounded-full bg-secondary-container text-on-secondary-container px-5 py-2.5'
+        : 'rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90';
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`px-4 py-2 border font-mono text-xs uppercase tracking-widest transition-colors
+      className={`font-mono text-xs uppercase tracking-widest transition-all
                   disabled:opacity-40 disabled:cursor-not-allowed ${cls}`}
     >
       {children}
@@ -151,10 +151,10 @@ function ActionButton({
 }
 
 function SourceBadge({ source }: { source: string }) {
-  const cls = SOURCE_BADGE_CLASS[source] ?? 'border-bone-mute text-bone-mute';
+  const cls = SOURCE_BADGE_CLASS[source] ?? 'bg-secondary-container text-on-secondary-container';
   const label = SOURCE_LABEL[source] ?? source;
   return (
-    <span className={`border font-mono text-[10px] uppercase tracking-widest rounded-full px-1.5 py-0.5 ${cls}`}>
+    <span className={`font-mono text-[10px] uppercase tracking-widest rounded-full px-2.5 py-0.5 ${cls}`}>
       {label}
     </span>
   );
@@ -244,9 +244,9 @@ function TrendCard({
     delta === null ? '' : delta > 0 ? 'text-signal-ok' : delta < 0 ? 'text-signal-warn' : 'text-bone-dim';
 
   return (
-    <section className="m3-card p-6 space-y-4" aria-labelledby="vo2-trend-heading">
-      <div className="space-y-1 border-b border-ink-line pb-4">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+    <section className="rounded-2xl bg-primary-container/40 p-5 space-y-4" aria-labelledby="vo2-trend-heading">
+      <div className="space-y-1 border-b border-primary/20 pb-4">
+        <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">
           vo2 max · aerobic ceiling
         </p>
         <h2 id="vo2-trend-heading" className="font-display tracking-widest text-2xl uppercase text-bone">
@@ -379,7 +379,7 @@ interface LabForm {
 function ComputedPreview({ label, value }: { label: string; value: number | null }) {
   if (value === null) return null;
   return (
-    <div className="m3-card bg-ink-shadow px-4 py-3 flex items-center gap-3">
+    <div className="bg-surface-container-high rounded-lg px-4 py-3 flex items-center gap-3">
       <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">{label}</span>
       <span className="font-display text-2xl text-accent tracking-widest">{fmt1(value)}</span>
       <span className="font-mono text-xs text-bone-mute">ml/kg/min</span>
@@ -621,8 +621,8 @@ function RockportTab({
             id="rp-sex"
             value={form.sex}
             onChange={(e) => { setForm((f) => ({ ...f, sex: e.target.value as RockportForm['sex'] })); setComputed(null); }}
-            className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
-                       focus:outline-none focus:border-accent transition-colors"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-bone
+                       focus:outline-none focus:border-primary transition-colors"
           >
             <option value="">Select…</option>
             <option value="male">Male</option>
@@ -754,8 +754,8 @@ function LabTab({ onAdded }: { onAdded: () => void }) {
             value={form.note}
             onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
             placeholder="e.g. Sports lab treadmill test"
-            className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
-                       placeholder:text-bone-mute focus:outline-none focus:border-accent transition-colors"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-bone
+                       placeholder:text-bone-mute focus:outline-none focus:border-primary transition-colors"
           />
         </div>
       </div>
@@ -800,17 +800,17 @@ function AddObservationCard({
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-0 m3-card w-fit" role="tablist">
+      <div className="flex gap-2 flex-wrap" role="tablist">
         {tabs.map((t) => (
           <button
             key={t.id}
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-2 font-mono text-xs uppercase tracking-widest transition-colors
+            className={`rounded-full px-3 py-1 font-mono text-[11px] uppercase tracking-widest transition-all
               ${tab === t.id
-                ? 'bg-accent text-ink'
-                : 'text-bone-dim hover:text-bone hover:bg-ink-panel'
+                ? 'bg-secondary-container text-on-secondary-container'
+                : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
               }`}
           >
             {t.label}
@@ -1001,8 +1001,8 @@ function ProfileQuickForm({ profile, onSaved }: { profile: Profile; onSaved: () 
                 id="qp-sex"
                 value={form.sex}
                 onChange={(e) => setForm((f) => ({ ...f, sex: e.target.value as typeof form.sex }))}
-                className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
-                           focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-bone
+                           focus:outline-none focus:border-primary transition-colors"
               >
                 <option value="">Select…</option>
                 <option value="male">Male</option>

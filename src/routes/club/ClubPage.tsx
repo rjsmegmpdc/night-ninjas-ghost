@@ -131,8 +131,8 @@ function SavedBadge({ status }: { status: SaveStatus }) {
 }
 
 const INPUT_CLASS =
-  'w-full bg-ink-shadow m3-card px-3 py-2.5 font-mono text-sm text-bone ' +
-  'placeholder:text-bone-mute focus:outline-none focus:border-accent transition-colors';
+  'w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-bone ' +
+  'placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors';
 
 const LABEL_CLASS = 'block font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-1';
 
@@ -267,7 +267,7 @@ function MemberPicker({
             type="button"
             onClick={() => void saveNew()}
             disabled={busy || !newName.trim()}
-            className="w-full font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2.5 m3-btn-outline text-accent active:bg-accent active:text-ink disabled:opacity-40 transition-colors"
+            className="w-full font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all disabled:opacity-40"
           >
             {busy ? 'Adding…' : 'Add member'}
           </button>
@@ -322,29 +322,29 @@ function LeaderboardView({
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <select value={win} onChange={(e) => setWin(e.target.value as WindowFilter)} className="bg-ink m3-card px-2 py-1.5 font-mono text-xs text-bone focus:outline-none focus:border-accent">
+        <select value={win} onChange={(e) => setWin(e.target.value as WindowFilter)} className="bg-surface-container-high rounded-lg border border-transparent px-2 py-1.5 font-mono text-xs text-on-surface focus:outline-none focus:border-primary transition-colors">
           {WINDOW_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-        <div className="flex m3-card">
+        <div className="flex gap-1">
           {(['all', 'M', 'F'] as const).map((s) => (
             <button
               key={s}
               type="button"
               onClick={() => setSex(s)}
-              className={`px-3 py-1.5 font-mono text-xs uppercase transition-colors ${sex === s ? 'bg-accent/15 text-accent' : 'text-bone-mute hover:text-bone'}`}
+              className={`px-3 py-1.5 font-mono text-xs uppercase rounded-full transition-colors ${sex === s ? 'bg-secondary-container text-on-secondary-container' : 'text-on-surface-variant hover:text-on-surface'}`}
             >
               {s === 'all' ? 'All' : s}
             </button>
           ))}
         </div>
-        <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value as AgeGroup | 'all')} className="bg-ink m3-card px-2 py-1.5 font-mono text-xs text-bone focus:outline-none focus:border-accent">
+        <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value as AgeGroup | 'all')} className="bg-surface-container-high rounded-lg border border-transparent px-2 py-1.5 font-mono text-xs text-on-surface focus:outline-none focus:border-primary transition-colors">
           <option value="all">All ages</option>
           {AGE_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
         </select>
         <button
           type="button"
           onClick={() => setLegend(!legend)}
-          className={`px-3 py-1.5 border font-mono text-xs uppercase tracking-widest transition-colors ${legend ? 'border-accent text-accent bg-accent/10' : 'border-ink-line text-bone-mute hover:text-bone'}`}
+          className={`px-3 py-1.5 rounded-full font-mono text-xs uppercase tracking-widest transition-colors ${legend ? 'bg-secondary-container text-on-secondary-container' : 'text-on-surface-variant hover:text-on-surface'}`}
           title="Rank by number of efforts, like Strava's Local Legend"
         >
           ★ Legend
@@ -357,7 +357,7 @@ function LeaderboardView({
       ) : (
         <div className="m3-card divide-y divide-ink-line">
           {board.map((row) => (
-            <div key={row.memberId} className="px-3 sm:px-4 py-2.5 flex items-center gap-3">
+            <div key={row.memberId} className="px-3 sm:px-4 py-2.5 flex items-center gap-3 hover:bg-on-surface/4 transition-colors">
               <span className={`font-display tracking-widest text-lg w-7 text-right shrink-0 ${row.rank <= 3 ? 'text-accent' : 'text-bone-mute'}`}>
                 {row.rank}
               </span>
@@ -422,7 +422,7 @@ function AddResultForm({
   }
 
   return (
-    <div className="border border-accent/40 p-4 space-y-3">
+    <div className="rounded-2xl bg-primary-container/30 p-4 space-y-3">
       <p className="font-mono text-[10px] uppercase tracking-widest text-accent">Add effort</p>
       <MemberPicker
         members={data.members}
@@ -454,7 +454,7 @@ function AddResultForm({
         type="button"
         onClick={() => void save()}
         disabled={!canSave || busy}
-        className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 m3-btn-outline text-accent active:bg-accent active:text-ink disabled:opacity-40 transition-colors"
+        className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all disabled:opacity-40"
       >
         {busy ? 'Saving…' : 'Save effort'}
       </button>
@@ -510,7 +510,7 @@ function ChampsView({
       {/* Year selector */}
       <div className="flex items-center gap-2">
         <label className="font-mono text-[10px] uppercase tracking-widest text-bone-mute">Year</label>
-        <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="bg-ink m3-card px-2 py-1.5 font-mono text-xs text-bone focus:outline-none focus:border-accent">
+        <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="bg-surface-container-high rounded-lg border border-transparent px-2 py-1.5 font-mono text-xs text-on-surface focus:outline-none focus:border-primary transition-colors">
           {years.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
       </div>
@@ -521,7 +521,7 @@ function ChampsView({
       ) : (
         <div className="m3-card divide-y divide-ink-line">
           {ranked.map((e) => (
-            <div key={e.id} className="px-3 sm:px-4 py-2.5 flex items-center gap-3">
+            <div key={e.id} className="px-3 sm:px-4 py-2.5 flex items-center gap-3 hover:bg-on-surface/4 transition-colors">
               <span className={`font-display tracking-widest text-lg w-7 text-right shrink-0 ${e.rank === 1 ? 'text-accent' : e.rank ? 'text-bone-dim' : 'text-bone-mute'}`}>
                 {e.rank ?? '—'}
               </span>
@@ -633,7 +633,7 @@ function ChampsEntryForm({
   }
 
   return (
-    <div className="border border-accent/40 p-4 space-y-3">
+    <div className="rounded-2xl bg-primary-container/30 p-4 space-y-3">
       <p className="font-mono text-[10px] uppercase tracking-widest text-accent">
         Register / update entry · {year}
       </p>
@@ -669,7 +669,7 @@ function ChampsEntryForm({
         type="button"
         onClick={() => void save()}
         disabled={!canSave || busy}
-        className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 m3-btn-outline text-accent active:bg-accent active:text-ink disabled:opacity-40 transition-colors"
+        className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all disabled:opacity-40"
       >
         {busy ? 'Saving…' : 'Save entry'}
       </button>
@@ -714,7 +714,7 @@ function WinnerForm({ onSaved }: { onSaved: () => void }) {
         type="button"
         onClick={() => void save()}
         disabled={!canSave || busy}
-        className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
+        className="font-mono text-xs uppercase tracking-widest rounded-full bg-secondary-container text-on-secondary-container px-5 py-2.5 hover:shadow-sm transition-all disabled:opacity-40"
       >
         {busy ? 'Saving…' : 'Save winner'}
       </button>
@@ -736,7 +736,7 @@ function ExternalCourseCard({ title, url, blurb }: { title: string; url: string 
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2.5 m3-btn-outline text-accent hover:bg-accent hover:text-ink transition-colors"
+          className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all"
         >
           Open results site <ExternalLink size={12} aria-hidden="true" />
         </a>
@@ -901,9 +901,9 @@ function SummaryCard({ data }: { data: SummaryData }) {
         </h2>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-ink-line">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {stats.map((s) => (
-          <div key={s.label} className="bg-ink-shadow p-4 space-y-1">
+          <div key={s.label} className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
             <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest">
               {s.label}
             </p>
@@ -995,7 +995,7 @@ function ShareCard({
       ) : (
         <>
           <pre
-            className="bg-ink-shadow m3-card px-4 py-3 font-mono text-xs text-bone-dim leading-relaxed whitespace-pre-wrap break-words"
+            className="bg-surface-container-high rounded-lg px-4 py-3 font-mono text-xs text-on-surface-variant leading-relaxed whitespace-pre-wrap break-words"
             aria-label="Share text preview"
           >
             {previewText}
@@ -1005,7 +1005,7 @@ function ShareCard({
             <button
               type="button"
               onClick={handleCopy}
-              className="px-4 py-2 m3-btn-outline text-accent hover:bg-accent hover:text-ink font-mono text-xs uppercase tracking-widest transition-colors"
+              className="rounded-full bg-secondary-container text-on-secondary-container px-5 py-2.5 font-mono text-xs uppercase tracking-widest hover:shadow-sm transition-all"
             >
               Copy training summary
             </button>
@@ -1233,10 +1233,10 @@ export default function ClubPage() {
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
-            className={`shrink-0 px-3 py-2 font-mono text-xs uppercase tracking-widest border transition-colors ${
+            className={`shrink-0 px-3 py-1.5 font-mono text-xs uppercase tracking-widest rounded-full transition-colors ${
               tab === t.key
-                ? 'border-accent text-accent bg-accent/10'
-                : 'border-ink-line text-bone-mute hover:text-bone'
+                ? 'bg-secondary-container text-on-secondary-container'
+                : 'text-on-surface-variant hover:text-on-surface'
             }`}
           >
             {t.label}

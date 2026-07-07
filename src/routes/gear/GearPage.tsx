@@ -82,12 +82,6 @@ function dealSearchUrl(brand: string | null, model: string | null, name: string)
   return `https://www.google.com/search?q=${encodeURIComponent(q + ' sale NZ running')}`;
 }
 
-function progressColor(pct: number): string {
-  if (pct >= 90) return 'bg-signal-miss';
-  if (pct >= 70) return 'bg-signal-warn';
-  return 'bg-signal-ok';
-}
-
 function rotationAdvice(shoe: ShoeRow, allActive: ShoeRow[]): { badge: string; color: string; tip: string } | null {
   if (!shoe.strava_gear_id) return null;
   if (shoe.session_count === 0) return null;
@@ -238,8 +232,8 @@ async function deleteGearItem(id: number): Promise<void> {
 function ProgressBar({ total_km, target_km }: { total_km: number; target_km: number }) {
   const pct = target_km > 0 ? Math.min((total_km / target_km) * 100, 100) : 0;
   return (
-    <div className="relative h-1 bg-ink-line rounded-full overflow-hidden" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
-      <div className={`absolute inset-y-0 left-0 ${progressColor(pct)} transition-all`} style={{ width: `${pct}%` }} />
+    <div className="relative h-2 rounded-full bg-surface-container-highest overflow-hidden" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
+      <div className={`absolute inset-y-0 left-0 rounded-full ${pct >= 90 ? 'bg-error' : pct >= 70 ? 'bg-signal-warn' : 'bg-primary'} transition-all`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -264,12 +258,12 @@ function ShoeCard({ shoe, allActive, onRefresh }: { shoe: ShoeRow; allActive: Sh
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-mono text-sm font-semibold text-bone truncate">{shoe.name}</p>
             {advice && (
-              <span className={`font-mono text-[10px] uppercase tracking-widest ${advice.color} border border-current/30 px-1.5 py-0.5`}>
+              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-secondary-container text-on-secondary-container`}>
                 {advice.badge}
               </span>
             )}
             {shoe.size && (
-              <span className="font-mono text-[10px] text-bone-mute m3-card px-1.5 py-0.5">
+              <span className="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-surface-container-high text-on-surface-variant">
                 {shoe.size}
               </span>
             )}
@@ -283,7 +277,7 @@ function ShoeCard({ shoe, allActive, onRefresh }: { shoe: ShoeRow; allActive: Sh
             href={dealSearchUrl(shoe.brand, shoe.model, shoe.name)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent m3-card hover:border-accent px-2 py-1 transition-colors"
+            className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest rounded-full px-3 py-1 bg-secondary-container text-on-secondary-container hover:shadow-sm transition-all"
           >
             Find deals <ExternalLink size={10} aria-hidden="true" />
           </a>
@@ -330,7 +324,7 @@ function GearItemCard({ item, onDelete }: { item: GearItem; onDelete: () => void
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-mono text-sm text-bone">{item.name}</p>
-            {item.size && <span className="font-mono text-[10px] text-bone-mute m3-card px-1.5 py-0.5">{item.size}</span>}
+            {item.size && <span className="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-surface-container-high text-on-surface-variant">{item.size}</span>}
             {item.quantity > 1 && <span className="font-mono text-[10px] text-bone-mute">×{item.quantity}</span>}
           </div>
           {subtitle && <p className="font-mono text-xs text-bone-dim">{subtitle}</p>}
@@ -344,7 +338,7 @@ function GearItemCard({ item, onDelete }: { item: GearItem; onDelete: () => void
             href={item.url ?? dealSearchUrl(item.brand, item.model, item.name)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent m3-card hover:border-accent px-2 py-1 transition-colors"
+            className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest rounded-full px-3 py-1 bg-secondary-container text-on-secondary-container hover:shadow-sm transition-all"
           >
             {item.url ? 'View ↗' : 'Find deals'} <ExternalLink size={10} aria-hidden="true" />
           </a>
@@ -474,12 +468,12 @@ function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="sm:col-span-3 space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Name *</label>
-          <input type="text" required value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Arc'teryx Norvan vest" className="w-full bg-ink-shadow m3-card text-bone font-mono text-sm px-3 py-2 placeholder:text-bone-mute focus:outline-none focus:border-accent" />
+          <input type="text" required value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Arc'teryx Norvan vest" className="w-full bg-surface-container-high rounded-lg border border-transparent text-bone font-mono text-sm px-3 py-2.5 placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors" />
         </div>
 
         <div className="space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Category</label>
-          <select value={category} onChange={e => handleCategoryChange(e.target.value as GearCategory)} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent">
+          <select value={category} onChange={e => handleCategoryChange(e.target.value as GearCategory)} className="w-full bg-surface-container-high rounded-lg border border-transparent text-bone font-mono text-xs px-3 py-2.5 focus:outline-none focus:border-primary transition-colors">
             {(['clothing','backpack','hardware','food'] as GearCategory[]).map(c => (
               <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
             ))}
@@ -488,17 +482,17 @@ function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean
 
         <div className="space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Brand</label>
-          <input type="text" value={form.brand} onChange={e => set('brand', e.target.value)} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
+          <input type="text" value={form.brand} onChange={e => set('brand', e.target.value)} className="w-full bg-surface-container-high rounded-lg border border-transparent text-bone font-mono text-xs px-3 py-2.5 focus:outline-none focus:border-primary transition-colors" />
         </div>
 
         <div className="space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Model</label>
-          <input type="text" value={form.model} onChange={e => set('model', e.target.value)} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
+          <input type="text" value={form.model} onChange={e => set('model', e.target.value)} className="w-full bg-surface-container-high rounded-lg border border-transparent text-bone font-mono text-xs px-3 py-2.5 focus:outline-none focus:border-primary transition-colors" />
         </div>
 
         <div className="space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">{sizeField.label}</label>
-          <input type="text" value={form.size} onChange={e => set('size', e.target.value)} placeholder={sizeField.placeholder} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 placeholder:text-bone-mute focus:outline-none focus:border-accent" />
+          <input type="text" value={form.size} onChange={e => set('size', e.target.value)} placeholder={sizeField.placeholder} className="w-full bg-surface-container-high rounded-lg border border-transparent text-bone font-mono text-xs px-3 py-2.5 placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors" />
         </div>
 
         <div className="flex items-center gap-2 sm:col-span-2">
@@ -510,22 +504,22 @@ function AddGearForm({ defaultWatchlist, onAdded }: { defaultWatchlist?: boolean
           <>
             <div className="space-y-1">
               <label className="font-mono text-[10px] uppercase text-bone-mute">Target price (NZD)</label>
-              <input type="number" step="0.01" value={form.target_price} onChange={e => set('target_price', e.target.value)} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
+              <input type="number" step="0.01" value={form.target_price} onChange={e => set('target_price', e.target.value)} className="w-full bg-surface-container-high rounded-lg border border-transparent text-bone font-mono text-xs px-3 py-2.5 focus:outline-none focus:border-primary transition-colors" />
             </div>
             <div className="sm:col-span-2 space-y-1">
               <label className="font-mono text-[10px] uppercase text-bone-mute">Product URL (optional)</label>
-              <input type="url" value={form.url} onChange={e => set('url', e.target.value)} placeholder="https://..." className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
+              <input type="url" value={form.url} onChange={e => set('url', e.target.value)} placeholder="https://..." className="w-full bg-surface-container-high rounded-lg border border-transparent text-bone font-mono text-xs px-3 py-2.5 focus:outline-none focus:border-primary transition-colors" />
             </div>
           </>
         )}
 
         <div className="sm:col-span-3 space-y-1">
           <label className="font-mono text-[10px] uppercase text-bone-mute">Notes</label>
-          <input type="text" value={form.notes} onChange={e => set('notes', e.target.value)} className="w-full bg-ink-shadow m3-card text-bone font-mono text-xs px-3 py-2 focus:outline-none focus:border-accent" />
+          <input type="text" value={form.notes} onChange={e => set('notes', e.target.value)} className="w-full bg-surface-container-high rounded-lg border border-transparent text-bone font-mono text-xs px-3 py-2.5 focus:outline-none focus:border-primary transition-colors" />
         </div>
       </div>
 
-      <button type="submit" disabled={busy || !form.name.trim()} className="w-full sm:w-auto px-4 py-2.5 m3-btn-outline text-accent hover:bg-accent hover:text-ink font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50">
+      <button type="submit" disabled={busy || !form.name.trim()} className="w-full sm:w-auto rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold font-mono text-xs uppercase tracking-widest hover:shadow-md active:opacity-90 transition-all disabled:opacity-50">
         {busy ? 'Adding…' : 'Add'}
       </button>
     </form>
@@ -579,7 +573,7 @@ function ImportBanner({ onImported }: { onImported: () => void }) {
         type="button"
         onClick={() => void handleImport()}
         disabled={busy}
-        className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-bone-mute hover:text-accent m3-card hover:border-accent px-3 py-2 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest rounded-full bg-secondary-container text-on-secondary-container px-5 py-2.5 hover:shadow-sm transition-all disabled:opacity-50"
       >
         <RefreshCw size={12} className={busy ? 'animate-spin' : ''} />
         {busy ? 'Importing…' : 'Import from Strava'}

@@ -346,11 +346,11 @@ export default function SetupPage() {
       </header>
 
       {!WORKER_URL && (
-        <div className="border border-signal-miss/40 p-4 space-y-1">
-          <p className="font-mono text-xs text-signal-miss uppercase tracking-widest">
+        <div className="rounded-xl bg-error-container/30 border border-error/30 p-4 space-y-1">
+          <p className="font-mono text-xs text-on-error-container uppercase tracking-widest">
             Configuration missing
           </p>
-          <p className="font-mono text-xs text-bone-dim leading-relaxed">
+          <p className="font-mono text-xs text-on-error-container/70 leading-relaxed">
             <code>VITE_STRAVA_OAUTH_WORKER</code> is not set. Add it to{' '}
             <code>.env.local</code> (dev) and as a GitHub secret + deploy workflow env (prod).
           </p>
@@ -519,7 +519,7 @@ function ProfileSyncSection({
             type="button"
             onClick={() => startSyncAuth('backup')}
             disabled={!WORKER_URL || busy}
-            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2.5 m3-card text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 bg-secondary-container text-on-secondary-container hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             Back up this device
           </button>
@@ -527,7 +527,7 @@ function ProfileSyncSection({
             type="button"
             onClick={() => startSyncAuth('restore')}
             disabled={!WORKER_URL || busy}
-            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2.5 m3-card text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 bg-secondary-container text-on-secondary-container hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             Restore to this device
           </button>
@@ -536,26 +536,26 @@ function ProfileSyncSection({
 
       {/* Passphrase prompt — appears after the email code round-trip */}
       {pendingSync && (
-        <div className="border border-accent/40 bg-ink-shadow p-4 space-y-3 max-w-md">
+        <div className="rounded-2xl bg-surface-container-low p-4 space-y-3 max-w-md">
           <p className="font-mono text-xs text-accent uppercase tracking-widest">
-            {pendingSync === 'backup' ? 'Choose an encryption passphrase' : 'Enter your encryption passphrase'}
+            {pendingSync === "backup" ? "Choose an encryption passphrase" : "Enter your encryption passphrase"}
           </p>
           <p className="font-mono text-xs text-bone-dim leading-relaxed">
-            {pendingSync === 'backup'
-              ? 'At least 8 characters. You’ll need it to restore on another device. There is no reset — if you lose it, just back up again from a device that’s already set up.'
-              : 'The passphrase you chose when you backed up.'}
+            {pendingSync === "backup"
+              ? "At least 8 characters. You’ll need it to restore on another device. There is no reset — if you lose it, just back up again from a device that’s already set up."
+              : "The passphrase you chose when you backed up."}
           </p>
           <div className="relative">
             <input
-              type={showPassphrase ? 'text' : 'password'}
+              type={showPassphrase ? "text" : "password"}
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+              onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
               placeholder="passphrase"
               autoComplete="off"
               spellCheck={false}
               disabled={busy}
-              className="w-full bg-ink m3-card px-3 py-2 pr-12 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent disabled:opacity-50"
+              className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 pr-12 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
             />
             <button
               type="button"
@@ -563,7 +563,7 @@ function ProfileSyncSection({
               className="absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] text-bone-mute hover:text-bone"
               tabIndex={-1}
             >
-              {showPassphrase ? 'hide' : 'show'}
+              {showPassphrase ? "hide" : "show"}
             </button>
           </div>
           <div className="flex items-center gap-3">
@@ -571,15 +571,15 @@ function ProfileSyncSection({
               type="button"
               onClick={submit}
               disabled={!passphraseOk || busy}
-              className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-btn-outline text-accent hover:bg-accent hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
-              {busy ? 'Working…' : pendingSync === 'backup' ? 'Encrypt & back up' : 'Decrypt & restore'}
+              {busy ? "Working…" : pendingSync === "backup" ? "Encrypt & back up" : "Decrypt & restore"}
             </button>
             <button
               type="button"
-              onClick={() => { setPassphrase(''); onCancelPending(); }}
+              onClick={() => { setPassphrase(""); onCancelPending(); }}
               disabled={busy}
-              className="font-mono text-xs text-bone-mute hover:text-bone disabled:opacity-40 transition-colors"
+              className="font-mono text-xs rounded-full px-4 py-2 text-primary hover:bg-primary/8 disabled:opacity-40 transition-colors"
             >
               Cancel
             </button>
@@ -709,7 +709,7 @@ function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
         <p className="font-mono text-xs text-accent uppercase tracking-widest">Step 2 — paste them here</p>
 
         <div className="space-y-1 max-w-sm">
-          <label htmlFor="cred-client-id" className="font-mono text-[10px] uppercase tracking-widest text-bone-mute">Client ID</label>
+          <label htmlFor="cred-client-id" className="font-mono text-[11px] font-medium text-on-surface-variant tracking-wide">Client ID</label>
           <input
             id="cred-client-id"
             type="text"
@@ -719,12 +719,12 @@ function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
             placeholder="123456"
             autoComplete="off"
             spellCheck={false}
-            className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
         <div className="space-y-1 max-w-sm">
-          <label htmlFor="cred-client-secret" className="font-mono text-[10px] uppercase tracking-widest text-bone-mute">Client Secret</label>
+          <label htmlFor="cred-client-secret" className="font-mono text-[11px] font-medium text-on-surface-variant tracking-wide">Client Secret</label>
           <div className="relative">
             <input
               id="cred-client-secret"
@@ -734,7 +734,7 @@ function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
               placeholder="40-character secret"
               autoComplete="off"
               spellCheck={false}
-              className="w-full bg-ink-shadow m3-card px-3 py-2 pr-12 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+              className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 pr-12 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
             />
             <button
               type="button"
@@ -760,7 +760,7 @@ function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
           type="button"
           onClick={() => void handleSave()}
           disabled={!idOk || !secretOk || saving}
-          className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 m3-btn-outline text-accent hover:bg-accent hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           {saving ? 'Saving…' : 'Save & continue'}
         </button>
@@ -827,7 +827,7 @@ function PrivacyNotice({ onAcknowledge }: { onAcknowledge: () => void }) {
       <button
         type="button"
         onClick={onAcknowledge}
-        className="font-mono text-xs uppercase tracking-widest rounded-full px-5 py-3 m3-btn-outline text-accent hover:bg-accent hover:text-ink transition-colors"
+        className="font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all"
       >
         Got it — let's go
       </button>
@@ -876,7 +876,7 @@ function NotConnected({
       {/* Official Strava "Connect with Strava" button — Strava brand colour #FC4C02 */}
       <a
         href={authUrl}
-        className={`inline-flex items-center gap-3 px-5 py-3 font-mono text-sm font-bold transition-opacity ${
+        className={`inline-flex items-center gap-3 rounded-full px-5 py-3 font-mono text-sm font-bold transition-opacity ${
           clientId ? 'cursor-pointer hover:opacity-90' : 'cursor-not-allowed opacity-50'
         }`}
         style={{ backgroundColor: '#FC4C02', color: '#fff', height: 48 }}
@@ -890,7 +890,7 @@ function NotConnected({
         Connect with Strava
       </a>
 
-      <details className="m3-card bg-ink">
+      <details className="bg-surface-container rounded-xl">
         <summary className="px-4 py-3 font-mono text-xs text-bone-mute uppercase tracking-widest cursor-pointer select-none hover:text-bone transition-colors">
           Connection details
         </summary>
@@ -936,7 +936,7 @@ function AthleteMismatchView({
   onCancel: () => void;
 }) {
   return (
-    <div className="space-y-4 border border-signal-warn/40 p-4">
+    <div className="rounded-xl bg-surface-container-high border border-signal-warn/40 p-4 space-y-4">
       <div className="flex items-start gap-2">
         <AlertCircle size={14} className="text-signal-warn flex-shrink-0 mt-0.5" />
         <div className="space-y-1">
@@ -950,16 +950,16 @@ function AthleteMismatchView({
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <button
           onClick={onProceed}
-          className="font-mono text-xs text-signal-warn border border-signal-warn/40 hover:border-signal-warn px-3 py-1.5 transition-colors"
+          className="font-mono text-xs rounded-full px-4 py-1.5 bg-secondary-container text-on-secondary-container hover:shadow-sm transition-all"
         >
           Continue anyway — mix data
         </button>
         <button
           onClick={onCancel}
-          className="font-mono text-xs text-bone-mute hover:text-bone transition-colors"
+          className="font-mono text-xs rounded-full px-4 py-1.5 text-primary hover:bg-primary/8 transition-colors"
         >
           Cancel
         </button>
@@ -1014,25 +1014,25 @@ function ConnectedView({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-px bg-ink-line m3-card">
-        <div className="bg-ink px-5 py-4">
-          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-1">Last sync</p>
-          <p className="font-mono text-sm text-bone">{lastSyncLabel}</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-surface-container rounded-xl px-5 py-4">
+          <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-1">Last sync</p>
+          <p className="font-mono text-sm text-on-surface">{lastSyncLabel}</p>
         </div>
-        <div className="bg-ink px-5 py-4">
-          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-1">Token expires</p>
-          <p className="font-mono text-sm text-bone">
+        <div className="bg-surface-container rounded-xl px-5 py-4">
+          <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-1">Token expires</p>
+          <p className="font-mono text-sm text-on-surface">
             {new Date(tokens.expiresAt * 1000).toLocaleString('en-NZ', {
               day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
             })}
           </p>
         </div>
-        <div className="bg-ink px-5 py-4">
-          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-1">Athlete ID</p>
-          <p className="font-mono text-sm text-bone-dim">{tokens.athleteId || '—'}</p>
+        <div className="bg-surface-container rounded-xl px-5 py-4">
+          <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-1">Athlete ID</p>
+          <p className="font-mono text-sm text-on-surface-variant">{tokens.athleteId || '—'}</p>
         </div>
-        <div className="bg-ink px-5 py-4">
-          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-1">Scope</p>
+        <div className="bg-surface-container rounded-xl px-5 py-4">
+          <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-1">Scope</p>
           <p className={`font-mono text-sm ${partialScope ? 'text-signal-warn' : 'text-signal-ok'}`}>
             {partialScope ? 'activity:read (partial)' : 'activity:read_all'}
           </p>
@@ -1041,7 +1041,7 @@ function ConnectedView({
 
       {/* Partial scope notice */}
       {partialScope && (
-        <div className="border border-signal-warn/40 p-3 space-y-1">
+        <div className="rounded-xl bg-surface-container-high border border-signal-warn/40 p-3 space-y-1">
           <p className="font-mono text-xs text-signal-warn uppercase tracking-widest">Limited access</p>
           <p className="font-mono text-xs text-bone-dim leading-relaxed">
             Private activities won't sync. Reconnect and tick the privacy checkbox to include them.
@@ -1058,7 +1058,7 @@ function ConnectedView({
       <div className="flex items-center gap-3">
         <button
           onClick={onSync}
-          className="inline-flex items-center gap-2 px-4 py-2 m3-btn-outline text-accent hover:bg-accent hover:text-ink font-mono text-xs uppercase tracking-widest transition-colors"
+          className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 bg-secondary-container text-on-secondary-container hover:shadow-sm font-mono text-xs uppercase tracking-widest transition-all"
         >
           <RefreshCw size={12} />
           Sync now
@@ -1072,19 +1072,19 @@ function ConnectedView({
             Disconnect
           </button>
         ) : (
-          <div className="flex items-center gap-3 border border-signal-miss/30 px-3 py-1.5">
-            <span className="font-mono text-xs text-signal-miss">
+          <div className="flex items-center gap-3 rounded-xl bg-error-container/20 border border-error/20 px-3 py-2">
+            <span className="font-mono text-xs text-on-error-container">
               Revoke Strava access and clear tokens?
             </span>
             <button
               onClick={() => { setConfirmingDisconnect(false); void onDisconnect(); }}
-              className="font-mono text-xs text-signal-miss border border-signal-miss/40 hover:border-signal-miss px-2 py-0.5 transition-colors"
+              className="font-mono text-xs rounded-full px-3 py-1 bg-error-container text-on-error-container hover:shadow-sm transition-all"
             >
               Yes, disconnect
             </button>
             <button
               onClick={() => setConfirmingDisconnect(false)}
-              className="font-mono text-xs text-bone-mute hover:text-bone transition-colors"
+              className="font-mono text-xs rounded-full px-3 py-1 text-primary hover:bg-primary/8 transition-colors"
             >
               Cancel
             </button>

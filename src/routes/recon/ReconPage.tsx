@@ -293,10 +293,10 @@ function MonthlyVolumeCard({ months }: { months: MonthVolume[] }) {
   const latest = months.length > 0 ? months[months.length - 1] : null;
 
   return (
-    <section className="m3-card p-6 space-y-4">
+    <section className="rounded-2xl bg-primary-container/40 p-5 space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-1">
+          <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-1">
             Monthly Volume
           </p>
           <p className="font-mono text-xs text-bone-mute">Last 6 months · km</p>
@@ -509,7 +509,7 @@ function FitnessFatigueCard({
           </p>
           <p className="font-mono text-xs text-bone-mute">Last 8 weeks · CTL vs ATL</p>
         </div>
-        <div className={`border px-3 py-1 font-mono text-xs uppercase tracking-widest ${badge.classes}`}>
+        <div className="rounded-full px-3 py-1 bg-secondary-container text-on-secondary-container font-mono text-xs uppercase tracking-widest">
           {badge.label}
         </div>
       </div>

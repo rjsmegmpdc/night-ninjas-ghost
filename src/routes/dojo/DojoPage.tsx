@@ -301,21 +301,21 @@ async function updateStartDate(periodId: number, newDate: string): Promise<void>
 
 function DojoCard({ dojo, isSelected, onSelect }: { dojo: DojoMeta; isSelected: boolean; onSelect: () => void }) {
   return (
-    <div className={['border p-6 space-y-4 transition-colors', isSelected ? 'border-accent bg-accent/5' : 'border-ink-line bg-ink-shadow hover:border-ink-line-bold'].join(' ')}>
+    <div className={['m3-card p-6 space-y-4 transition-colors', isSelected ? 'bg-primary-container/20' : 'hover:bg-surface-container'].join(' ')}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h3 className="font-display tracking-widest text-xl uppercase text-bone leading-tight">{dojo.name}</h3>
-          <p className="font-mono text-xs text-bone-dim mt-0.5">{dojo.tagline}</p>
+          <h3 className="font-display tracking-widest text-xl uppercase text-on-surface leading-tight">{dojo.name}</h3>
+          <p className="font-mono text-xs text-on-surface-variant mt-0.5">{dojo.tagline}</p>
         </div>
         <div className="flex-shrink-0 text-right">
-          <span className="font-display tracking-widest text-2xl text-bone-dim leading-none">{dojo.weeks}</span>
-          <p className="font-mono text-xs text-bone-mute">weeks</p>
+          <span className="font-display tracking-widest text-2xl text-on-surface-variant leading-none">{dojo.weeks}</span>
+          <p className="font-mono text-xs text-on-surface-variant">weeks</p>
         </div>
       </div>
       <ul className="space-y-1" role="list">
         {dojo.features.map((f) => (
-          <li key={f} className="flex items-center gap-2 font-mono text-xs text-bone-mute">
-            <span className="w-1 h-1 bg-bone-mute rounded-full flex-shrink-0" aria-hidden="true" />
+          <li key={f} className="flex items-center gap-2 font-mono text-xs text-on-surface-variant">
+            <span className="w-1 h-1 bg-on-surface-variant rounded-full flex-shrink-0" aria-hidden="true" />
             {f}
           </li>
         ))}
@@ -324,7 +324,7 @@ function DojoCard({ dojo, isSelected, onSelect }: { dojo: DojoMeta; isSelected: 
         type="button"
         onClick={onSelect}
         aria-pressed={isSelected}
-        className={['flex items-center gap-2 font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 border transition-colors', isSelected ? 'border-accent text-accent bg-accent/10 cursor-default' : 'border-ink-line text-bone-dim hover:border-accent hover:text-accent'].join(' ')}
+        className={['flex items-center gap-2 font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 transition-all', isSelected ? 'bg-primary text-on-primary font-bold cursor-default' : 'bg-secondary-container text-on-secondary-container hover:shadow-sm'].join(' ')}
       >
         {isSelected ? <><Check size={12} aria-hidden="true" />Active</> : 'Select'}
       </button>
@@ -361,78 +361,76 @@ function ActivePlanBar({
   }
 
   return (
-    <div className="m3-card">
-      <div className="flex items-center gap-0 flex-wrap divide-x divide-ink-line">
-        {/* Dojo name */}
-        <div className="px-5 py-4 min-w-[140px]">
-          <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-0.5">Active plan</p>
-          <p className="font-display text-lg tracking-widest uppercase text-bone leading-none">{dojoMeta?.name ?? plan.dojo}</p>
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+      {/* Dojo name */}
+      <div className="bg-surface-container rounded-xl p-4 sm:p-5 col-span-1">
+        <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest mb-0.5">Active plan</p>
+        <p className="font-display text-lg tracking-widest uppercase text-on-surface leading-none">{dojoMeta?.name ?? plan.dojo}</p>
+      </div>
+
+      {/* Phase + week */}
+      {phase && (
+        <div className="bg-surface-container rounded-xl p-4 sm:p-5">
+          <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest mb-0.5">Phase</p>
+          <p className={`font-display text-sm uppercase tracking-widest ${PHASE_TEXT_CLASS[phase]}`}>
+            {PHASE_LABELS[phase]} · W{weekNum}/{programWeeks}
+          </p>
         </div>
-
-        {/* Phase + week */}
-        {phase && (
-          <div className="px-5 py-4">
-            <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-0.5">Phase</p>
-            <p className={`font-display text-sm uppercase tracking-widest ${PHASE_TEXT_CLASS[phase]}`}>
-              {PHASE_LABELS[phase]} · W{weekNum}/{programWeeks}
-            </p>
-          </div>
-        )}
-        {!isActive && weekNum < 1 && (
-          <div className="px-5 py-4">
-            <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-0.5">Status</p>
-            <p className="font-mono text-xs text-bone-dim">Starts {formatShortDate(plan.startDate)}</p>
-          </div>
-        )}
-        {!isActive && weekNum > programWeeks && (
-          <div className="px-5 py-4">
-            <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-0.5">Status</p>
-            <p className="font-mono text-xs text-bone-dim">Program complete</p>
-          </div>
-        )}
-
-        {/* Goal race */}
-        {goalRace && (
-          <div className="px-5 py-4">
-            <p className="font-mono text-[10px] text-bone-mute uppercase tracking-widest mb-0.5">Goal race</p>
-            <p className="font-mono text-xs text-bone">{goalRace.name}</p>
-            <p className="font-mono text-[10px] text-bone-mute">{formatShortDate(goalRace.date)} · {goalRace.distance_km}km</p>
-          </div>
-        )}
-
-        {/* Start date editor */}
-        <div className="px-5 py-4 flex items-end gap-3">
-          <div>
-            <label htmlFor="bar-start-date" className="font-mono text-[10px] text-bone-mute uppercase tracking-widest block mb-0.5">
-              Start date
-            </label>
-            <input
-              id="bar-start-date"
-              type="date"
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              className="bg-transparent font-mono text-xs text-bone border-b border-ink-line focus:outline-none focus:border-accent transition-colors"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent transition-colors pb-px"
-          >
-            {saved ? 'Saved ✓' : 'Save'}
-          </button>
+      )}
+      {!isActive && weekNum < 1 && (
+        <div className="bg-surface-container rounded-xl p-4 sm:p-5">
+          <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest mb-0.5">Status</p>
+          <p className="font-mono text-xs text-on-surface-variant">Starts {formatShortDate(plan.startDate)}</p>
         </div>
-
-        {/* Change plan */}
-        <div className="px-5 py-4 ml-auto">
-          <button
-            type="button"
-            onClick={onChangePlan}
-            className="font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent m3-card hover:border-accent px-3 py-2 transition-colors"
-          >
-            Change plan
-          </button>
+      )}
+      {!isActive && weekNum > programWeeks && (
+        <div className="bg-surface-container rounded-xl p-4 sm:p-5">
+          <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest mb-0.5">Status</p>
+          <p className="font-mono text-xs text-on-surface-variant">Program complete</p>
         </div>
+      )}
+
+      {/* Goal race */}
+      {goalRace && (
+        <div className="bg-surface-container rounded-xl p-4 sm:p-5">
+          <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest mb-0.5">Goal race</p>
+          <p className="font-mono text-xs text-on-surface">{goalRace.name}</p>
+          <p className="font-mono text-[10px] text-on-surface-variant">{formatShortDate(goalRace.date)} · {goalRace.distance_km}km</p>
+        </div>
+      )}
+
+      {/* Start date editor */}
+      <div className="bg-surface-container rounded-xl p-4 sm:p-5 flex items-end gap-3">
+        <div>
+          <label htmlFor="bar-start-date" className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest block mb-0.5">
+            Start date
+          </label>
+          <input
+            id="bar-start-date"
+            type="date"
+            value={startDate}
+            onChange={e => setStartDate(e.target.value)}
+            className="bg-transparent font-mono text-xs text-on-surface border-b border-outline focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleSave}
+          className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors pb-px"
+        >
+          {saved ? 'Saved ✓' : 'Save'}
+        </button>
+      </div>
+
+      {/* Change plan */}
+      <div className="bg-surface-container rounded-xl p-4 sm:p-5 flex items-center justify-end">
+        <button
+          type="button"
+          onClick={onChangePlan}
+          className="rounded-full bg-secondary-container text-on-secondary-container font-mono text-[10px] uppercase tracking-widest px-3 py-2 hover:shadow-sm transition-all"
+        >
+          Change plan
+        </button>
       </div>
     </div>
   );
@@ -681,8 +679,8 @@ function TrainingCalendar({
           <div className="flex gap-3 flex-wrap">
             {(['base', 'build', 'peak', 'taper'] as Phase[]).map(p => (
               <div key={p} className="flex items-center gap-1.5">
-                <div className={`w-2.5 h-2.5 border ${PHASE_CELL_CLASS[p]}`} aria-hidden="true" />
-                <span className="font-mono text-[10px] text-bone-mute uppercase">{PHASE_LABELS[p]}</span>
+                <div className={`w-2.5 h-2.5 rounded-sm border ${PHASE_CELL_CLASS[p]}`} aria-hidden="true" />
+                <span className="font-mono text-[10px] text-on-surface-variant uppercase">{PHASE_LABELS[p]}</span>
               </div>
             ))}
           </div>
@@ -844,7 +842,7 @@ export default function DojoPage() {
             <button
               type="button"
               onClick={() => setShowPicker(false)}
-              className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-bone-mute hover:text-accent transition-colors mb-6"
+              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-mono text-xs uppercase tracking-widest text-primary hover:bg-primary/8 transition-colors mb-6"
             >
               <ChevronLeft size={14} aria-hidden="true" />
               Back to calendar
@@ -857,14 +855,14 @@ export default function DojoPage() {
             </h2>
 
             {/* Level toggle */}
-            <div className="flex m3-card" role="group" aria-label="Training level">
+            <div className="flex gap-1" role="group" aria-label="Training level">
               {(['beginner', 'intermediate', 'advanced'] as Level[]).map((l) => (
                 <button
                   key={l}
                   type="button"
                   onClick={() => setLevel(l)}
                   aria-pressed={level === l}
-                  className={['px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors border-r border-ink-line last:border-r-0', level === l ? 'bg-accent/15 text-accent' : 'text-bone-mute hover:text-bone'].join(' ')}
+                  className={['rounded-full px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors', level === l ? 'bg-secondary-container text-on-secondary-container' : 'text-on-surface-variant hover:bg-on-surface/8'].join(' ')}
                 >
                   {l}
                 </button>
@@ -891,7 +889,7 @@ export default function DojoPage() {
               onClick={() => setShowMore(v => !v)}
               aria-expanded={showMore}
               aria-controls="secondary-dojos"
-              className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-bone-mute hover:text-bone transition-colors"
+              className="inline-flex items-center gap-2 rounded-full px-4 py-2 font-mono text-xs uppercase tracking-widest text-primary hover:bg-primary/8 transition-colors"
             >
               {showMore
                 ? <><ChevronUp size={14} aria-hidden="true" />Show fewer</>

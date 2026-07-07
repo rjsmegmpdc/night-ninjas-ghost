@@ -134,12 +134,12 @@ function isRunSport(sportType: string): boolean {
 // ---------------------------------------------------------------------------
 
 function badgeClass(value: number | null): string {
-  if (value === null) return 'text-bone-mute border-bone-mute/30';
-  if (value <= 1) return 'text-signal-miss border-signal-miss/40 bg-signal-miss/10';
-  if (value === 2) return 'text-signal-warn border-signal-warn/30 bg-signal-warn/10';
-  if (value === 3) return 'text-bone-dim border-bone-dim/30 bg-ink-panel';
-  if (value === 4) return 'text-signal-ok border-signal-ok/30 bg-signal-ok/10';
-  return 'text-signal-ok border-signal-ok/50 bg-signal-ok/20';
+  if (value === null) return 'bg-surface-container-high text-on-surface-variant';
+  if (value <= 1) return 'bg-error-container text-on-error-container';
+  if (value === 2) return 'bg-tertiary-container text-on-tertiary-container';
+  if (value === 3) return 'bg-surface-container-high text-on-surface-variant';
+  if (value === 4) return 'bg-secondary-container text-on-secondary-container';
+  return 'bg-secondary-container text-on-secondary-container';
 }
 
 function energyBarClass(energy: number | null): string {
@@ -263,17 +263,17 @@ function DayCell({
       aria-label={`${iso}${isToday ? ' (today)' : ''}${acts && acts.length ? `, ${acts.length} activity` : ''}${journal ? ', wellness logged' : ''}`}
       aria-pressed={selected}
       className={[
-        'relative flex flex-col justify-between m3-card/50 p-1 text-left transition-colors',
-        'hover:bg-ink-line/30 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-accent',
+        'relative flex flex-col justify-between bg-surface-container rounded-md p-1 text-left transition-colors',
+        'hover:bg-surface-container-high cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary',
         'h-14 sm:h-16',
-        selected   ? 'bg-ink-line/50'  : '',
+        selected   ? 'bg-surface-container-high ring-1 ring-primary/40' : '',
         isFuture   ? 'opacity-30'      : '',
-        isToday    ? 'ring-1 ring-accent' : '',
+        isToday    ? 'ring-1 ring-primary' : '',
       ].filter(Boolean).join(' ')}
     >
       {/* Day number + health indicator */}
       <div className="flex items-center justify-between w-full">
-        <span className="font-mono text-xs text-bone-mute leading-none">
+        <span className={`font-mono text-xs leading-none ${isToday ? 'text-primary' : 'text-on-surface-variant'}`}>
           {formatDayNumber(iso)}
         </span>
         {hasHealth && (
@@ -382,7 +382,7 @@ function DayDetail({
         <button
           type="button"
           onClick={onClose}
-          className="font-mono text-xs uppercase tracking-widest text-bone-mute hover:text-bone transition-colors mt-1"
+          className="rounded-full px-4 py-2 font-mono text-xs uppercase tracking-widest text-primary hover:bg-primary/8 transition-colors mt-1"
           aria-label="Close day detail"
         >
           Close
@@ -398,7 +398,7 @@ function DayDetail({
           <ul className="divide-y divide-ink-line m3-card" role="list">
             {acts.map((a, i) => (
               <li key={i} className="px-4 py-3 flex items-center gap-3">
-                <span className="font-mono text-xs text-bone-dim bg-ink-panel m3-card px-2 py-0.5 flex-shrink-0">
+                <span className="font-mono text-xs text-on-surface-variant bg-surface-container-high rounded-md px-2 py-0.5 flex-shrink-0">
                   {sportIcon(a.sportType)}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -425,9 +425,9 @@ function DayDetail({
           <div className="flex flex-wrap gap-3 items-center">
             {journal.sleepQ !== null && (
               <div className="flex items-center gap-1.5">
-                <span className="font-mono text-xs text-bone-mute">Sleep</span>
+                <span className="font-mono text-xs text-on-surface-variant">Sleep</span>
                 <span
-                  className={`font-mono text-xs border px-2 py-0.5 ${badgeClass(journal.sleepQ)}`}
+                  className={`font-mono text-[11px] font-medium rounded-full px-2.5 py-0.5 ${badgeClass(journal.sleepQ)}`}
                 >
                   {journal.sleepQ}/5
                 </span>
@@ -435,9 +435,9 @@ function DayDetail({
             )}
             {journal.energy !== null && (
               <div className="flex items-center gap-1.5">
-                <span className="font-mono text-xs text-bone-mute">Energy</span>
+                <span className="font-mono text-xs text-on-surface-variant">Energy</span>
                 <span
-                  className={`font-mono text-xs border px-2 py-0.5 ${badgeClass(journal.energy)}`}
+                  className={`font-mono text-[11px] font-medium rounded-full px-2.5 py-0.5 ${badgeClass(journal.energy)}`}
                 >
                   {journal.energy}/5
                 </span>
@@ -445,9 +445,9 @@ function DayDetail({
             )}
             {journal.stress !== null && (
               <div className="flex items-center gap-1.5">
-                <span className="font-mono text-xs text-bone-mute">Stress</span>
+                <span className="font-mono text-xs text-on-surface-variant">Stress</span>
                 <span
-                  className={`font-mono text-xs border px-2 py-0.5 ${badgeClass(journal.stress)}`}
+                  className={`font-mono text-[11px] font-medium rounded-full px-2.5 py-0.5 ${badgeClass(journal.stress)}`}
                 >
                   {journal.stress}/5
                 </span>
@@ -497,14 +497,14 @@ function DayDetail({
           value={notesValue}
           onChange={(e) => setNotesValue(e.target.value)}
           placeholder="How did training feel today?"
-          className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent resize-none"
+          className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors resize-none"
         />
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving…' : 'Save'}
           </button>
@@ -697,11 +697,11 @@ export default function JournalPage() {
         </p>
 
         {/* Day-of-week column headers */}
-        <div className="grid grid-cols-7 gap-px mb-px" role="row">
+        <div className="grid grid-cols-7 gap-1 mb-1" role="row">
           {DOW_HEADERS.map((d) => (
             <div
               key={d}
-              className="font-mono text-xs text-bone-mute text-center py-1"
+              className="font-mono text-xs text-on-surface-variant text-center py-1"
               role="columnheader"
               aria-label={d}
             >
@@ -712,7 +712,7 @@ export default function JournalPage() {
 
         {/* Calendar grid — 5 rows × 7 columns */}
         <div
-          className="grid grid-cols-7 gap-px bg-ink-line/30"
+          className="grid grid-cols-7 gap-1"
           role="grid"
           aria-label="5-week training calendar"
         >

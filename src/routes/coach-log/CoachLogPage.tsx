@@ -154,10 +154,10 @@ function EmojiPicker({
             type="button"
             onClick={() => onChange(value === o.v ? null : o.v)}
             className={[
-              'px-2.5 py-1.5 font-mono text-sm border transition-colors',
+              'rounded-full px-2.5 py-1.5 font-mono text-sm transition-colors',
               value === o.v
-                ? 'ring-2 ring-accent border-accent text-bone bg-accent/10'
-                : 'border-ink-line text-bone-dim hover:border-ink-line-bold hover:text-bone',
+                ? 'bg-secondary-container text-on-secondary-container'
+                : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high',
             ].join(' ')}
             aria-pressed={value === o.v}
           >
@@ -461,7 +461,7 @@ function TodayLogForm({
             placeholder="bpm"
             value={form.restingHr}
             onChange={(e) => setForm((f) => ({ ...f, restingHr: e.target.value }))}
-            className="w-full bg-ink-shadow m3-card px-3 py-1.5 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
           />
         </div>
         <div className="space-y-1.5">
@@ -477,7 +477,7 @@ function TodayLogForm({
             placeholder="ms"
             value={form.hrv}
             onChange={(e) => setForm((f) => ({ ...f, hrv: e.target.value }))}
-            className="w-full bg-ink-shadow m3-card px-3 py-1.5 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
           />
         </div>
         <div className="space-y-1.5">
@@ -493,7 +493,7 @@ function TodayLogForm({
             placeholder="0–100"
             value={form.bodyBattery}
             onChange={(e) => setForm((f) => ({ ...f, bodyBattery: e.target.value }))}
-            className="w-full bg-ink-shadow m3-card px-3 py-1.5 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
           />
         </div>
       </div>
@@ -508,7 +508,7 @@ function TodayLogForm({
           placeholder="How's the body feeling?"
           value={form.notes}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-          className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent resize-none"
+          className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors resize-none"
         />
       </div>
 
@@ -517,7 +517,7 @@ function TodayLogForm({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="px-5 py-2 bg-accent hover:bg-accent-hover text-bone font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold font-mono text-xs uppercase tracking-widest hover:shadow-md active:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
@@ -604,7 +604,7 @@ function InlineEditForm({
           placeholder="bpm"
           value={form.restingHr}
           onChange={(e) => setForm((f) => ({ ...f, restingHr: e.target.value }))}
-          className="w-32 bg-ink m3-card px-3 py-1.5 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent"
+          className="w-32 bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
         />
       </div>
       <div className="space-y-1">
@@ -613,7 +613,7 @@ function InlineEditForm({
           rows={2}
           value={form.notes}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-          className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent resize-none"
+          className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors resize-none"
         />
       </div>
       <div className="flex gap-3">
@@ -621,14 +621,14 @@ function InlineEditForm({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="px-4 py-1.5 bg-accent hover:bg-accent-hover text-bone font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50"
+          className="rounded-full bg-primary text-on-primary px-5 py-2 font-bold font-mono text-xs uppercase tracking-widest hover:shadow-md active:opacity-90 transition-all disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Update'}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-1.5 m3-card text-bone-mute hover:text-bone font-mono text-xs uppercase tracking-widest transition-colors"
+          className="rounded-full px-4 py-1.5 bg-surface-container text-on-surface-variant hover:bg-surface-container-high font-mono text-xs uppercase tracking-widest transition-colors"
         >
           Cancel
         </button>
@@ -971,7 +971,7 @@ function AiCoachPanel() {
     : [];
 
   return (
-    <section className="border border-accent/40 p-6 space-y-4">
+    <section className="rounded-2xl bg-primary-container/40 p-6 space-y-4">
       <p className="font-mono text-xs text-accent uppercase tracking-widest">ai coach</p>
 
       {/* No API key — show canned messages or key prompt */}
@@ -1017,7 +1017,7 @@ function AiCoachPanel() {
               <button
                 type="button"
                 onClick={() => { void handleAskCoach(); }}
-                className="font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2 m3-btn-outline text-accent hover:bg-accent/10 transition-colors"
+                className="font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all"
               >
                 Ask Coach
               </button>

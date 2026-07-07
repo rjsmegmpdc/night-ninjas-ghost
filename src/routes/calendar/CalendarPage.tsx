@@ -109,12 +109,12 @@ function distanceLabelFromKm(km: number): string {
 
 function eventTypeBadgeClass(type: string): string {
   switch (type) {
-    case 'holiday':    return 'text-accent border-accent/40';
-    case 'work_trip':  return 'text-signal-warn border-signal-warn/40';
-    case 'sickness':   return 'text-signal-miss border-signal-miss/40';
-    case 'birthday':   return 'text-bone border-bone/30';
-    case 'commitment': return 'text-bone-dim border-bone-dim/30';
-    default:           return 'text-bone-mute border-bone-mute/30';
+    case 'holiday':    return 'bg-primary-container text-on-primary-container';
+    case 'work_trip':  return 'bg-tertiary-container text-on-tertiary-container';
+    case 'sickness':   return 'bg-error-container text-on-error-container';
+    case 'birthday':   return 'bg-secondary-container text-on-secondary-container';
+    case 'commitment': return 'bg-secondary-container text-on-secondary-container';
+    default:           return 'bg-surface-container-high text-on-surface-variant';
   }
 }
 
@@ -124,12 +124,12 @@ function eventTypeBadgeClass(type: string): string {
 
 function LevelBadge({ level }: { level: string }) {
   const colour =
-    level === 'beginner'     ? 'text-signal-ok border-signal-ok/40' :
-    level === 'advanced'     ? 'text-accent border-accent/40' :
-    /* intermediate */         'text-bone-dim border-bone-dim/30';
+    level === 'beginner'     ? 'bg-secondary-container text-on-secondary-container' :
+    level === 'advanced'     ? 'bg-primary-container text-on-primary-container' :
+    /* intermediate */         'bg-surface-container-high text-on-surface-variant';
 
   return (
-    <span className={`font-mono text-xs uppercase tracking-widest border px-2 py-0.5 ${colour}`}>
+    <span className={`font-mono text-[11px] font-medium uppercase tracking-widest rounded-full px-2.5 py-0.5 ${colour}`}>
       {level}
     </span>
   );
@@ -316,26 +316,26 @@ function NzRaceSearch({
         onFocus={() => { if (value.length >= 2) setOpen(true); }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Search NZ races or type manually…"
-        className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+        className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
       />
       {open && results.length > 0 && (
-        <ul className="absolute z-50 left-0 right-0 top-full m3-card border-t-0 bg-ink-shadow max-h-52 overflow-y-auto">
+        <ul className="absolute z-50 left-0 right-0 top-full bg-surface-container-high rounded-lg border border-outline/20 shadow-lg max-h-52 overflow-y-auto mt-1">
           {results.map((race) => (
             <li key={`${race.name}-${race.date}`}>
               <button
                 type="button"
                 onMouseDown={() => handleSelect(race)}
-                className="w-full px-3 py-2 text-left flex items-center justify-between gap-3 hover:bg-ink-panel transition-colors"
+                className="w-full px-3 py-2 text-left flex items-center justify-between gap-3 hover:bg-on-surface/8 transition-colors"
               >
                 <div className="min-w-0">
-                  <span className="font-mono text-xs text-bone block truncate">{race.name}</span>
-                  <span className="font-mono text-[10px] text-bone-dim">{race.city}</span>
+                  <span className="font-mono text-xs text-on-surface block truncate">{race.name}</span>
+                  <span className="font-mono text-[10px] text-on-surface-variant">{race.city}</span>
                 </div>
                 <div className="shrink-0 text-right">
-                  <span className="font-mono text-[10px] text-bone-dim block">
+                  <span className="font-mono text-[10px] text-on-surface-variant block">
                     {new Date(race.date + 'T12:00:00Z').toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', timeZone: 'UTC' })}
                   </span>
-                  <span className="font-mono text-[10px] text-bone-dim">
+                  <span className="font-mono text-[10px] text-on-surface-variant">
                     {race.distance_km === 42.195 ? 'Marathon' : 'Half'}
                   </span>
                 </div>
@@ -480,39 +480,39 @@ function GoalRaceCard({
   onConfirmDelete: () => void;
 }) {
   return (
-    <div className="border border-accent/30 bg-ink-shadow p-4 space-y-3">
+    <div className="rounded-2xl bg-primary-container/40 p-5 space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <p className="font-display tracking-widest text-2xl uppercase text-bone">{race.name}</p>
-          <p className="font-mono text-xs text-bone">{formatDisplayDate(race.date)}</p>
+          <p className="font-display tracking-widest text-2xl uppercase text-on-surface">{race.name}</p>
+          <p className="font-mono text-xs text-on-surface-variant">{formatDisplayDate(race.date)}</p>
         </div>
         <LevelBadge level={race.level} />
       </div>
 
       <div className="flex items-center gap-4 flex-wrap">
-        <span className="font-mono text-sm text-bone">
+        <span className="font-mono text-sm text-on-surface">
           {distanceLabelFromKm(race.distance_km)}
         </span>
         {race.goal_time && (
-          <span className="font-mono text-sm text-bone-dim">
+          <span className="font-mono text-sm text-on-surface-variant">
             Goal: {race.goal_time}
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-3 pt-1 border-t border-ink-line">
-        <button onClick={onEdit} className="font-mono text-xs text-bone-mute hover:text-accent transition-colors">
+      <div className="flex items-center gap-3 pt-1 border-t border-outline/20">
+        <button onClick={onEdit} className="rounded-full px-4 py-2 font-mono text-xs text-primary hover:bg-primary/8 transition-colors">
           Edit
         </button>
         {!confirmDel ? (
-          <button onClick={onRequestDelete} className="font-mono text-xs text-bone-mute hover:text-signal-miss transition-colors">
+          <button onClick={onRequestDelete} className="rounded-full px-4 py-2 font-mono text-xs text-error hover:bg-error/8 transition-colors">
             Remove goal
           </button>
         ) : (
           <span className="flex items-center gap-2">
-            <span className="font-mono text-xs text-signal-miss">Demote this race?</span>
-            <button onClick={onConfirmDelete} className="font-mono text-xs text-signal-miss hover:underline">Yes</button>
-            <button onClick={onCancelDelete} className="font-mono text-xs text-bone-mute hover:text-bone transition-colors">Cancel</button>
+            <span className="font-mono text-xs text-error">Demote this race?</span>
+            <button onClick={onConfirmDelete} className="font-mono text-xs text-error hover:underline">Yes</button>
+            <button onClick={onCancelDelete} className="rounded-full px-3 py-1 font-mono text-xs text-on-surface-variant hover:bg-on-surface/4 transition-colors">Cancel</button>
           </span>
         )}
       </div>
@@ -655,22 +655,22 @@ function RaceForm({
   }
 
   return (
-    <div className="m3-card bg-ink-shadow p-4 space-y-3">
+    <div className="bg-surface-container-low rounded-2xl p-5 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Date */}
         <div className="space-y-1">
-          <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Date *</label>
+          <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">Date *</label>
           <input
             type="date"
             value={form.date}
             onChange={(e) => onChange({ ...form, date: e.target.value })}
-            className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
         {/* Name — NZ race search combobox */}
         <div className="space-y-1">
-          <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Race Name *</label>
+          <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">Race Name *</label>
           <NzRaceSearch
             value={form.name}
             onTextChange={(name) => onChange({ ...form, name, raceUrl: null, raceSearchUrl: null })}
@@ -683,18 +683,18 @@ function RaceForm({
                 href={form.raceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 font-mono text-[10px] text-accent hover:underline"
+                className="flex items-center gap-1 font-mono text-[10px] text-primary hover:underline"
               >
                 Event page <ExternalLink size={10} aria-hidden="true" />
               </a>
               {form.raceSearchUrl && (
                 <>
-                  <span className="font-mono text-[10px] text-bone-mute">·</span>
+                  <span className="font-mono text-[10px] text-on-surface-variant">·</span>
                   <a
                     href={form.raceSearchUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 font-mono text-[10px] text-bone-mute hover:text-bone hover:underline"
+                    className="flex items-center gap-1 font-mono text-[10px] text-on-surface-variant hover:text-on-surface hover:underline"
                   >
                     Google if 404 <ExternalLink size={10} aria-hidden="true" />
                   </a>
@@ -706,11 +706,11 @@ function RaceForm({
 
         {/* Distance */}
         <div className="space-y-1">
-          <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Distance *</label>
+          <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">Distance *</label>
           <select
             value={form.distanceLabel}
             onChange={(e) => onDistanceChange(e.target.value)}
-            className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
           >
             {DISTANCE_OPTIONS.map((o) => (
               <option key={o.label} value={o.label}>{o.label}</option>
@@ -721,7 +721,7 @@ function RaceForm({
         {/* Custom distance_km if Other */}
         {isOther && (
           <div className="space-y-1">
-            <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Distance (km) *</label>
+            <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">Distance (km) *</label>
             <input
               type="number"
               min="0"
@@ -729,31 +729,31 @@ function RaceForm({
               value={form.distance_km}
               onChange={(e) => onChange({ ...form, distance_km: e.target.value })}
               placeholder="e.g. 60"
-              className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+              className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
             />
           </div>
         )}
 
         {/* Goal time */}
         <div className="space-y-1">
-          <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Goal Time (optional)</label>
+          <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">Goal Time (optional)</label>
           <input
             type="text"
             value={form.goal_time}
             onChange={(e) => onChange({ ...form, goal_time: e.target.value })}
             placeholder="H:MM:SS"
-            className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
         {/* Level */}
         {showLevel && (
           <div className="space-y-1">
-            <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Level</label>
+            <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">Level</label>
             <select
               value={form.level}
               onChange={(e) => onChange({ ...form, level: e.target.value as Level })}
-              className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
+              className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
             >
               {LEVEL_OPTIONS.map((l) => (
                 <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>
@@ -767,14 +767,14 @@ function RaceForm({
         <button
           onClick={onSave}
           disabled={saving || !form.date || !form.name || !form.distance_km}
-          className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {saving ? 'Saving…' : submitLabel}
         </button>
         <button
           onClick={onCancel}
           disabled={saving}
-          className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-mute hover:text-bone transition-colors"
+          className="rounded-full px-4 py-2 font-mono text-xs uppercase tracking-widest text-primary hover:bg-primary/8 transition-colors"
         >
           Cancel
         </button>
@@ -843,7 +843,7 @@ function CapacitySection({ capacity, onRefresh }: CapacitySectionProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">
             Weekly Volume Cap (km)
           </label>
           <input
@@ -853,12 +853,12 @@ function CapacitySection({ capacity, onRefresh }: CapacitySectionProps) {
             value={weekly}
             onChange={(e) => setWeekly(e.target.value)}
             placeholder="e.g. 80"
-            className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+          <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">
             Long Run Cap (km)
           </label>
           <input
@@ -868,7 +868,7 @@ function CapacitySection({ capacity, onRefresh }: CapacitySectionProps) {
             value={longRun}
             onChange={(e) => setLongRun(e.target.value)}
             placeholder="e.g. 32"
-            className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+            className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
           />
         </div>
       </div>
@@ -877,7 +877,7 @@ function CapacitySection({ capacity, onRefresh }: CapacitySectionProps) {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {saving ? 'Saving…' : 'Save Caps'}
         </button>
@@ -969,7 +969,7 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-mono text-sm text-bone">{ev.title}</p>
-                  <span className={`font-mono text-xs border px-1.5 py-0.5 ${eventTypeBadgeClass(ev.type)}`}>
+                  <span className={`font-mono text-[11px] font-medium rounded-full px-2.5 py-0.5 ${eventTypeBadgeClass(ev.type)}`}>
                     {EVENT_TYPE_LABELS[ev.type as EventType] ?? ev.type}
                   </span>
                 </div>
@@ -995,38 +995,38 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
       )}
 
       {adding && (
-        <div className="m3-card bg-ink-shadow p-4 space-y-3">
+        <div className="bg-surface-container-low rounded-2xl p-5 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Date */}
             <div className="space-y-1">
-              <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Date *</label>
+              <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">Date *</label>
               <input
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
+                className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
               />
             </div>
 
             {/* Title */}
             <div className="space-y-1">
-              <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Title *</label>
+              <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">Title *</label>
               <input
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="e.g. Christmas Day"
-                className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+                className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
               />
             </div>
 
             {/* Type */}
             <div className="space-y-1">
-              <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Type</label>
+              <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">Type</label>
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as EventType })}
-                className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone focus:outline-none focus:border-accent"
+                className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
               >
                 {EVENT_TYPES.map((t) => (
                   <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>
@@ -1036,13 +1036,13 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
 
             {/* Notes */}
             <div className="space-y-1">
-              <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Notes (optional)</label>
+              <label className="text-[11px] font-medium text-on-surface-variant tracking-wide">Notes (optional)</label>
               <input
                 type="text"
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 placeholder="Optional details"
-                className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
+                className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
               />
             </div>
           </div>
@@ -1051,14 +1051,14 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
             <button
               onClick={handleAdd}
               disabled={saving || !form.date || !form.title}
-              className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving…' : 'Add Event'}
             </button>
             <button
               onClick={() => { setAdding(false); setForm(BLANK_EVENT_FORM); }}
               disabled={saving}
-              className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-mute hover:text-bone transition-colors"
+              className="rounded-full px-4 py-2 font-mono text-xs uppercase tracking-widest text-primary hover:bg-primary/8 transition-colors"
             >
               Cancel
             </button>
