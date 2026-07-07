@@ -315,7 +315,7 @@ function NzRaceSearch({
         onChange={(e) => { onTextChange(e.target.value); setOpen(true); }}
         onFocus={() => { if (value.length >= 2) setOpen(true); }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder="Search NZ races or type manuallyâ€¦"
+        placeholder="Search NZ races or type manually…"
         className="w-full bg-ink m3-card px-3 py-2 font-mono text-sm text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent"
       />
       {open && results.length > 0 && (
@@ -585,8 +585,8 @@ function TuneupRacesBlock({ tuneupRaces, onRefresh }: { tuneupRaces: Race[]; onR
               <div className="space-y-0.5 min-w-0">
                 <p className="font-mono text-sm text-bone truncate">{r.name}</p>
                 <p className="font-mono text-xs text-bone-dim">
-                  {formatDisplayDate(r.date)} Â· {distanceLabelFromKm(r.distance_km)}
-                  {r.goal_time && ` Â· ${r.goal_time}`}
+                  {formatDisplayDate(r.date)} · {distanceLabelFromKm(r.distance_km)}
+                  {r.goal_time && ` · ${r.goal_time}`}
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -668,7 +668,7 @@ function RaceForm({
           />
         </div>
 
-        {/* Name â€” NZ race search combobox */}
+        {/* Name — NZ race search combobox */}
         <div className="space-y-1">
           <label className="font-mono text-xs text-bone-mute uppercase tracking-widest">Race Name *</label>
           <NzRaceSearch
@@ -676,7 +676,7 @@ function RaceForm({
             onTextChange={(name) => onChange({ ...form, name, raceUrl: null, raceSearchUrl: null })}
             onSelect={handleNzSelect}
           />
-          {/* Originator link â€” shown after selecting a NZ race */}
+          {/* Originator link — shown after selecting a NZ race */}
           {form.raceUrl && (
             <div className="flex items-center gap-2 flex-wrap pt-0.5">
               <a
@@ -689,7 +689,7 @@ function RaceForm({
               </a>
               {form.raceSearchUrl && (
                 <>
-                  <span className="font-mono text-[10px] text-bone-mute">Â·</span>
+                  <span className="font-mono text-[10px] text-bone-mute">·</span>
                   <a
                     href={form.raceSearchUrl}
                     target="_blank"
@@ -769,7 +769,7 @@ function RaceForm({
           disabled={saving || !form.date || !form.name || !form.distance_km}
           className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {saving ? 'Savingâ€¦' : submitLabel}
+          {saving ? 'Saving…' : submitLabel}
         </button>
         <button
           onClick={onCancel}
@@ -879,7 +879,7 @@ function CapacitySection({ capacity, onRefresh }: CapacitySectionProps) {
           disabled={saving}
           className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {saving ? 'Savingâ€¦' : 'Save Caps'}
+          {saving ? 'Saving…' : 'Save Caps'}
         </button>
         {saved && (
           <span className="font-mono text-xs text-signal-ok">Saved.</span>
@@ -1053,7 +1053,7 @@ function CommitmentsSection({ events, onRefresh }: CommitmentsSectionProps) {
               disabled={saving || !form.date || !form.title}
               className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {saving ? 'Savingâ€¦' : 'Add Event'}
+              {saving ? 'Saving…' : 'Add Event'}
             </button>
             <button
               onClick={() => { setAdding(false); setForm(BLANK_EVENT_FORM); }}

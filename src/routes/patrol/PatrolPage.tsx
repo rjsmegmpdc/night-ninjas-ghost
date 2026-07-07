@@ -54,7 +54,7 @@ function formatDateRange(startIso: string, endIso: string): string {
   const fmt = (iso: string) =>
     new Date(iso + 'T12:00:00').toLocaleDateString('en-NZ', { day: '2-digit', month: 'short' });
   const year = new Date(endIso + 'T12:00:00').getFullYear();
-  return `${fmt(startIso)} â€” ${fmt(endIso)} ${year}`;
+  return `${fmt(startIso)} — ${fmt(endIso)} ${year}`;
 }
 
 function daysUntil(dateIso: string): number {
@@ -133,12 +133,12 @@ const SESSION_TYPE_BADGE: Record<string, { label: string; color: string }> = {
   repetition: { label: 'R', color: 'text-red-400' },
   cross:      { label: 'X', color: 'text-bone-mute' },
   strength:   { label: 'S', color: 'text-bone-mute' },
-  rest:       { label: 'â€”', color: 'text-bone-dim' },
+  rest:       { label: '—', color: 'text-bone-dim' },
 };
 
 const DOW_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-// Compliance flag badge â€” only shown for actionable non-ok results on past days
+// Compliance flag badge — only shown for actionable non-ok results on past days
 const COMPLIANCE_FLAG: Partial<Record<ComplianceFlag, { label: string; color: string }>> = {
   fast:  { label: 'FAST',  color: 'text-signal-warn' },
   slow:  { label: 'SLOW',  color: 'text-bone-mute' },
@@ -170,12 +170,12 @@ function computeDayStatus(
 }
 
 const STATUS_DOT: Record<DayStatus, string> = {
-  done:          'â—',
-  missed:        'â—‹',
-  upcoming:      'â€“',
-  'today-pending': 'â—‰',
-  rest:          'Â·',
-  'today-rest':  'Â·',
+  done:          '●',
+  missed:        '○',
+  upcoming:      '–',
+  'today-pending': '◉',
+  rest:          '·',
+  'today-rest':  '·',
 };
 
 const STATUS_COLOR: Record<DayStatus, string> = {
@@ -259,20 +259,20 @@ function NoDataState() {
   return (
     <div className="m3-card p-8 space-y-3">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-        patrol Â· no data yet
+        patrol · no data yet
       </p>
       <h2 className="font-display tracking-widest text-3xl uppercase text-bone">
         No activities synced
       </h2>
       <p className="font-mono text-sm text-bone-dim max-w-xl leading-relaxed">
-        Patrol shows your current week â€” sessions, paces, stats. Pull your activity history from
+        Patrol shows your current week — sessions, paces, stats. Pull your activity history from
         Strava first to see anything here.
       </p>
       <Link
         to="/setup"
         className="inline-flex items-center gap-2 mt-2 font-mono text-xs uppercase tracking-widest text-accent hover:text-accent-hover transition-colors"
       >
-        Go to setup â†’
+        Go to setup →
       </Link>
     </div>
   );
@@ -288,7 +288,7 @@ function PatrolDashboard({
   const { stats, activities, nextRace, activePlan } = data;
   const currentDow = todayDow();
 
-  // Derive plan â€” memoised so it doesn't recalculate on every render
+  // Derive plan — memoised so it doesn't recalculate on every render
   const derived = useMemo(() => {
     if (!activePlan) return null;
     const engine = ENGINES[activePlan.dojo as Dojo];
@@ -332,7 +332,7 @@ function PatrolDashboard({
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-              dashboard Â· this week
+              dashboard · this week
             </p>
             <h1 className="font-display tracking-widest text-4xl uppercase leading-none text-bone">
               This Week
@@ -342,7 +342,7 @@ function PatrolDashboard({
             </p>
             {derived && (
               <p className="font-mono text-xs text-bone-mute">
-                {derived.engine.displayName} Â· week {derived.wk} of {activePlan!.programWeeks}
+                {derived.engine.displayName} · week {derived.wk} of {activePlan!.programWeeks}
               </p>
             )}
           </div>
@@ -366,7 +366,7 @@ function PatrolDashboard({
         )}
       </header>
 
-      {/* Framework stats row â€” dojo-specific if plan active, generic fallback otherwise */}
+      {/* Framework stats row — dojo-specific if plan active, generic fallback otherwise */}
       {derived ? (
         <FrameworkStatsRow stats={derived.frameworkStats} />
       ) : (
@@ -409,7 +409,7 @@ function PatrolDashboard({
                 to="/calendar"
                 className="inline-block font-mono text-xs text-bone-dim hover:text-accent transition-colors"
               >
-                + Book a race â†’
+                + Book a race →
               </Link>
             </div>
           )}
@@ -420,7 +420,7 @@ function PatrolDashboard({
 }
 
 // ---------------------------------------------------------------------------
-// Framework stats â€” dojo-specific
+// Framework stats — dojo-specific
 // ---------------------------------------------------------------------------
 
 function FrameworkStatsRow({ stats }: { stats: FrameworkStat[] }) {
@@ -460,9 +460,9 @@ function GenericStatsRow({ stats }: { stats: WeekStats }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-ink-line m3-card">
       <StatBox label="this week" value={stats.totalKm > 0 ? stats.totalKm.toFixed(1) : '0.0'} unit="km" accent={stats.totalKm > 0} sub={`${stats.totalSessions} session${stats.totalSessions === 1 ? '' : 's'}`} />
-      <StatBox label="long run" value={stats.longRunKm > 0 ? stats.longRunKm.toFixed(1) : 'â€”'} unit={stats.longRunKm > 0 ? 'km' : ''} sub={stats.longRunKm > 0 ? 'longest run' : 'pending'} />
-      <StatBox label="avg pace" value={stats.avgPaceSpk ? formatSpk(stats.avgPaceSpk) : 'â€”:â€”'} unit={stats.avgPaceSpk ? '/km' : ''} sub="running pace" />
-      <StatBox label="avg hr" value={stats.avgHr ? Math.round(stats.avgHr).toString() : 'â€”'} unit={stats.avgHr ? 'bpm' : ''} sub={stats.avgHr ? 'weighted by time' : 'no HR data'} />
+      <StatBox label="long run" value={stats.longRunKm > 0 ? stats.longRunKm.toFixed(1) : '—'} unit={stats.longRunKm > 0 ? 'km' : ''} sub={stats.longRunKm > 0 ? 'longest run' : 'pending'} />
+      <StatBox label="avg pace" value={stats.avgPaceSpk ? formatSpk(stats.avgPaceSpk) : '—:—'} unit={stats.avgPaceSpk ? '/km' : ''} sub="running pace" />
+      <StatBox label="avg hr" value={stats.avgHr ? Math.round(stats.avgHr).toString() : '—'} unit={stats.avgHr ? 'bpm' : ''} sub={stats.avgHr ? 'weighted by time' : 'no HR data'} />
     </div>
   );
 }
@@ -486,7 +486,7 @@ function WeekPlanGrid({
     <div className="m3-card">
       <div className="flex items-center justify-between px-6 py-4 border-b border-ink-line">
         <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          week plan Â· {template.phaseName}
+          week plan · {template.phaseName}
         </span>
         <span className="font-mono text-xs text-bone-mute">
           {template.totalKmTarget} km target
@@ -502,7 +502,7 @@ function WeekPlanGrid({
             : 'upcoming';
           const isToday = dow === currentDow;
           const dateNum = weekDayDate(startIso, dow);
-          // Compliance flags for this day â€” only meaningful for past days with sessions
+          // Compliance flags for this day — only meaningful for past days with sessions
           const complianceDay = compliance.days.find((cd) => cd.dow === dow);
           const sessionFlags = complianceDay?.sessions
             .map((sc) => COMPLIANCE_FLAG[sc.flag])
@@ -532,7 +532,7 @@ function WeekPlanGrid({
                           </span>
                           <span className="font-mono text-xs text-bone-dim truncate max-w-[180px]">
                             {s.label}
-                            {s.distanceKmMin != null && s.distanceKmMax != null && ` Â· ${s.distanceKmMin.toFixed(0)}â€“${s.distanceKmMax.toFixed(0)}km`}
+                            {s.distanceKmMin != null && s.distanceKmMax != null && ` · ${s.distanceKmMin.toFixed(0)}–${s.distanceKmMax.toFixed(0)}km`}
                           </span>
                         </span>
                       );
@@ -558,7 +558,7 @@ function WeekPlanGrid({
                   </span>
                 )}
 
-                {/* Compliance flags â€” only shown for past done days with non-ok evaluations */}
+                {/* Compliance flags — only shown for past done days with non-ok evaluations */}
                 {status === 'done' && sessionFlags.length > 0 && (
                   <div className="flex gap-1.5 mt-0.5">
                     {sessionFlags.map((f, fi) => (
@@ -629,7 +629,7 @@ function TonightMission({
           Configure a training plan in Dojo to see tonight's session prescription here.
         </p>
         <Link to="/dojo" className="inline-block font-mono text-xs text-bone-dim hover:text-accent transition-colors">
-          Open Dojo â†’
+          Open Dojo →
         </Link>
       </div>
     );
@@ -646,12 +646,12 @@ function TonightMission({
 
       {isDone ? (
         <>
-          <div className="font-display tracking-widest text-2xl uppercase text-signal-ok">Done âœ“</div>
+          <div className="font-display tracking-widest text-2xl uppercase text-signal-ok">Done ✓</div>
           <div className="space-y-1">
             {doneRuns.map((a, i) => {
               const km = a.distanceM / 1000;
               const pace = a.movingTimeS > 0 && km > 0 ? a.movingTimeS / km : null;
-              const line = `${a.name} Â· ${km.toFixed(1)} km${pace ? ` Â· ${formatSpk(pace)}/km` : ''}`;
+              const line = `${a.name} · ${km.toFixed(1)} km${pace ? ` · ${formatSpk(pace)}/km` : ''}`;
               return a.stravaId ? (
                 <a
                   key={i}
@@ -660,7 +660,7 @@ function TonightMission({
                   rel="noopener noreferrer"
                   className="block font-mono text-xs text-bone-dim hover:text-accent transition-colors"
                 >
-                  {line} â†—
+                  {line} ↗
                 </a>
               ) : (
                 <p key={i} className="font-mono text-xs text-bone-dim">{line}</p>
@@ -682,15 +682,15 @@ function TonightMission({
             {dayPlan!.sessions.map((s, si) => {
               const badge = SESSION_TYPE_BADGE[s.type ?? 'rest'] ?? SESSION_TYPE_BADGE.rest;
               const distInfo = s.distanceKmMin != null && s.distanceKmMax != null
-                ? `${s.distanceKmMin.toFixed(0)}â€“${s.distanceKmMax.toFixed(0)} km`
+                ? `${s.distanceKmMin.toFixed(0)}–${s.distanceKmMax.toFixed(0)} km`
                 : s.distanceKmMin != null ? `${s.distanceKmMin.toFixed(0)}+ km`
-                : s.durationMinMin != null ? `${s.durationMinMin}â€“${s.durationMinMax ?? s.durationMinMin} min`
+                : s.durationMinMin != null ? `${s.durationMinMin}–${s.durationMinMax ?? s.durationMinMin} min`
                 : null;
               return (
                 <div key={si} className="flex items-center gap-2">
                   <span className={`font-display text-xs uppercase ${badge.color}`}>{badge.label}</span>
                   <span className="font-mono text-xs text-bone-dim">{s.type}</span>
-                  {distInfo && <span className="font-mono text-xs text-bone-mute">Â· {distInfo}</span>}
+                  {distInfo && <span className="font-mono text-xs text-bone-mute">· {distInfo}</span>}
                 </div>
               );
             })}
@@ -701,13 +701,13 @@ function TonightMission({
             )}
           </div>
 
-          {/* strava://record opens the app's record screen â€” the scheme only
+          {/* strava://record opens the app's record screen — the scheme only
               resolves on phones with Strava installed, so mobile-only. */}
           <a
             href="strava://record"
             className="sm:hidden inline-flex items-center gap-2 mt-1 px-4 py-2.5 m3-btn-outline text-accent font-mono text-xs uppercase tracking-widest active:bg-accent active:text-ink transition-colors"
           >
-            â–¶ Record on Strava
+            ▶ Record on Strava
           </a>
         </>
       )}
@@ -740,7 +740,7 @@ function ActivityRow({ activity: a }: { activity: GhostActivity }) {
   const dow = DOW_LABELS[activityDow(a.startDate)] ?? '?';
 
   const stravaLink = a.stravaId ? (
-    <a href={`https://www.strava.com/activities/${a.stravaId}`} target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] text-bone-mute hover:text-accent transition-colors" title="View on Strava">â†—</a>
+    <a href={`https://www.strava.com/activities/${a.stravaId}`} target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] text-bone-mute hover:text-accent transition-colors" title="View on Strava">↗</a>
   ) : <span />;
 
   return (
@@ -754,13 +754,13 @@ function ActivityRow({ activity: a }: { activity: GhostActivity }) {
           <div className="font-mono text-xs text-bone-mute mt-0.5">{a.type}</div>
         </div>
         <span className="hidden sm:block font-mono tabular-nums text-bone text-sm">{distKm.toFixed(1)} km</span>
-        <span className="hidden sm:block font-mono tabular-nums text-bone-dim text-sm">{pace ? `${formatSpk(pace)}/km` : 'â€”'}</span>
-        <span className="hidden sm:block font-mono tabular-nums text-bone-mute text-xs">{a.avgHr ? `${Math.round(a.avgHr)} bpm` : 'â€”'}</span>
+        <span className="hidden sm:block font-mono tabular-nums text-bone-dim text-sm">{pace ? `${formatSpk(pace)}/km` : '—'}</span>
+        <span className="hidden sm:block font-mono tabular-nums text-bone-mute text-xs">{a.avgHr ? `${Math.round(a.avgHr)} bpm` : '—'}</span>
         {stravaLink}
       </div>
       {/* Mobile stats line, aligned under the name column */}
       <div className="sm:hidden pl-[52px] mt-1 font-mono tabular-nums text-xs text-bone-dim">
-        {distKm.toFixed(1)} km{pace ? ` Â· ${formatSpk(pace)}/km` : ''}{a.avgHr ? ` Â· ${Math.round(a.avgHr)} bpm` : ''}
+        {distKm.toFixed(1)} km{pace ? ` · ${formatSpk(pace)}/km` : ''}{a.avgHr ? ` · ${Math.round(a.avgHr)} bpm` : ''}
       </div>
     </div>
   );
@@ -776,9 +776,9 @@ function RaceCountdown({ race }: { race: { date: string; name: string; distanceK
   return (
     <div className="flex items-center gap-3">
       <span className="font-display tracking-widest text-xl uppercase text-accent">{days}d</span>
-      <span className="font-mono text-xs text-bone-mute">until {race.name} Â· {distLabel}</span>
+      <span className="font-mono text-xs text-bone-mute">until {race.name} · {distLabel}</span>
       <Link to="/race" className="font-mono text-xs text-bone-mute hover:text-accent transition-colors m3-card hover:border-accent px-2 py-0.5">
-        Race plan â†’
+        Race plan →
       </Link>
     </div>
   );

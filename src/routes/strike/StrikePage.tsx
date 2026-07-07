@@ -1,5 +1,5 @@
 /**
- * Strike â€” Athlete State screen.
+ * Strike — Athlete State screen.
  * Shows CTL/ATL/TSB (Card 1), Intensity History (Card 2),
  * Mileage Trajectory (Card 3), Long Run this week (Card 4), Biometrics (Card 5).
  */
@@ -38,7 +38,7 @@ import {
 } from 'recharts';
 
 // ---------------------------------------------------------------------------
-// UTC date helpers â€” always build keys with UTC so they match computeEwma's
+// UTC date helpers — always build keys with UTC so they match computeEwma's
 // internal walk (which also anchors to UTC).
 // ---------------------------------------------------------------------------
 
@@ -60,7 +60,7 @@ function todayUtcIso(): string {
 }
 
 /**
- * ISO week key â€” Mon is day 1. Returns 'YYYY-Www'.
+ * ISO week key — Mon is day 1. Returns 'YYYY-Www'.
  * Uses UTC date components so keys don't shift by timezone.
  */
 function isoWeekKey(dateIso: string): string {
@@ -385,7 +385,7 @@ async function fetchLongRun(
 
   if (longRunKm < 10) return null;
 
-  // Two weeks ago's runs â€” use same week window offset by 14 days
+  // Two weeks ago's runs — use same week window offset by 14 days
   const twoWeeksAgoSundayIso = (() => {
     const d = new Date(twoWeeksAgoIso + 'T00:00:00Z');
     d.setUTCDate(d.getUTCDate() + 6);
@@ -414,7 +414,7 @@ async function fetchLongRun(
 }
 
 // ---------------------------------------------------------------------------
-// Rolling 28-day volume â€” actual vs planned.
+// Rolling 28-day volume — actual vs planned.
 //
 // Each display day carries the trailing 28-day sum. Display window = 56 days,
 // so the query reaches back 56 + 27 lead-in days. Planned daily km is the
@@ -526,7 +526,7 @@ async function fetchBiometrics(fromIso: string, toIso: string): Promise<Resolved
     ).catch(() => [] as unknown[][]),
   ]);
 
-  // Build a map of date â†’ rows (for resolveDayRows)
+  // Build a map of date → rows (for resolveDayRows)
   const byDate = new Map<string, { source: string; rhrBpm?: number | null; hrvMs?: number | null; sleepDurationS?: number | null; sleepScore?: number | null; stressScore?: number | null; bodyBattery?: number | null; vo2maxDevice?: number | null; weightKg?: number | null }[]>();
 
   for (const r of healthRows) {
@@ -676,7 +676,7 @@ export default function StrikePage() {
           Strike
         </h1>
         <p className="font-mono text-xs text-bone-dim">
-          Athlete State â€” 8-week window
+          Athlete State — 8-week window
         </p>
       </header>
 
@@ -693,15 +693,15 @@ export default function StrikePage() {
             <MileageTrajectoryCard weeks={mileageWeeks} />
           </div>
 
-          {/* Card 3b: Rolling 28-day volume â€” actual vs planned */}
+          {/* Card 3b: Rolling 28-day volume — actual vs planned */}
           {rolling.some((d) => d.actual > 0) && (
             <RollingVolumeCard days={rolling} hasPlan={hasPlan} />
           )}
 
-          {/* Card 4: Long Run â€” only if > 10km exists this week */}
+          {/* Card 4: Long Run — only if > 10km exists this week */}
           {longRun && <LongRunCard data={longRun} />}
 
-          {/* Card 5: Biometrics â€” only if any data logged */}
+          {/* Card 5: Biometrics — only if any data logged */}
           {biometrics.length > 0 && <BiometricsCard days={biometrics} />}
         </>
       )}
@@ -709,7 +709,7 @@ export default function StrikePage() {
       {/* Static footer */}
       <footer className="border-t border-ink-line pt-4">
         <Link to="/vo2max" className="font-mono text-xs text-bone-mute hover:text-accent transition-colors">
-          VO2max analysis â†’
+          VO2max analysis →
         </Link>
       </footer>
     </div>
@@ -727,10 +727,10 @@ function trendArrow(
   if (trend.latest == null || trend.priorMean == null) return null;
   const improved = lowerIsBetter ? trend.latest < trend.priorMean : trend.latest > trend.priorMean;
   const flat = Math.abs(trend.latest - trend.priorMean) / (Math.abs(trend.priorMean) || 1) < 0.02;
-  if (flat) return { symbol: 'â†’', color: 'text-bone-mute' };
+  if (flat) return { symbol: '→', color: 'text-bone-mute' };
   return improved
-    ? { symbol: 'â†‘', color: 'text-signal-ok' }
-    : { symbol: 'â†“', color: 'text-signal-miss' };
+    ? { symbol: '↑', color: 'text-signal-ok' }
+    : { symbol: '↓', color: 'text-signal-miss' };
 }
 
 const HRV_SPARK_H = 28;
@@ -800,7 +800,7 @@ function BiometricsCard({ days }: { days: ResolvedDayMetrics[] }) {
     <section className="m3-card" aria-label="Biometrics">
       <div className="px-6 py-4 border-b border-ink-line flex items-center justify-between">
         <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          biometrics Â· 28-day window
+          biometrics · 28-day window
         </span>
         <span className="font-mono text-xs text-bone-dim">manual + garmin</span>
       </div>
@@ -831,7 +831,7 @@ function BiometricsCard({ days }: { days: ResolvedDayMetrics[] }) {
                   )}
                 </>
               ) : (
-                <p className="font-mono text-sm text-bone-mute">â€”</p>
+                <p className="font-mono text-sm text-bone-mute">—</p>
               )}
             </div>
           );
@@ -856,7 +856,7 @@ function EmptyState() {
   return (
     <div className="m3-card p-8 space-y-3">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-        strike Â· insufficient data
+        strike · insufficient data
       </p>
       <h2 className="font-display tracking-widest text-3xl uppercase text-bone">
         Not enough history
@@ -869,7 +869,7 @@ function EmptyState() {
         to="/setup"
         className="inline-flex items-center gap-2 mt-2 font-mono text-xs uppercase tracking-widest text-accent hover:text-accent-hover transition-colors"
       >
-        Go to setup â†’
+        Go to setup →
       </Link>
     </div>
   );
@@ -888,7 +888,7 @@ function AthleteStateCard({ state }: { state: AthleteStateData }) {
       {/* Card header */}
       <div className="px-6 py-4 border-b border-ink-line flex items-center justify-between">
         <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          athlete state Â· CTL / ATL / TSB
+          athlete state · CTL / ATL / TSB
         </span>
         <span className={`font-mono text-xs uppercase tracking-widest ${FORM_COLOR[formClass]}`}>
           {FORM_LABEL[formClass]}
@@ -903,7 +903,7 @@ function AthleteStateCard({ state }: { state: AthleteStateData }) {
           <p className="font-display tracking-widest text-4xl leading-none text-bone">
             {ctl.toFixed(1)}
           </p>
-          <p className="font-mono text-xs text-bone-mute">chronic Â· fitness</p>
+          <p className="font-mono text-xs text-bone-mute">chronic · fitness</p>
         </div>
 
         {/* ATL */}
@@ -912,7 +912,7 @@ function AthleteStateCard({ state }: { state: AthleteStateData }) {
           <p className="font-display tracking-widest text-4xl leading-none text-bone">
             {atl.toFixed(1)}
           </p>
-          <p className="font-mono text-xs text-bone-mute">acute Â· fatigue</p>
+          <p className="font-mono text-xs text-bone-mute">acute · fatigue</p>
         </div>
 
         {/* TSB */}
@@ -933,7 +933,7 @@ function AthleteStateCard({ state }: { state: AthleteStateData }) {
           {activityCount} {activityCount === 1 ? 'activity' : 'activities'} in window
         </span>
         <span className="font-mono text-xs text-bone-mute">
-          {hrCount} with HR Â· {paceOnlyCount} pace-only
+          {hrCount} with HR · {paceOnlyCount} pace-only
         </span>
         <span className="font-mono text-xs text-bone-dim uppercase tracking-widest">
           {confidence}
@@ -958,7 +958,7 @@ function IntensityHistoryCard({ weeks }: { weeks: WeekIntensity[] }) {
       {/* Header */}
       <div className="px-6 py-4 border-b border-ink-line flex items-center justify-between flex-wrap gap-3">
         <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          intensity Â· 8 weeks
+          intensity · 8 weeks
         </span>
         <div className="flex items-center gap-4">
           <LegendSwatch color="bg-signal-ok" label="Easy" />
@@ -1063,7 +1063,7 @@ function MileageTrajectoryCard({ weeks }: { weeks: WeekMileage[] }) {
       {/* Header */}
       <div className="px-6 py-4 border-b border-ink-line flex items-center justify-between flex-wrap gap-2">
         <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          mileage Â· 8 weeks
+          mileage · 8 weeks
         </span>
         {peakKm > 0 && (
           <span className="font-mono text-xs text-bone-dim">
@@ -1140,7 +1140,7 @@ function MileageBar({
 }
 
 // ---------------------------------------------------------------------------
-// Card 3b: Rolling 28-day volume â€” actual vs planned (Recharts)
+// Card 3b: Rolling 28-day volume — actual vs planned (Recharts)
 // ---------------------------------------------------------------------------
 
 function RollingTooltip({
@@ -1175,7 +1175,7 @@ function RollingVolumeCard({ days, hasPlan }: { days: RollingDay[]; hasPlan: boo
     <section className="m3-card" aria-label="Rolling 28-day volume">
       <div className="px-6 py-4 border-b border-ink-line flex items-center justify-between flex-wrap gap-3">
         <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          rolling volume Â· 28-day window
+          rolling volume · 28-day window
         </span>
         <div className="flex items-center gap-4">
           <LegendSwatch color="bg-accent" label="Actual" />
@@ -1239,7 +1239,7 @@ function RollingVolumeCard({ days, hasPlan }: { days: RollingDay[]; hasPlan: boo
       {!hasPlan && (
         <div className="px-6 pb-4">
           <p className="font-mono text-xs text-bone-mute">
-            No active plan â€” pick a dojo in{' '}
+            No active plan — pick a dojo in{' '}
             <Link to="/dojo" className="text-accent hover:underline">Dojo</Link>{' '}
             to see planned volume alongside actual.
           </p>
@@ -1262,7 +1262,7 @@ function LongRunCard({ data }: { data: LongRunData }) {
     <section className="m3-card" aria-label="Long Run">
       <div className="px-6 py-4 border-b border-ink-line">
         <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          long run Â· this week
+          long run · this week
         </span>
       </div>
 
@@ -1307,7 +1307,7 @@ function LongRunCard({ data }: { data: LongRunData }) {
               </p>
             </>
           ) : (
-            <p className="font-display tracking-widest text-4xl leading-none text-bone-mute">â€”</p>
+            <p className="font-display tracking-widest text-4xl leading-none text-bone-mute">—</p>
           )}
         </div>
       </div>
@@ -1316,7 +1316,7 @@ function LongRunCard({ data }: { data: LongRunData }) {
 }
 
 // ---------------------------------------------------------------------------
-// Pad week arrays to a fixed length (oldest â†’ newest)
+// Pad week arrays to a fixed length (oldest → newest)
 // ---------------------------------------------------------------------------
 
 function padWeeks(weeks: WeekIntensity[], count: number): (WeekIntensity | null)[] {

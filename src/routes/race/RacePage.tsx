@@ -221,7 +221,7 @@ export default function RacePage() {
     <div className="px-4 sm:px-8 lg:px-12 py-8 max-w-7xl mx-auto space-y-6">
       {/* Page header */}
       <header className="border-b border-ink-line pb-6 space-y-1">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">ghost Â· race</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">ghost · race</p>
         <h1 className="font-display text-4xl tracking-widest uppercase text-bone">Race</h1>
       </header>
 
@@ -258,14 +258,14 @@ function NoGoalRace() {
         to="/calendar"
         className="inline-block font-mono text-xs uppercase tracking-widest text-accent hover:text-accent-hover transition-colors"
       >
-        Go to Calendar â†’
+        Go to Calendar →
       </Link>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Dashboard â€” assembled from cards
+// Dashboard — assembled from cards
 // ---------------------------------------------------------------------------
 
 interface DashboardProps {
@@ -385,7 +385,7 @@ function RaceHeaderCard({ race, daysToRace }: { race: GoalRace; daysToRace: numb
           day: 'numeric',
           timeZone: 'UTC',
         })}
-        {race.level && ` Â· ${race.level}`}
+        {race.level && ` · ${race.level}`}
       </p>
     </div>
   );
@@ -434,9 +434,9 @@ function WeatherCard({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-px bg-ink-line m3-card">
-        <WeatherStat label="max temp" value={`${weather.tempMaxC}Â°C`} />
-        <WeatherStat label="min temp" value={`${weather.tempMinC}Â°C`} />
-        <WeatherStat label="feels like" value={`${weather.apparentTempMaxC}Â°C`} />
+        <WeatherStat label="max temp" value={`${weather.tempMaxC}°C`} />
+        <WeatherStat label="min temp" value={`${weather.tempMinC}°C`} />
+        <WeatherStat label="feels like" value={`${weather.apparentTempMaxC}°C`} />
         <WeatherStat label="humidity" value={`${weather.humidityPct}%`} />
         <WeatherStat label="wind" value={`${Math.round(weather.windMaxKmh)} km/h`} />
       </div>
@@ -527,7 +527,7 @@ function PacePlanCard({
           {formatSpk(plan.goalPaceSpk)}
         </span>
         <span className="font-mono text-xs text-bone-mute">/km goal pace</span>
-        <span className="font-mono text-xs text-bone-mute">Â·</span>
+        <span className="font-mono text-xs text-bone-mute">·</span>
         <span className="font-mono text-sm text-bone">{formatDuration(plan.totalTimeS)}</span>
       </div>
 
@@ -546,7 +546,7 @@ function PacePlanCard({
             {plan.segments.map((seg, i) => (
               <tr key={i} className="hover:bg-ink-shadow transition-colors">
                 <td className="font-mono tabular-nums text-xs text-bone py-2 pr-4 whitespace-nowrap">
-                  {seg.fromKm}â€“{seg.toKm} km
+                  {seg.fromKm}–{seg.toKm} km
                 </td>
                 <td className="font-mono tabular-nums text-xs text-bone py-2 pr-4 whitespace-nowrap">
                   {formatSpk(seg.paceSpk)}/km
@@ -582,7 +582,7 @@ function FuelingCard({ targetTimeS }: { targetTimeS: number }) {
         <FuelStat label="fluid/hr" value={`${plan.fluidMlPerHr}ml`} />
         <FuelStat label="sodium/hr" value={`${plan.sodiumMgPerHr}mg`} />
         <FuelStat label="total carbs" value={`${plan.totalCarbsG}g`} />
-        <FuelStat label="gel count" value={`${plan.gelCount}`} unit="Ã— 25g gels" />
+        <FuelStat label="gel count" value={`${plan.gelCount}`} unit="× 25g gels" />
         <FuelStat label="gel interval" value={`${plan.gelIntervalMin}min`} unit="between gels" />
       </div>
     </div>
@@ -615,7 +615,7 @@ function CarbLoadCard({ weightKg }: { weightKg: number | null }) {
           to="/profile"
           className="inline-block font-mono text-xs text-bone-dim hover:text-accent transition-colors"
         >
-          Open Profile â†’
+          Open Profile →
         </Link>
       </div>
     );
@@ -713,7 +713,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
 
     const rpeNum = rpe ? parseInt(rpe, 10) : null;
     if (rpe && (isNaN(rpeNum!) || rpeNum! < 1 || rpeNum! > 10)) {
-      setSaveError('RPE must be 1â€“10');
+      setSaveError('RPE must be 1–10');
       return;
     }
 
@@ -777,7 +777,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
               <p className={`font-mono text-xs uppercase tracking-widest ${
                 phase.active ? 'text-accent' : 'text-bone-mute'
               }`}>
-                phase {phase.index}/{phase.totalPhases} Â· {phase.label}
+                phase {phase.index}/{phase.totalPhases} · {phase.label}
               </p>
               <p className="font-mono text-xs text-bone-mute">{phase.dayRange}</p>
             </div>
@@ -813,7 +813,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
 
             <div className="space-y-1">
               <label className="font-mono text-xs text-bone-mute uppercase tracking-widest block" htmlFor="rpe">
-                RPE (1â€“10)
+                RPE (1–10)
               </label>
               <input
                 id="rpe"
@@ -868,7 +868,7 @@ function PostRaceCard({ race, daysSinceRace, raceResult, onResultSaved }: PostRa
             disabled={saving}
             className="font-mono text-xs uppercase tracking-widest rounded-full px-6 py-2 m3-btn-outline text-accent hover:bg-accent hover:text-bone transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? 'Savingâ€¦' : raceResult ? 'Update debrief' : 'Save debrief'}
+            {saving ? 'Saving…' : raceResult ? 'Update debrief' : 'Save debrief'}
           </button>
         </form>
       </div>

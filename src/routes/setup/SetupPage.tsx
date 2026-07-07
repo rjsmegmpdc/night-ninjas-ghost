@@ -110,7 +110,7 @@ export default function SetupPage() {
   }, []);
 
   // Returned from Cloudflare Access with a sync token? Ask for the
-  // encryption passphrase before doing anything â€” the passphrase is never
+  // encryption passphrase before doing anything — the passphrase is never
   // persisted, so it must be collected after the redirect round-trip.
   useEffect(() => {
     if (!ready) return;
@@ -123,25 +123,25 @@ export default function SetupPage() {
   async function executeSync(intent: SyncIntent, passphrase: string) {
     try {
       if (intent === 'backup') {
-        setSyncStatus({ type: 'busy', msg: 'Encrypting and backing upâ€¦' });
+        setSyncStatus({ type: 'busy', msg: 'Encrypting and backing up…' });
         await uploadProfile(passphrase);
         setPendingSync(null);
-        setSyncStatus({ type: 'ok', msg: 'Profile backed up â€” encrypted with your passphrase. Restore on any device with the same email + passphrase.' });
+        setSyncStatus({ type: 'ok', msg: 'Profile backed up — encrypted with your passphrase. Restore on any device with the same email + passphrase.' });
       } else {
-        setSyncStatus({ type: 'busy', msg: 'Downloading and decryptingâ€¦' });
+        setSyncStatus({ type: 'busy', msg: 'Downloading and decrypting…' });
         const blob = await downloadAndDecryptProfile(passphrase);
         const { restoredCreds } = await applyProfileBlob(blob);
         setPendingSync(null);
         setSyncStatus({
           type: 'ok',
           msg: restoredCreds
-            ? 'Profile restored â€” API credentials and preferences are in. Connect with Strava below.'
-            : 'Preferences restored. This backup held no API credentials â€” run the wizard below.',
+            ? 'Profile restored — API credentials and preferences are in. Connect with Strava below.'
+            : 'Preferences restored. This backup held no API credentials — run the wizard below.',
         });
         await loadState();
       }
     } catch (e) {
-      // Wrong passphrase keeps the prompt open for a retry â€” the Access
+      // Wrong passphrase keeps the prompt open for a retry — the Access
       // token is still valid, no need to redo the email code.
       setSyncStatus({ type: 'err', msg: e instanceof Error ? e.message : String(e) });
     }
@@ -169,7 +169,7 @@ export default function SetupPage() {
       sessionStorage.removeItem('strava_oauth_state');
 
       if (!returnedState || !storedState || returnedState !== storedState) {
-        setState({ status: 'error', message: 'OAuth state mismatch â€” possible CSRF. Please try connecting again.' });
+        setState({ status: 'error', message: 'OAuth state mismatch — possible CSRF. Please try connecting again.' });
         return;
       }
 
@@ -177,7 +177,7 @@ export default function SetupPage() {
       const scopeParam = searchParams.get('scope') ?? '';
       const grantedScope = parseGrantedScope(scopeParam);
       if (grantedScope === 'none') {
-        setState({ status: 'error', message: 'No activity permission granted â€” reconnect and approve access.' });
+        setState({ status: 'error', message: 'No activity permission granted — reconnect and approve access.' });
         return;
       }
 
@@ -213,7 +213,7 @@ export default function SetupPage() {
 
         if (currentAthleteId !== null && currentAthleteId !== newAthleteId) {
           const currentName = (await getSetting('strava_athlete_name')) ?? 'previous athlete';
-          // Store new tokens but don't wipe existing data â€” let the user decide
+          // Store new tokens but don't wipe existing data — let the user decide
           const newTokens: StoredTokens = {
             accessToken:  resp.access_token,
             refreshToken: resp.refresh_token,
@@ -236,7 +236,7 @@ export default function SetupPage() {
             const saved = parseSettingsSnapshot(profile.settingsJson);
             for (const [k, v] of Object.entries(saved)) await setSetting(k, v);
           }
-          welcomeBack = `Welcome back, ${newAthleteName} â€” restored your previous settings.`;
+          welcomeBack = `Welcome back, ${newAthleteName} — restored your previous settings.`;
         }
 
         await storeTokens({
@@ -328,7 +328,7 @@ export default function SetupPage() {
       settingsJson: snapshot,
     });
 
-    // Revoke on Strava (best-effort â€” local wipe proceeds regardless)
+    // Revoke on Strava (best-effort — local wipe proceeds regardless)
     void revokeToken(tokens.accessToken, WORKER_URL);
 
     await clearTokens();
@@ -367,7 +367,7 @@ export default function SetupPage() {
         onChangeCredentials={() => setState({ status: 'needs-credentials' })}
       />
 
-      {/* Profile sync â€” optional cross-device backup/restore */}
+      {/* Profile sync — optional cross-device backup/restore */}
       <ProfileSyncSection
         status={syncStatus}
         pendingSync={pendingSync}
@@ -375,7 +375,7 @@ export default function SetupPage() {
         onCancelPending={() => { setPendingSync(null); setSyncStatus(null); }}
       />
 
-      {/* Powered by Strava â€” required by brand guidelines */}
+      {/* Powered by Strava — required by brand guidelines */}
       <footer className="flex items-center gap-2 pt-2 border-t border-ink-line">
         <span className="font-mono text-xs text-bone-mute">Powered by</span>
         <a
@@ -422,7 +422,7 @@ function StravaSection({
       {state.status === 'loading' && (
         <div className="flex items-center gap-2 font-mono text-xs text-bone-mute">
           <Loader size={12} className="animate-spin" />
-          Checking connectionâ€¦
+          Checking connection…
         </div>
       )}
 
@@ -437,7 +437,7 @@ function StravaSection({
       {state.status === 'exchanging' && (
         <div className="flex items-center gap-2 font-mono text-xs text-bone-mute">
           <Loader size={12} className="animate-spin" />
-          Exchanging token with Stravaâ€¦
+          Exchanging token with Strava…
         </div>
       )}
 
@@ -471,7 +471,7 @@ function StravaSection({
 }
 
 // ---------------------------------------------------------------------------
-// Profile sync â€” optional backup/restore of setup across devices.
+// Profile sync — optional backup/restore of setup across devices.
 // Identity is Cloudflare Access (email + one-time PIN) on the worker's
 // /sync path; the app itself stays account-free.
 // ---------------------------------------------------------------------------
@@ -506,10 +506,10 @@ function ProfileSyncSection({
 
       <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-xl">
         Move your setup between devices without redoing it. Backs up your API
-        credentials, theme, font size, home page, and gear sizes â€” never your
+        credentials, theme, font size, home page, and gear sizes — never your
         activities (those re-sync from Strava). You'll verify an email with a
         6-digit code, then choose a passphrase. Everything is{' '}
-        <strong className="text-bone">encrypted on your device before upload</strong> â€”
+        <strong className="text-bone">encrypted on your device before upload</strong> —
         nobody, including whoever runs this site, can read your backup.
       </p>
 
@@ -534,7 +534,7 @@ function ProfileSyncSection({
         </div>
       )}
 
-      {/* Passphrase prompt â€” appears after the email code round-trip */}
+      {/* Passphrase prompt — appears after the email code round-trip */}
       {pendingSync && (
         <div className="border border-accent/40 bg-ink-shadow p-4 space-y-3 max-w-md">
           <p className="font-mono text-xs text-accent uppercase tracking-widest">
@@ -542,7 +542,7 @@ function ProfileSyncSection({
           </p>
           <p className="font-mono text-xs text-bone-dim leading-relaxed">
             {pendingSync === 'backup'
-              ? 'At least 8 characters. Youâ€™ll need it to restore on another device. There is no reset â€” if you lose it, just back up again from a device thatâ€™s already set up.'
+              ? 'At least 8 characters. You’ll need it to restore on another device. There is no reset — if you lose it, just back up again from a device that’s already set up.'
               : 'The passphrase you chose when you backed up.'}
           </p>
           <div className="relative">
@@ -573,7 +573,7 @@ function ProfileSyncSection({
               disabled={!passphraseOk || busy}
               className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-btn-outline text-accent hover:bg-accent hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              {busy ? 'Workingâ€¦' : pendingSync === 'backup' ? 'Encrypt & back up' : 'Decrypt & restore'}
+              {busy ? 'Working…' : pendingSync === 'backup' ? 'Encrypt & back up' : 'Decrypt & restore'}
             </button>
             <button
               type="button"
@@ -601,7 +601,7 @@ function ProfileSyncSection({
 
       <p className="font-mono text-[10px] text-bone-mute leading-relaxed max-w-xl">
         Requires profile sync to be enabled on this deployment (Cloudflare
-        Access + KV â€” see docs/ACCESS-SETUP.md). If it isn't, the buttons
+        Access + KV — see docs/ACCESS-SETUP.md). If it isn't, the buttons
         will return an error and nothing is stored.
       </p>
     </section>
@@ -609,7 +609,7 @@ function ProfileSyncSection({
 }
 
 // ---------------------------------------------------------------------------
-// Credentials wizard â€” guided, per-user Strava API app setup.
+// Credentials wizard — guided, per-user Strava API app setup.
 // Strava has no password login for apps: every user creates their own free
 // API app once, and GHOST stores its ID + secret locally on this device.
 // ---------------------------------------------------------------------------
@@ -629,7 +629,7 @@ function CopyValue({ value }: { value: string }) {
         }}
         className="font-mono text-[10px] uppercase tracking-widest text-bone-mute hover:text-accent transition-colors shrink-0"
       >
-        {copied ? 'Copied âœ“' : 'Copy'}
+        {copied ? 'Copied ✓' : 'Copy'}
       </button>
     </span>
   );
@@ -661,19 +661,19 @@ function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
   return (
     <div className="space-y-6">
       <p className="font-mono text-xs text-bone-dim leading-relaxed">
-        GHOST talks to Strava through your own free API app â€” a one-time,
+        GHOST talks to Strava through your own free API app — a one-time,
         two-minute setup. Your details are stored only on this device.
       </p>
 
       <p className="font-mono text-xs text-bone-mute leading-relaxed m3-card px-3 py-2">
-        Already set up GHOST on another device? Skip this â€” use{' '}
+        Already set up GHOST on another device? Skip this — use{' '}
         <strong className="text-bone">Profile Sync</strong> at the bottom of
         this page to restore your credentials here.
       </p>
 
-      {/* Step 1 â€” create the app on Strava */}
+      {/* Step 1 — create the app on Strava */}
       <div className="space-y-3">
-        <p className="font-mono text-xs text-accent uppercase tracking-widest">Step 1 â€” create your API app</p>
+        <p className="font-mono text-xs text-accent uppercase tracking-widest">Step 1 — create your API app</p>
         <ol className="space-y-2.5 font-mono text-xs text-bone-dim leading-relaxed list-decimal list-inside">
           <li>
             Open{' '}
@@ -688,7 +688,7 @@ function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
             and log in if asked.
           </li>
           <li>
-            Fill in the form â€” any values work, but these are sensible:
+            Fill in the form — any values work, but these are sensible:
             <div className="mt-2 ml-1 grid grid-cols-1 gap-y-2 font-mono text-xs">
               <div><span className="text-bone-mute">Application Name:</span> <code className="text-bone">GHOST</code></div>
               <div><span className="text-bone-mute">Category:</span> <code className="text-bone">Data Importer</code></div>
@@ -699,14 +699,14 @@ function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
               </div>
             </div>
           </li>
-          <li>Upload any image as the app icon (Strava requires one â€” a photo of your shoes works).</li>
-          <li>After saving, Strava shows your <strong className="text-bone">Client ID</strong> and <strong className="text-bone">Client Secret</strong> â€” copy them into Step 2.</li>
+          <li>Upload any image as the app icon (Strava requires one — a photo of your shoes works).</li>
+          <li>After saving, Strava shows your <strong className="text-bone">Client ID</strong> and <strong className="text-bone">Client Secret</strong> — copy them into Step 2.</li>
         </ol>
       </div>
 
-      {/* Step 2 â€” paste the credentials */}
+      {/* Step 2 — paste the credentials */}
       <div className="space-y-3">
-        <p className="font-mono text-xs text-accent uppercase tracking-widest">Step 2 â€” paste them here</p>
+        <p className="font-mono text-xs text-accent uppercase tracking-widest">Step 2 — paste them here</p>
 
         <div className="space-y-1 max-w-sm">
           <label htmlFor="cred-client-id" className="font-mono text-[10px] uppercase tracking-widest text-bone-mute">Client ID</label>
@@ -749,7 +749,7 @@ function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
 
         <p className="font-mono text-[10px] text-bone-mute leading-relaxed max-w-sm">
           Both are saved to this device's private storage only. They identify your
-          API app, not your Strava account â€” you still approve access on strava.com next.
+          API app, not your Strava account — you still approve access on strava.com next.
         </p>
 
         {error && (
@@ -762,7 +762,7 @@ function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
           disabled={!idOk || !secretOk || saving}
           className="w-full sm:w-auto font-mono text-xs uppercase tracking-widest rounded-full px-5 py-2.5 m3-btn-outline text-accent hover:bg-accent hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          {saving ? 'Savingâ€¦' : 'Save & continue'}
+          {saving ? 'Saving…' : 'Save & continue'}
         </button>
       </div>
     </div>
@@ -770,7 +770,7 @@ function CredentialsWizard({ onSaved }: { onSaved: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// Privacy notice â€” shown once, before the first OAuth redirect.
+// Privacy notice — shown once, before the first OAuth redirect.
 // Plain language on what GHOST stores and where. Dismissal is remembered in
 // localStorage so returning users go straight to the connect button.
 // ---------------------------------------------------------------------------
@@ -801,7 +801,7 @@ function PrivacyNotice({ onAcknowledge }: { onAcknowledge: () => void }) {
         <p>
           <strong className="text-bone">Your Strava API app details:</strong>{' '}
           The Client ID and Secret you enter during setup are saved to this
-          device's private storage. They identify your API app to Strava â€”
+          device's private storage. They identify your API app to Strava —
           they are not your Strava password, and GHOST never sees or stores
           your password.
         </p>
@@ -817,7 +817,7 @@ function PrivacyNotice({ onAcknowledge }: { onAcknowledge: () => void }) {
           >
             strava.com/settings/apps
           </a>
-          {' '}â€” GHOST will need to reconnect if you do.
+          {' '}— GHOST will need to reconnect if you do.
         </p>
         <p className="text-bone">
           No accounts. No servers. No analytics. Your data stays yours.
@@ -829,14 +829,14 @@ function PrivacyNotice({ onAcknowledge }: { onAcknowledge: () => void }) {
         onClick={onAcknowledge}
         className="font-mono text-xs uppercase tracking-widest rounded-full px-5 py-3 m3-btn-outline text-accent hover:bg-accent hover:text-ink transition-colors"
       >
-        Got it â€” let's go
+        Got it — let's go
       </button>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Not connected â€” login-style first-run screen.
+// Not connected — login-style first-run screen.
 // Privacy notice gates the connect button on the very first visit; the
 // technical OAuth params live in a collapsed details block.
 // Official Strava brand: #FC4C02 orange, 48px height, white text.
@@ -870,10 +870,10 @@ function NotConnected({
     <div className="space-y-6">
       <p className="font-mono text-sm text-bone-dim leading-relaxed">
         Connect your Strava account and GHOST will pull in your activity history
-        automatically â€” your last 90 days sync the moment you're in.
+        automatically — your last 90 days sync the moment you're in.
       </p>
 
-      {/* Official Strava "Connect with Strava" button â€” Strava brand colour #FC4C02 */}
+      {/* Official Strava "Connect with Strava" button — Strava brand colour #FC4C02 */}
       <a
         href={authUrl}
         className={`inline-flex items-center gap-3 px-5 py-3 font-mono text-sm font-bold transition-opacity ${
@@ -914,7 +914,7 @@ function NotConnected({
             onClick={onChangeCredentials}
             className="font-mono text-xs text-bone-mute hover:text-accent transition-colors mt-2"
           >
-            Change API credentials â†’
+            Change API credentials →
           </button>
         </div>
       </details>
@@ -923,7 +923,7 @@ function NotConnected({
 }
 
 // ---------------------------------------------------------------------------
-// Athlete mismatch â€” different athlete detected
+// Athlete mismatch — different athlete detected
 // ---------------------------------------------------------------------------
 
 function AthleteMismatchView({
@@ -955,7 +955,7 @@ function AthleteMismatchView({
           onClick={onProceed}
           className="font-mono text-xs text-signal-warn border border-signal-warn/40 hover:border-signal-warn px-3 py-1.5 transition-colors"
         >
-          Continue anyway â€” mix data
+          Continue anyway — mix data
         </button>
         <button
           onClick={onCancel}
@@ -1029,7 +1029,7 @@ function ConnectedView({
         </div>
         <div className="bg-ink px-5 py-4">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-1">Athlete ID</p>
-          <p className="font-mono text-sm text-bone-dim">{tokens.athleteId || 'â€”'}</p>
+          <p className="font-mono text-sm text-bone-dim">{tokens.athleteId || '—'}</p>
         </div>
         <div className="bg-ink px-5 py-4">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-1">Scope</p>
@@ -1050,7 +1050,7 @@ function ConnectedView({
             href={clientId ? buildStravaAuthUrl(clientId) : '#'}
             className="font-mono text-xs text-accent hover:text-accent-hover transition-colors"
           >
-            Reconnect with full access â†’
+            Reconnect with full access →
           </a>
         </div>
       )}
@@ -1093,7 +1093,7 @@ function ConnectedView({
       </div>
 
       <p className="font-mono text-[10px] text-bone-mute">
-        Disconnecting revokes Strava access and clears tokens. Your activity data is kept locally â€”
+        Disconnecting revokes Strava access and clears tokens. Your activity data is kept locally —
         delete it separately in Settings if needed.
       </p>
     </div>
@@ -1101,15 +1101,15 @@ function ConnectedView({
 }
 
 // ---------------------------------------------------------------------------
-// Syncing â€” handles 'paused' phase calmly
+// Syncing — handles 'paused' phase calmly
 // ---------------------------------------------------------------------------
 
 function SyncingView({ progress }: { progress: SyncProgress }) {
   const phaseLabel: Record<SyncProgress['phase'], string> = {
-    token:    'Refreshing tokenâ€¦',
-    fetching: 'Fetching from Stravaâ€¦',
-    writing:  'Writing to databaseâ€¦',
-    paused:   'Rate limit reached â€” importing gradually. Be patient.',
+    token:    'Refreshing token…',
+    fetching: 'Fetching from Strava…',
+    writing:  'Writing to database…',
+    paused:   'Rate limit reached — importing gradually. Be patient.',
     done:     'Done',
     error:    'Error',
   };
@@ -1131,7 +1131,7 @@ function SyncingView({ progress }: { progress: SyncProgress }) {
       {isPaused && (
         <p className="font-mono text-xs text-bone-mute leading-relaxed">
           Strava's rate limit was reached. GHOST will automatically resume in ~15 minutes.
-          You can safely navigate away â€” the next time you visit Setup the sync will continue.
+          You can safely navigate away — the next time you visit Setup the sync will continue.
         </p>
       )}
       {(progress.fetched > 0 || progress.inserted > 0) && (
@@ -1160,7 +1160,7 @@ function ErrorView({ message, clientId, onDisconnect }: { message: string; clien
           href={clientId ? buildStravaAuthUrl(clientId) : '#'}
           className="font-mono text-xs text-accent hover:text-accent-hover transition-colors"
         >
-          Reconnect â†’
+          Reconnect →
         </a>
         <button
           onClick={onDisconnect}

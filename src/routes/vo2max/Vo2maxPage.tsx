@@ -247,7 +247,7 @@ function TrendCard({
     <section className="m3-card p-6 space-y-4" aria-labelledby="vo2-trend-heading">
       <div className="space-y-1 border-b border-ink-line pb-4">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          vo2 max Â· aerobic ceiling
+          vo2 max · aerobic ceiling
         </p>
         <h2 id="vo2-trend-heading" className="font-display tracking-widest text-2xl uppercase text-bone">
           Current Estimate
@@ -295,7 +295,7 @@ function TrendCard({
 
           {/* Disclaimer */}
           <p className="font-mono text-[10px] text-bone-mute border-t border-ink-line pt-3">
-            Observed only â€” does not affect training paces.
+            Observed only — does not affect training paces.
           </p>
         </div>
       )}
@@ -329,7 +329,7 @@ function InsightsCard({ series }: { series: Vo2Observation[] }) {
   return (
     <section className="m3-card p-6 space-y-4" aria-labelledby="vo2-insights-heading">
       <div className="space-y-1 border-b border-ink-line pb-4">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max Â· analysis</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max · analysis</p>
         <h2 id="vo2-insights-heading" className="font-display tracking-widest text-2xl uppercase text-bone">
           Insights
         </h2>
@@ -429,7 +429,7 @@ function CooperTab({
     }
   }
 
-  // suppress unused profile warning â€” profile available for future pre-fill
+  // suppress unused profile warning — profile available for future pre-fill
   void profile;
 
   const distM = parseFloat(form.distanceM);
@@ -474,7 +474,7 @@ function CooperTab({
 
       <div className="flex items-center gap-4">
         <ActionButton onClick={handleSubmit} disabled={saving || !canCompute || !form.date}>
-          {saving ? 'Savingâ€¦' : 'Save observation'}
+          {saving ? 'Saving…' : 'Save observation'}
         </ActionButton>
         {status === 'saved' && (
           <span className="font-mono text-xs text-signal-ok" role="status" aria-live="polite">Saved.</span>
@@ -624,7 +624,7 @@ function RockportTab({
             className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                        focus:outline-none focus:border-accent transition-colors"
           >
-            <option value="">Selectâ€¦</option>
+            <option value="">Select…</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>
@@ -675,7 +675,7 @@ function RockportTab({
 
       <div className="flex items-center gap-4">
         <ActionButton onClick={handleSubmit} disabled={saving || !valid}>
-          {saving ? 'Savingâ€¦' : 'Save observation'}
+          {saving ? 'Saving…' : 'Save observation'}
         </ActionButton>
         {status === 'saved' && (
           <span className="font-mono text-xs text-signal-ok" role="status" aria-live="polite">Saved.</span>
@@ -762,7 +762,7 @@ function LabTab({ onAdded }: { onAdded: () => void }) {
 
       <div className="flex items-center gap-4">
         <ActionButton onClick={handleSubmit} disabled={saving || !canSubmit}>
-          {saving ? 'Savingâ€¦' : 'Save observation'}
+          {saving ? 'Saving…' : 'Save observation'}
         </ActionButton>
         {status === 'saved' && (
           <span className="font-mono text-xs text-signal-ok" role="status" aria-live="polite">Saved.</span>
@@ -793,7 +793,7 @@ function AddObservationCard({
   return (
     <section className="m3-card p-6 space-y-4" aria-labelledby="vo2-add-heading">
       <div className="space-y-1 border-b border-ink-line pb-4">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max Â· log</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max · log</p>
         <h2 id="vo2-add-heading" className="font-display tracking-widest text-2xl uppercase text-bone">
           Add Observation
         </h2>
@@ -850,7 +850,7 @@ function HistoryCard({ rows, onDeleted }: { rows: ObsRow[]; onDeleted: () => voi
   return (
     <section className="m3-card p-6 space-y-4" aria-labelledby="vo2-history-heading">
       <div className="space-y-1 border-b border-ink-line pb-4">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max Â· history</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">vo2 max · history</p>
         <h2 id="vo2-history-heading" className="font-display tracking-widest text-2xl uppercase text-bone">
           All Observations
         </h2>
@@ -964,7 +964,7 @@ function ProfileQuickForm({ profile, onSaved }: { profile: Profile; onSaved: () 
                    text-bone-dim hover:text-bone transition-colors"
       >
         <span id="vo2-profile-heading">Edit profile</span>
-        <span aria-hidden="true">{open ? 'â–²' : 'â–¼'}</span>
+        <span aria-hidden="true">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
@@ -1004,7 +1004,7 @@ function ProfileQuickForm({ profile, onSaved }: { profile: Profile; onSaved: () 
                 className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                            focus:outline-none focus:border-accent transition-colors"
               >
-                <option value="">Selectâ€¦</option>
+                <option value="">Select…</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </select>
@@ -1121,7 +1121,7 @@ export default function Vo2maxPage() {
   useEffect(() => {
     if (!ready) return;
     loadData().catch(() => {
-      // silently ignore â€” error state shown via dbError from useDb()
+      // silently ignore — error state shown via dbError from useDb()
     });
   }, [ready, loadData]);
 
@@ -1144,7 +1144,7 @@ export default function Vo2maxPage() {
           VO2 Max
         </h1>
         <p className="font-mono text-xs text-bone-mute">
-          Aerobic ceiling â€” training reference
+          Aerobic ceiling — training reference
         </p>
       </header>
 

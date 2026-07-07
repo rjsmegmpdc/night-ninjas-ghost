@@ -28,7 +28,7 @@ interface ActivitySummary {
 }
 
 // ---------------------------------------------------------------------------
-// Date helpers â€” UTC to avoid timezone drift on ISO date strings
+// Date helpers — UTC to avoid timezone drift on ISO date strings
 // ---------------------------------------------------------------------------
 
 function todayIso(): string {
@@ -106,27 +106,27 @@ async function loadData(cutoff42: string): Promise<{
 // ---------------------------------------------------------------------------
 
 const SLEEP_OPTIONS = [
-  { v: 1, label: 'ðŸ˜´ 1' },
-  { v: 2, label: 'ðŸ˜ª 2' },
-  { v: 3, label: 'ðŸ˜ 3' },
-  { v: 4, label: 'ðŸ˜Š 4' },
-  { v: 5, label: 'ðŸ˜„ 5' },
+  { v: 1, label: '😴 1' },
+  { v: 2, label: '😪 2' },
+  { v: 3, label: '😐 3' },
+  { v: 4, label: '😊 4' },
+  { v: 5, label: '😄 5' },
 ];
 
 const ENERGY_OPTIONS = [
-  { v: 1, label: 'ðŸ˜© 1' },
-  { v: 2, label: 'ðŸ˜” 2' },
-  { v: 3, label: 'ðŸ˜ 3' },
-  { v: 4, label: 'ðŸ™‚ 4' },
-  { v: 5, label: 'ðŸ˜„ 5' },
+  { v: 1, label: '😩 1' },
+  { v: 2, label: '😔 2' },
+  { v: 3, label: '😐 3' },
+  { v: 4, label: '🙂 4' },
+  { v: 5, label: '😄 5' },
 ];
 
 const STRESS_OPTIONS = [
-  { v: 1, label: 'ðŸ˜Œ 1' },
-  { v: 2, label: 'ðŸ™‚ 2' },
-  { v: 3, label: 'ðŸ˜ 3' },
-  { v: 4, label: 'ðŸ˜Ÿ 4' },
-  { v: 5, label: 'ðŸ˜¤ 5' },
+  { v: 1, label: '😌 1' },
+  { v: 2, label: '🙂 2' },
+  { v: 3, label: '😐 3' },
+  { v: 4, label: '😟 4' },
+  { v: 5, label: '😤 5' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -208,7 +208,7 @@ function Sparkline({ title, dates, getValue, entries, yMin, yMax, color, invert 
   const latestEntry = entryByDate.get(dates[0]);
   const latestVal = latestEntry ? getValue(latestEntry) : null;
 
-  // Build polyline points string â€” skip gaps
+  // Build polyline points string — skip gaps
   const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
 
   return (
@@ -272,7 +272,7 @@ function WellnessSparklines({
     return (
       <section className="m3-card p-6 space-y-3">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          wellness Â· 14-day trends
+          wellness · 14-day trends
         </p>
         <p className="font-mono text-sm text-bone-dim">
           Log a few entries to see trends.
@@ -284,7 +284,7 @@ function WellnessSparklines({
   return (
     <section className="m3-card p-6 space-y-4">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-        wellness Â· 14-day trends
+        wellness · 14-day trends
       </p>
       <div className="grid grid-cols-2 gap-6">
         <Sparkline
@@ -425,7 +425,7 @@ function TodayLogForm({
   return (
     <section className="m3-card p-6 space-y-5">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-        today's check-in Â· {formatDateHeader(todayIso())}
+        today's check-in · {formatDateHeader(todayIso())}
       </p>
 
       <EmojiPicker
@@ -490,7 +490,7 @@ function TodayLogForm({
             inputMode="numeric"
             min={0}
             max={100}
-            placeholder="0â€“100"
+            placeholder="0–100"
             value={form.bodyBattery}
             onChange={(e) => setForm((f) => ({ ...f, bodyBattery: e.target.value }))}
             className="w-full bg-ink-shadow m3-card px-3 py-1.5 font-mono text-sm text-bone placeholder-bone-mute focus:outline-none focus:border-accent"
@@ -519,7 +519,7 @@ function TodayLogForm({
           disabled={saving}
           className="px-5 py-2 bg-accent hover:bg-accent-hover text-bone font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? 'Savingâ€¦' : 'Save'}
+          {saving ? 'Saving…' : 'Save'}
         </button>
         {savedMsg && (
           <span className="font-mono text-xs text-signal-ok" role="status" aria-live="polite">
@@ -623,7 +623,7 @@ function InlineEditForm({
           disabled={saving}
           className="px-4 py-1.5 bg-accent hover:bg-accent-hover text-bone font-mono text-xs uppercase tracking-widest transition-colors disabled:opacity-50"
         >
-          {saving ? 'Savingâ€¦' : 'Update'}
+          {saving ? 'Saving…' : 'Update'}
         </button>
         <button
           type="button"
@@ -661,7 +661,7 @@ function HistoryRow({
 
   const notesPreview =
     entry.notes && entry.notes.length > 80
-      ? entry.notes.slice(0, 80) + 'â€¦'
+      ? entry.notes.slice(0, 80) + '…'
       : entry.notes;
 
   return (
@@ -672,7 +672,7 @@ function HistoryRow({
         {actSummary && (
           <span className="px-2 py-0.5 font-mono text-xs rounded-sm"
             style={{ backgroundColor: 'rgba(255,95,0,0.2)', color: '#FF5F00' }}>
-            {actSummary.cnt} {actSummary.cnt === 1 ? 'run' : 'runs'} Â· {actSummary.km}km
+            {actSummary.cnt} {actSummary.cnt === 1 ? 'run' : 'runs'} · {actSummary.km}km
           </span>
         )}
       </div>
@@ -785,7 +785,7 @@ function HistoryList({
   return (
     <section className="m3-card p-6">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-4">
-        journal history Â· last 42 days
+        journal history · last 42 days
       </p>
       {entries.length === 0 ? (
         <p className="font-mono text-sm text-bone-dim">
@@ -846,7 +846,7 @@ function ActivityBars({
   return (
     <section className="m3-card p-6">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-3">
-        activity Â· last 14 days
+        activity · last 14 days
       </p>
       <div className="flex items-end gap-1" style={{ height: '40px' }}>
         {orderedDates.map((iso, idx) => {
@@ -887,7 +887,7 @@ function ActivityBars({
 // AI Coach Panel
 // ---------------------------------------------------------------------------
 
-const COACH_SYSTEM = `You are an experienced running coach. Review the athlete's current training context and give specific, practical coaching advice. Be direct â€” 2-3 short paragraphs, no generic platitudes. Address today's session, weekly progress, and one thing to watch.`;
+const COACH_SYSTEM = `You are an experienced running coach. Review the athlete's current training context and give specific, practical coaching advice. Be direct — 2-3 short paragraphs, no generic platitudes. Address today's session, weekly progress, and one thing to watch.`;
 
 async function callAnthropic(apiKey: string, contextText: string): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -974,7 +974,7 @@ function AiCoachPanel() {
     <section className="border border-accent/40 p-6 space-y-4">
       <p className="font-mono text-xs text-accent uppercase tracking-widest">ai coach</p>
 
-      {/* No API key â€” show canned messages or key prompt */}
+      {/* No API key — show canned messages or key prompt */}
       {!apiKey && (
         <>
           {cannedMessages.length > 0 ? (
@@ -1006,7 +1006,7 @@ function AiCoachPanel() {
         </>
       )}
 
-      {/* API key set â€” show ask button and response */}
+      {/* API key set — show ask button and response */}
       {apiKey && (
         <>
           {!response && !loading && (
@@ -1026,7 +1026,7 @@ function AiCoachPanel() {
 
           {loading && (
             <div className="flex items-center gap-3 py-2">
-              <span className="font-mono text-xs text-bone-mute animate-pulse">Thinkingâ€¦</span>
+              <span className="font-mono text-xs text-bone-mute animate-pulse">Thinking…</span>
             </div>
           )}
 
@@ -1116,18 +1116,18 @@ export default function CoachLogPage() {
       {/* Header */}
       <header className="space-y-1 border-b border-ink-line pb-6">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          ghost Â· wellness
+          ghost · wellness
         </p>
         <h1 className="font-display tracking-widest text-4xl uppercase leading-none text-bone">
           Coach Log
         </h1>
-        <p className="font-mono text-xs text-bone-mute">Training wellness â€” last 42 days</p>
+        <p className="font-mono text-xs text-bone-mute">Training wellness — last 42 days</p>
       </header>
 
-      {/* AI Coach panel â€” first thing after header */}
+      {/* AI Coach panel — first thing after header */}
       <AiCoachPanel />
 
-      {/* Section 4: Activity bars â€” narrow strip, always visible */}
+      {/* Section 4: Activity bars — narrow strip, always visible */}
       <ActivityBars dates14={dates14} actMap={actMap} />
 
       {/* Section 1: Wellness sparklines */}

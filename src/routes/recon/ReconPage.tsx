@@ -9,7 +9,7 @@ import { CTL_TIME_CONSTANT, ATL_TIME_CONSTANT, WINDOW_DAYS } from '@/lib/analysi
 // Types
 // ---------------------------------------------------------------------------
 
-// Raw positional row from query() â€” columns by index
+// Raw positional row from query() — columns by index
 type RawRow = unknown[];
 
 type Zone5 = 'easy' | 'marathon' | 'threshold' | 'interval' | 'repetition';
@@ -49,7 +49,7 @@ function classifyZone(avgSpeedMs: number): Zone5 {
 }
 
 // ---------------------------------------------------------------------------
-// EWMA series builder â€” single pass, produces array for the chart
+// EWMA series builder — single pass, produces array for the chart
 // ---------------------------------------------------------------------------
 
 function buildEwmaSeries(
@@ -161,7 +161,7 @@ async function loadReconData(): Promise<ReconData> {
     moving_time: Number(r[2]),
   }));
 
-  // Build daily load map: load = (distance_km) Ã— (moving_time_hours)
+  // Build daily load map: load = (distance_km) × (moving_time_hours)
   const dailyLoads = new Map<string, number>();
   for (const a of fitnessActivities) {
     const dateKey = a.start_date.slice(0, 10);
@@ -177,7 +177,7 @@ async function loadReconData(): Promise<ReconData> {
   const atlByDate = new Map<string, number>();
   for (const p of fullAtlSeries) atlByDate.set(p.date, p.value);
 
-  // Scale factor Ã— 10 for readability
+  // Scale factor × 10 for readability
   const SCALE = 10;
   const fitnessSeries: FitnessPoint[] = fullCtlSeries
     .filter((p) => p.date >= displayStart)
@@ -231,7 +231,7 @@ export default function ReconPage() {
     <div className="px-4 sm:px-8 lg:px-12 py-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <header className="space-y-2 border-b border-ink-line pb-6">
-        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">Ghost Â· Intelligence</p>
+        <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">Ghost · Intelligence</p>
         <h1 className="font-display text-4xl tracking-widest uppercase text-bone leading-none">
           Recon
         </h1>
@@ -276,9 +276,9 @@ export default function ReconPage() {
 function InsufficientDataState() {
   return (
     <div className="m3-card p-8 space-y-3">
-      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">recon Â· no data</p>
+      <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">recon · no data</p>
       <p className="font-mono text-sm text-bone-dim max-w-xl leading-relaxed">
-        Not enough data yet â€” sync more activities in Setup.
+        Not enough data yet — sync more activities in Setup.
       </p>
     </div>
   );
@@ -299,7 +299,7 @@ function MonthlyVolumeCard({ months }: { months: MonthVolume[] }) {
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-1">
             Monthly Volume
           </p>
-          <p className="font-mono text-xs text-bone-mute">Last 6 months Â· km</p>
+          <p className="font-mono text-xs text-bone-mute">Last 6 months · km</p>
         </div>
         {latest && latest.deltaPct !== null && (
           <div className={`font-display tracking-widest text-2xl leading-none ${
@@ -317,7 +317,7 @@ function MonthlyVolumeCard({ months }: { months: MonthVolume[] }) {
           return (
             <div key={m.month} className="flex-1 flex flex-col items-center justify-end gap-1">
               <span className="font-mono text-xs text-bone-mute tabular-nums leading-none">
-                {m.km > 0 ? m.km.toFixed(0) : 'â€”'}
+                {m.km > 0 ? m.km.toFixed(0) : '—'}
               </span>
               <div className="w-full relative" style={{ height: '80px' }}>
                 <div
@@ -339,7 +339,7 @@ function MonthlyVolumeCard({ months }: { months: MonthVolume[] }) {
             {latest.deltaKm !== null
               ? `${latest.deltaKm >= 0 ? '+' : ''}${latest.deltaKm.toFixed(0)} km vs previous month`
               : 'First month in window'}
-            {' â€” '}
+            {' — '}
             <span className="text-bone-mute">
               {latest.km.toFixed(1)} km this month
             </span>
@@ -399,7 +399,7 @@ function ZoneDistributionCard({
           Zone Distribution
         </p>
         <p className="font-mono text-xs text-bone-mute">
-          Last 28 days Â· {activityCount} activities Â·{' '}
+          Last 28 days · {activityCount} activities ·{' '}
           {totalHours > 0 ? `${totalHours}h ` : ''}{totalMins}m total
         </p>
       </div>
@@ -437,7 +437,7 @@ function ZoneDistributionCard({
                   {ZONE_LABELS[z]}
                 </span>
                 <span className="font-mono text-xs text-bone-mute tabular-nums">
-                  {pct[z]}% Â· {Math.round(minutes[z])}m
+                  {pct[z]}% · {Math.round(minutes[z])}m
                 </span>
               </div>
             ))}
@@ -507,7 +507,7 @@ function FitnessFatigueCard({
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-1">
             Fitness / Fatigue
           </p>
-          <p className="font-mono text-xs text-bone-mute">Last 8 weeks Â· CTL vs ATL</p>
+          <p className="font-mono text-xs text-bone-mute">Last 8 weeks · CTL vs ATL</p>
         </div>
         <div className={`border px-3 py-1 font-mono text-xs uppercase tracking-widest ${badge.classes}`}>
           {badge.label}
@@ -533,7 +533,7 @@ function FitnessFatigueCard({
                 x2={PAD.left + chartW} y2={PAD.top + chartH}
                 stroke="#2A2A2A" strokeWidth="1"
               />
-              {/* ATL â€” dashed */}
+              {/* ATL — dashed */}
               <polyline
                 points={atlPoints}
                 fill="none"
@@ -543,7 +543,7 @@ function FitnessFatigueCard({
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-              {/* CTL â€” solid */}
+              {/* CTL — solid */}
               <polyline
                 points={ctlPoints}
                 fill="none"
@@ -579,8 +579,8 @@ function FitnessFatigueCard({
           </div>
 
           <p className="font-mono text-xs text-bone-mute leading-relaxed border-t border-ink-line pt-3">
-            CTL = 42-day fitness load. ATL = 7-day fatigue load. TSB = form (CTL âˆ’ ATL). Values are
-            pace-derived proxies â€” connect HR data in Profile for improved accuracy.
+            CTL = 42-day fitness load. ATL = 7-day fatigue load. TSB = form (CTL − ATL). Values are
+            pace-derived proxies — connect HR data in Profile for improved accuracy.
           </p>
         </>
       )}

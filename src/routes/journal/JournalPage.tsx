@@ -61,7 +61,7 @@ function addDays(iso: string, n: number): string {
 /** Return YYYY-MM-DD for last Monday (or today if today is Monday). */
 function lastMonday(iso: string): string {
   const d = new Date(iso + 'T00:00:00Z');
-  const dow = d.getUTCDay(); // 0=Sun, 1=Mon â€¦ 6=Sat
+  const dow = d.getUTCDay(); // 0=Sun, 1=Mon … 6=Sat
   const daysBack = dow === 0 ? 6 : dow - 1;
   d.setUTCDate(d.getUTCDate() - daysBack);
   return d.toISOString().slice(0, 10);
@@ -130,7 +130,7 @@ function isRunSport(sportType: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Wellness badge colour (1â€“5 scale)
+// Wellness badge colour (1–5 scale)
 // ---------------------------------------------------------------------------
 
 function badgeClass(value: number | null): string {
@@ -301,7 +301,7 @@ function DayCell({
         </div>
       )}
 
-      {/* Wellness energy bar â€” 3px at bottom */}
+      {/* Wellness energy bar — 3px at bottom */}
       {journal && journal.energy !== null && (
         <span
           aria-hidden="true"
@@ -506,7 +506,7 @@ function DayDetail({
             disabled={saving}
             className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 bg-accent text-ink hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {saving ? 'Savingâ€¦' : 'Save'}
+            {saving ? 'Saving…' : 'Save'}
           </button>
           {savedMsg && (
             <span
@@ -560,19 +560,19 @@ function WeekSummaries({ summaries }: { summaries: WeekSummary[] }) {
           >
             <span className="text-bone-dim">{wk.label}</span>
             <span className="text-right w-16 text-bone">
-              {wk.totalRunKm > 0 ? `${wk.totalRunKm.toFixed(1)}` : 'â€”'}
+              {wk.totalRunKm > 0 ? `${wk.totalRunKm.toFixed(1)}` : '—'}
             </span>
             <span className="text-right w-12 text-bone-mute">
-              {wk.runCount > 0 ? wk.runCount : 'â€”'}
+              {wk.runCount > 0 ? wk.runCount : '—'}
             </span>
             <span className="text-right w-16 text-bone-mute">
-              {wk.wellnessDays > 0 ? `${wk.wellnessDays}d` : 'â€”'}
+              {wk.wellnessDays > 0 ? `${wk.wellnessDays}d` : '—'}
             </span>
             <span className="text-right w-16 text-bone-mute">
-              {wk.avgEnergy !== null ? wk.avgEnergy.toFixed(1) : 'â€”'}
+              {wk.avgEnergy !== null ? wk.avgEnergy.toFixed(1) : '—'}
             </span>
             <span className="text-right w-16 text-bone-mute">
-              {wk.avgHrv !== null ? `${wk.avgHrv}ms` : 'â€”'}
+              {wk.avgHrv !== null ? `${wk.avgHrv}ms` : '—'}
             </span>
           </div>
         ))}
@@ -684,7 +684,7 @@ export default function JournalPage() {
       <header className="border-b border-ink-line pb-6">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest mb-2">Ghost</p>
         <h1 className="font-display text-4xl tracking-widest uppercase text-bone">Journal</h1>
-        <p className="font-mono text-xs text-bone-mute mt-1">Training diary â€” last 5 weeks</p>
+        <p className="font-mono text-xs text-bone-mute mt-1">Training diary — last 5 weeks</p>
       </header>
 
       {/* Section 1: Calendar grid */}
@@ -710,7 +710,7 @@ export default function JournalPage() {
           ))}
         </div>
 
-        {/* Calendar grid â€” 5 rows Ã— 7 columns */}
+        {/* Calendar grid — 5 rows × 7 columns */}
         <div
           className="grid grid-cols-7 gap-px bg-ink-line/30"
           role="grid"

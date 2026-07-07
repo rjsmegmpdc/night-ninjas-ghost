@@ -173,7 +173,7 @@ function AthleteProfileCard({ initial }: { initial: AthleteForm }) {
     <section className="m3-card p-6 space-y-4" aria-labelledby="card-athlete">
       <div className="space-y-1 border-b border-ink-line pb-4">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          profile Â· biometrics
+          profile · biometrics
         </p>
         <h2
           id="card-athlete"
@@ -218,7 +218,7 @@ function AthleteProfileCard({ initial }: { initial: AthleteForm }) {
             className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                        focus:outline-none focus:border-accent transition-colors"
           >
-            <option value="">Selectâ€¦</option>
+            <option value="">Select…</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>
@@ -287,7 +287,7 @@ function HrZonesCard({ initial }: { initial: HrZoneForm }) {
     <section className="m3-card p-6 space-y-4" aria-labelledby="card-hr">
       <div className="space-y-1 border-b border-ink-line pb-4">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          profile Â· Norwegian Split
+          profile · Norwegian Split
         </p>
         <h2
           id="card-hr"
@@ -389,7 +389,7 @@ function StrengthCard({ initial }: { initial: StrengthForm }) {
     <section className="m3-card p-6 space-y-4" aria-labelledby="card-strength">
       <div className="space-y-1 border-b border-ink-line pb-4">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          profile Â· cross-training
+          profile · cross-training
         </p>
         <h2
           id="card-strength"
@@ -411,7 +411,7 @@ function StrengthCard({ initial }: { initial: StrengthForm }) {
             className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-sm text-bone
                        focus:outline-none focus:border-accent transition-colors"
           >
-            <option value="">Selectâ€¦</option>
+            <option value="">Select…</option>
             <option value="weights">Weights</option>
             <option value="pilates">Pilates</option>
             <option value="yoga">Yoga</option>
@@ -480,7 +480,7 @@ function CheckinCard() {
     <section className="m3-card p-6 space-y-4" aria-labelledby="card-checkin">
       <div className="space-y-1 border-b border-ink-line pb-4">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
-          profile Â· daily log
+          profile · daily log
         </p>
         <h2
           id="card-checkin"

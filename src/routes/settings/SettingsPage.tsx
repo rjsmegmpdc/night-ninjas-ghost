@@ -18,7 +18,7 @@ import type { GarminDailySnapshot } from '@/lib/garmin/types';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function formatShort(isoDate: string | null | undefined): string {
-  if (!isoDate) return 'â€”';
+  if (!isoDate) return '—';
   // Handle ISO datetime strings (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DD)
   const datePart = isoDate.slice(0, 10);
   const d = new Date(datePart + 'T00:00:00Z');
@@ -29,7 +29,7 @@ function formatShort(isoDate: string | null | undefined): string {
 }
 
 function relativeTime(isoStr: string | null | undefined): string {
-  if (!isoStr) return 'â€”';
+  if (!isoStr) return '—';
   const then = new Date(isoStr).getTime();
   if (isNaN(then)) return isoStr;
   const diffMs = Date.now() - then;
@@ -49,7 +49,7 @@ function relativeTime(isoStr: string | null | undefined): string {
 }
 
 function formatDateTime(isoStr: string | null | undefined): string {
-  if (!isoStr) return 'â€”';
+  if (!isoStr) return '—';
   const d = new Date(isoStr);
   if (isNaN(d.getTime())) return isoStr;
   const day = d.getUTCDate();
@@ -101,7 +101,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ---------------------------------------------------------------------------
-// Section 0: Display preferences (localStorage â€” no DB, instant effect)
+// Section 0: Display preferences (localStorage — no DB, instant effect)
 // ---------------------------------------------------------------------------
 
 const HOME_OPTIONS = [
@@ -301,7 +301,7 @@ function StravaSection({ settings }: { settings: SettingsMap }) {
             {lastSync ? (
               <span title={lastSync}>{relativeTime(lastSync)}</span>
             ) : (
-              'â€”'
+              '—'
             )}
           </span>
         </div>
@@ -333,9 +333,9 @@ function StravaSection({ settings }: { settings: SettingsMap }) {
 // ---------------------------------------------------------------------------
 
 function statusIcon(status: string): string {
-  if (status === 'completed') return 'âœ“';
-  if (status === 'failed') return 'âœ—';
-  return 'âŸ³';
+  if (status === 'completed') return '✓';
+  if (status === 'failed') return '✗';
+  return '⟳';
 }
 
 function statusClass(status: string): string {
@@ -379,10 +379,10 @@ function SyncHistorySection({ jobs }: { jobs: SyncJob[] }) {
                     {job.status}
                   </td>
                   <td className="font-mono text-xs text-bone-dim py-2 pr-4 text-right">
-                    {job.fetched != null ? job.fetched : 'â€”'}
+                    {job.fetched != null ? job.fetched : '—'}
                   </td>
                   <td className="font-mono text-xs text-signal-miss py-2 max-w-[160px] truncate" title={job.error ?? undefined}>
-                    {job.error ? job.error.slice(0, 60) + (job.error.length > 60 ? 'â€¦' : '') : ''}
+                    {job.error ? job.error.slice(0, 60) + (job.error.length > 60 ? '…' : '') : ''}
                   </td>
                 </tr>
               ))}
@@ -410,8 +410,8 @@ function StatCell({ label, value }: { label: string; value: React.ReactNode }) {
 function DataStatsSection({ stats }: { stats: Stats }) {
   const dateRange =
     stats.oldest && stats.newest
-      ? `${formatShort(stats.oldest)} â€“ ${formatShort(stats.newest)}`
-      : 'â€”';
+      ? `${formatShort(stats.oldest)} – ${formatShort(stats.newest)}`
+      : '—';
 
   return (
     <section aria-labelledby="stats-heading" className="m3-card p-6 space-y-4">
@@ -527,7 +527,7 @@ function DataManagementSection() {
             disabled={exporting}
             className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {exporting ? 'Exportingâ€¦' : 'Export data'}
+            {exporting ? 'Exporting…' : 'Export data'}
           </button>
           {exportDone && (
             <span
@@ -569,7 +569,7 @@ function DataManagementSection() {
                 id="wipe-warning-title"
                 className="font-mono text-xs text-signal-miss uppercase tracking-widest"
               >
-                Danger â€” irreversible action
+                Danger — irreversible action
               </p>
               <p id="wipe-warning-desc" className="font-mono text-xs text-bone-dim leading-relaxed">
                 This will delete all activities, settings, races, shoes, and journal entries.
@@ -598,7 +598,7 @@ function DataManagementSection() {
                 disabled={wipeInput !== 'CLEAR' || wiping}
                 className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-1.5 border border-signal-miss text-signal-miss hover:bg-signal-miss/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
-                {wiping ? 'Clearingâ€¦' : 'Confirm clear'}
+                {wiping ? 'Clearing…' : 'Confirm clear'}
               </button>
               <button
                 type="button"
@@ -617,7 +617,7 @@ function DataManagementSection() {
 }
 
 // ---------------------------------------------------------------------------
-// Section 5: AI Coach â€” BYOK
+// Section 5: AI Coach — BYOK
 // ---------------------------------------------------------------------------
 
 function AiCoachSection() {
@@ -663,7 +663,7 @@ function AiCoachSection() {
     setTimeout(() => setStatus('idle'), 2500);
   }
 
-  const maskedKey = savedKey ? `sk-ant-â€¦${savedKey.slice(-4)}` : null;
+  const maskedKey = savedKey ? `sk-ant-…${savedKey.slice(-4)}` : null;
 
   return (
     <section aria-labelledby="ai-coach-heading" className="m3-card p-6 space-y-4">
@@ -673,7 +673,7 @@ function AiCoachSection() {
       </h2>
 
       <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-xl">
-        Enter your Anthropic API key to enable the AI coach in Coach Log. Your key is stored locally â€” it never leaves your device.
+        Enter your Anthropic API key to enable the AI coach in Coach Log. Your key is stored locally — it never leaves your device.
       </p>
 
       {maskedKey && (
@@ -698,7 +698,7 @@ function AiCoachSection() {
               value={inputKey}
               onChange={(e) => setInputKey(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') void handleSave(); }}
-              placeholder="sk-ant-api03-â€¦"
+              placeholder="sk-ant-api03-…"
               className="w-full bg-ink-shadow m3-card px-3 py-2 font-mono text-xs text-bone placeholder:text-bone-mute focus:outline-none focus:border-accent pr-10"
               autoComplete="off"
               spellCheck={false}
@@ -718,7 +718,7 @@ function AiCoachSection() {
             disabled={saving || !inputKey.trim()}
             className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
-            {saving ? 'Savingâ€¦' : 'Save key'}
+            {saving ? 'Saving…' : 'Save key'}
           </button>
         </div>
       )}
@@ -740,7 +740,7 @@ function AiCoachSection() {
         >
           console.anthropic.com
         </a>
-        . BYOK â€” your usage costs, your control.
+        . BYOK — your usage costs, your control.
       </p>
     </section>
   );
@@ -969,7 +969,7 @@ function GarminImportSection() {
           rel="noopener noreferrer"
           className="text-accent hover:underline"
         >
-          garmin.com â†’ Data Export
+          garmin.com → Data Export
         </a>
         , request your data. Unzip the archive, open the <span className="text-bone">DI_CONNECT</span> folder,
         then select all the JSON files below. GHOST reads RHR, HRV, sleep, stress, body battery, VO2 max, and weight.
@@ -980,7 +980,7 @@ function GarminImportSection() {
           <span className="w-2 h-2 rounded-full bg-signal-ok flex-shrink-0" aria-hidden="true" />
           <span className="font-mono text-xs text-signal-ok">
             Last imported {relativeTime(lastImported)}
-            {' '}Â·{' '}
+            {' '}·{' '}
             <span className="text-bone-mute">{formatDateTime(lastImported)}</span>
           </span>
         </div>
@@ -1006,7 +1006,7 @@ function GarminImportSection() {
       {/* Parsing indicator */}
       {parsing && (
         <p className="font-mono text-xs text-bone-mute" role="status" aria-live="polite">
-          Parsing filesâ€¦
+          Parsing files…
         </p>
       )}
 
@@ -1051,7 +1051,7 @@ function GarminImportSection() {
             disabled={importing}
             className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-btn-outline text-accent hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {importing ? 'Importingâ€¦' : `Import ${preview.rows.length} days`}
+            {importing ? 'Importing…' : `Import ${preview.rows.length} days`}
           </button>
         </div>
       )}
@@ -1095,7 +1095,7 @@ export default function SettingsPage() {
       .then(([statsRows, settingsRows, syncRows]) => {
         if (cancelled) return;
 
-        // Stats â€” column index access
+        // Stats — column index access
         const sr = statsRows[0] ?? [];
         setStats({
           actCount: (sr[0] as number) ?? 0,
@@ -1162,7 +1162,7 @@ export default function SettingsPage() {
       {/* Section 1: Strava */}
       <StravaSection settings={settings} />
 
-      {/* Profile sync pointer â€” the feature lives on /setup */}
+      {/* Profile sync pointer — the feature lives on /setup */}
       <section aria-labelledby="profile-sync-pointer" className="m3-card p-6 space-y-2">
         <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">cross-device</p>
         <h2 id="profile-sync-pointer" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
@@ -1170,13 +1170,13 @@ export default function SettingsPage() {
         </h2>
         <p className="font-mono text-xs text-bone-dim leading-relaxed max-w-xl">
           Back up your API credentials and preferences, or restore them on
-          another device â€” encrypted with your passphrase.
+          another device — encrypted with your passphrase.
         </p>
         <a
           href="/setup"
           className="inline-block font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 m3-card text-bone-dim hover:border-accent hover:text-accent transition-colors"
         >
-          Open Profile Sync in Setup â†’
+          Open Profile Sync in Setup →
         </a>
       </section>
 
