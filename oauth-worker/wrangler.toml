@@ -22,3 +22,6 @@ database_id   = "d73cd23e-945c-4c66-9683-077dab5e9bde"
 # Secrets (set via `wrangler secret put`, never committed):
 #   STRAVA_CLIENT_ID     (optional — baked-in shared-app deployments only)
 #   STRAVA_CLIENT_SECRET (optional — baked-in shared-app deployments only)
+
+# AI coach secret — set via: npx wrangler secret put ANTHROPIC_API_KEY
+# Model: claude-haiku-4-5-20251001 (default) or claude-sonnet-4-6

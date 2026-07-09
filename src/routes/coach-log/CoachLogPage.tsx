@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDb } from '@/db/DbContext';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { query, exec } from '@/db/client';
 import { buildAthleteSnapshot } from '@/lib/ai/snapshot-builder';
 import { snapshotToText } from '@/lib/ai/context-pure';
 import { getCoachMessages } from '@/lib/coach/coach-voice-pure';
+import { streamCoachReply } from '@/lib/ai/coach-client';
+import { getSetting } from '@/lib/db/settings';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -358,9 +360,11 @@ function formFromEntry(e: JournalEntry | undefined): LogFormState {
 function TodayLogForm({
   todayEntry,
   onSaved,
+  onSavedWithText,
 }: {
   todayEntry: JournalEntry | undefined;
   onSaved: () => void;
+  onSavedWithText?: (notes: string) => void;
 }) {
   const [form, setForm] = useState<LogFormState>(() => formFromEntry(todayEntry));
   const [saving, setSaving] = useState(false);
@@ -415,6 +419,7 @@ function TodayLogForm({
       }
 
       onSaved();
+      onSavedWithText?.(form.notes);
       setSavedMsg(true);
       setTimeout(() => setSavedMsg(false), 2000);
     } finally {
@@ -884,54 +889,20 @@ function ActivityBars({
 }
 
 // ---------------------------------------------------------------------------
-// AI Coach Panel
+// AI Coach Panel — canned messages (no Worker configured)
 // ---------------------------------------------------------------------------
 
-const COACH_SYSTEM = `You are an experienced running coach. Review the athlete's current training context and give specific, practical coaching advice. Be direct — 2-3 short paragraphs, no generic platitudes. Address today's session, weekly progress, and one thing to watch.`;
-
-async function callAnthropic(apiKey: string, contextText: string): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 400,
-      system: COACH_SYSTEM,
-      messages: [{ role: 'user', content: contextText }],
-    }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { error?: { message?: string } };
-    throw new Error(body.error?.message ?? `Anthropic error ${res.status}`);
-  }
-  const data = await res.json() as { content: Array<{ type: string; text: string }> };
-  return data.content.find((c) => c.type === 'text')?.text ?? '';
-}
-
-function AiCoachPanel() {
+function AiCoachCannedPanel() {
   const { ready } = useDb();
-  const [apiKey, setApiKey] = useState<string | null>(null);
   const [planInfo, setPlanInfo] = useState<{ dojo: string; weekNumber: number; programWeeks: number } | null>(null);
-  const [response, setResponse] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ready) return;
-    Promise.all([
-      query("SELECT value FROM settings WHERE key = 'ai.anthropic_key'"),
-      query(
-        `SELECT p.dojo, p.params_json, pp.start_date
-         FROM plan_periods pp JOIN plans p ON p.id = pp.plan_id
-         WHERE pp.end_date IS NULL ORDER BY pp.start_date DESC LIMIT 1`,
-      ),
-    ]).then(([keyRows, planRows]) => {
-      const key = keyRows[0]?.[0] as string | null ?? null;
-      setApiKey(key && key.length > 0 ? key : null);
+    query(
+      `SELECT p.dojo, p.params_json, pp.start_date
+       FROM plan_periods pp JOIN plans p ON p.id = pp.plan_id
+       WHERE pp.end_date IS NULL ORDER BY pp.start_date DESC LIMIT 1`,
+    ).then((planRows) => {
       if (planRows.length) {
         const dojo = planRows[0][0] as string;
         const startDate = planRows[0][2] as string;
@@ -946,26 +917,9 @@ function AiCoachPanel() {
         const wk = Math.max(1, Math.floor(days / 7) + 1);
         setPlanInfo({ dojo, weekNumber: wk, programWeeks });
       }
-    });
+    }).catch(() => { /* ignore */ });
   }, [ready]);
 
-  async function handleAskCoach() {
-    if (!apiKey) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const snapshot = await buildAthleteSnapshot();
-      const contextText = snapshotToText(snapshot);
-      const text = await callAnthropic(apiKey, contextText);
-      setResponse(text);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Canned messages when no API key
   const cannedMessages = planInfo
     ? getCoachMessages({ dojo: planInfo.dojo, weekNumber: planInfo.weekNumber, programWeeks: planInfo.programWeeks })
     : [];
@@ -973,102 +927,135 @@ function AiCoachPanel() {
   return (
     <section className="rounded-2xl bg-primary-container/40 p-6 space-y-4">
       <p className="font-mono text-xs text-accent uppercase tracking-widest">ai coach</p>
-
-      {/* No API key — show canned messages or key prompt */}
-      {!apiKey && (
-        <>
-          {cannedMessages.length > 0 ? (
-            <div className="space-y-4">
-              {cannedMessages.map((m, i) => (
-                <div key={i} className="space-y-1">
-                  <p className="font-display tracking-widest text-lg uppercase text-bone">{m.headline}</p>
-                  <p className="font-mono text-xs text-bone-dim leading-relaxed">{m.body}</p>
-                </div>
-              ))}
-              <p className="font-mono text-xs text-bone-mute pt-2 border-t border-ink-line">
-                Add an Anthropic API key in{' '}
-                <a href="/settings" className="text-accent hover:underline">Settings</a>
-                {' '}to get personalised AI coaching.
-              </p>
+      {cannedMessages.length > 0 ? (
+        <div className="space-y-4">
+          {cannedMessages.map((m, i) => (
+            <div key={i} className="space-y-1">
+              <p className="font-display tracking-widest text-lg uppercase text-bone">{m.headline}</p>
+              <p className="font-mono text-xs text-bone-dim leading-relaxed">{m.body}</p>
             </div>
-          ) : (
-            <div className="space-y-2">
-              <p className="font-display tracking-widest text-lg uppercase text-bone-dim">No plan active</p>
-              <p className="font-mono text-xs text-bone-mute leading-relaxed">
-                Set a training plan in{' '}
-                <a href="/dojo" className="text-accent hover:underline">Dojo</a>
-                {' '}and add an Anthropic API key in{' '}
-                <a href="/settings" className="text-accent hover:underline">Settings</a>
-                {' '}to activate the AI coach.
-              </p>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* API key set — show ask button and response */}
-      {apiKey && (
-        <>
-          {!response && !loading && (
-            <div className="space-y-2">
-              <p className="font-mono text-xs text-bone-dim leading-relaxed">
-                The coach will review your current week, today's session, and recent training to give you specific advice.
-              </p>
-              <button
-                type="button"
-                onClick={() => { void handleAskCoach(); }}
-                className="font-mono text-xs uppercase tracking-widest rounded-full bg-primary text-on-primary px-6 py-2.5 font-bold hover:shadow-md active:opacity-90 transition-all"
-              >
-                Ask Coach
-              </button>
-            </div>
-          )}
-
-          {loading && (
-            <div className="flex items-center gap-3 py-2">
-              <span className="font-mono text-xs text-bone-mute animate-pulse">Thinking…</span>
-            </div>
-          )}
-
-          {error && (
-            <div className="space-y-2">
-              <p className="font-mono text-xs text-signal-miss">{error}</p>
-              <button
-                type="button"
-                onClick={() => { setError(null); }}
-                className="font-mono text-xs text-bone-mute hover:text-bone transition-colors"
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
-
-          {response && !loading && (
-            <div className="space-y-4">
-              <div className="font-mono text-sm text-bone-dim leading-relaxed whitespace-pre-wrap">
-                {response}
-              </div>
-              <div className="flex items-center gap-4 pt-2 border-t border-ink-line">
-                <button
-                  type="button"
-                  onClick={() => { void handleAskCoach(); }}
-                  className="font-mono text-xs text-bone-mute hover:text-accent transition-colors uppercase tracking-widest"
-                >
-                  Ask again
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setResponse(null)}
-                  className="font-mono text-xs text-bone-mute hover:text-bone transition-colors"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-          )}
-        </>
+          ))}
+          <p className="font-mono text-xs text-bone-mute pt-2 border-t border-ink-line">
+            Configure the Night Ninjas coach worker in{' '}
+            <a href="/settings" className="text-accent hover:underline">Settings</a>
+            {' '}to get personalised AI coaching.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <p className="font-display tracking-widest text-lg uppercase text-bone-dim">No plan active</p>
+          <p className="font-mono text-xs text-bone-mute leading-relaxed">
+            Set a training plan in{' '}
+            <a href="/dojo" className="text-accent hover:underline">Dojo</a>
+            {' '}to see coaching notes here.
+          </p>
+        </div>
       )}
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Ask Coach Card — Worker SSE streaming (post-save)
+// ---------------------------------------------------------------------------
+
+const WORKER_URL_COACH_LOG = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
+
+type AskCoachState = 'idle' | 'loading' | 'streaming' | 'done' | 'error';
+
+function AskCoachCard({ savedNotes }: { savedNotes: string }) {
+  const [state, setState] = useState<AskCoachState>('idle');
+  const [text, setText] = useState('');
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
+
+  async function handleAsk() {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setState('loading');
+    setText('');
+
+    try {
+      const [snapshot, athleteIdRaw, modelRaw] = await Promise.all([
+        buildAthleteSnapshot(),
+        getSetting('strava_athlete_id'),
+        getSetting('ai_coach_model'),
+      ]);
+
+      const athleteId = athleteIdRaw ? Number(athleteIdRaw) : 0;
+      const model = modelRaw ?? 'claude-haiku-4-5-20251001';
+      const snapshotText = snapshotToText(snapshot);
+      const context = savedNotes
+        ? `Today's journal entry: ${savedNotes}\n\n${snapshotText}`
+        : snapshotText;
+
+      setState('streaming');
+
+      const gen = streamCoachReply(
+        { athleteId, context, question: "I just logged my wellness. Any coaching note for today?", model },
+        ctrl.signal,
+      );
+
+      for await (const chunk of gen) {
+        if (ctrl.signal.aborted) break;
+        setText((prev) => prev + chunk);
+      }
+
+      if (!ctrl.signal.aborted) {
+        setState('done');
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      setState('error');
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-surface-container p-5 mt-2">
+      <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-3">
+        ai coach
+      </p>
+
+      {state === 'idle' && (
+        <button
+          type="button"
+          onClick={() => { void handleAsk(); }}
+          className="rounded-full bg-secondary-container text-on-secondary-container px-5 py-2.5 text-sm font-mono uppercase tracking-widest hover:shadow-sm transition-all"
+        >
+          Ask coach
+        </button>
+      )}
+
+      {state === 'loading' && (
+        <p className="font-mono text-xs text-on-surface-variant animate-pulse">Thinking…</p>
+      )}
+
+      {(state === 'streaming' || state === 'done') && (
+        <div>
+          <p className="text-on-surface text-sm leading-relaxed whitespace-pre-wrap">
+            {text}
+            {state === 'streaming' && <span className="animate-pulse">|</span>}
+          </p>
+          {state === 'done' && (
+            <button
+              type="button"
+              onClick={() => { setText(''); setState('idle'); }}
+              className="mt-3 font-mono text-xs text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-widest"
+            >
+              Ask again
+            </button>
+          )}
+        </div>
+      )}
+
+      {state === 'error' && (
+        <p className="text-on-surface-variant text-sm">Coach unavailable</p>
+      )}
+    </div>
   );
 }
 
@@ -1081,6 +1068,7 @@ export default function CoachLogPage() {
   const [journal, setJournal] = useState<JournalEntry[]>([]);
   const [actMap, setActMap] = useState<Map<string, ActivitySummary>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [savedNotes, setSavedNotes] = useState<string | null>(null);
 
   const dates14 = last14Dates(); // newest first
   const today = todayIso();
@@ -1110,6 +1098,7 @@ export default function CoachLogPage() {
   if (!ready || loading) return <PageSkeleton />;
 
   const todayEntry = journal.find((e) => e.date === today);
+  const workerConfigured = WORKER_URL_COACH_LOG !== '';
 
   return (
     <div className="px-4 sm:px-8 lg:px-12 py-8 sm:py-10 max-w-7xl mx-auto space-y-6">
@@ -1124,8 +1113,8 @@ export default function CoachLogPage() {
         <p className="font-mono text-xs text-bone-mute">Training wellness — last 42 days</p>
       </header>
 
-      {/* AI Coach panel — first thing after header */}
-      <AiCoachPanel />
+      {/* AI Coach panel — canned messages when no worker; hidden when worker is configured (post-save card handles it) */}
+      {!workerConfigured && <AiCoachCannedPanel />}
 
       {/* Section 4: Activity bars — narrow strip, always visible */}
       <ActivityBars dates14={dates14} actMap={actMap} />
@@ -1134,7 +1123,16 @@ export default function CoachLogPage() {
       <WellnessSparklines entries={journal} dates14={dates14} />
 
       {/* Section 2: Today's log form */}
-      <TodayLogForm todayEntry={todayEntry} onSaved={reload} />
+      <TodayLogForm
+        todayEntry={todayEntry}
+        onSaved={reload}
+        onSavedWithText={(notes) => setSavedNotes(notes)}
+      />
+
+      {/* Ask coach — revealed after saving today's entry (Worker path) */}
+      {workerConfigured && savedNotes !== null && (
+        <AskCoachCard savedNotes={savedNotes} />
+      )}
 
       {/* Section 3: History list */}
       <HistoryList entries={journal} actMap={actMap} onReload={reload} />

@@ -1,8 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router';
 import { RefreshCw } from 'lucide-react';
 import { useDb } from '@/db/DbContext';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { streamCoachReply } from '@/lib/ai/coach-client';
+import { buildAthleteSnapshot } from '@/lib/ai/snapshot-builder';
+import { snapshotToText } from '@/lib/ai/context-pure';
+import { getSetting } from '@/lib/db/settings';
 import {
   getActivitiesInRange,
   getTotalActivityCount,
@@ -279,6 +283,113 @@ function NoDataState() {
 }
 
 // ---------------------------------------------------------------------------
+// Coach briefing card
+// ---------------------------------------------------------------------------
+
+const WORKER_URL_PATROL = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
+
+type CoachState = 'idle' | 'loading' | 'streaming' | 'done' | 'error';
+
+function CoachBriefingCard() {
+  const [coachState, setCoachState] = useState<CoachState>('idle');
+  const [text, setText] = useState('');
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  async function handleGetBrief() {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setCoachState('loading');
+    setText('');
+
+    try {
+      const [snapshot, athleteIdRaw, modelRaw] = await Promise.all([
+        buildAthleteSnapshot(),
+        getSetting('strava_athlete_id'),
+        getSetting('ai_coach_model'),
+      ]);
+
+      const athleteId = athleteIdRaw ? Number(athleteIdRaw) : 0;
+      const model = modelRaw ?? 'claude-haiku-4-5-20251001';
+      const context = snapshotToText(snapshot);
+
+      setCoachState('streaming');
+
+      const gen = streamCoachReply(
+        { athleteId, context, question: 'Give me a brief coaching note for this week.', model },
+        ctrl.signal,
+      );
+
+      for await (const chunk of gen) {
+        if (ctrl.signal.aborted) break;
+        setText((prev) => prev + chunk);
+      }
+
+      if (!ctrl.signal.aborted) {
+        setCoachState('done');
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      setCoachState('error');
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-surface-container p-5 mt-4">
+      <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-3">
+        ai coach · weekly brief
+      </p>
+
+      {coachState === 'idle' && (
+        <button
+          type="button"
+          onClick={() => { void handleGetBrief(); }}
+          className="rounded-full bg-secondary-container text-on-secondary-container px-5 py-2.5 text-sm font-mono uppercase tracking-widest hover:shadow-sm transition-all"
+        >
+          Get weekly brief
+        </button>
+      )}
+
+      {coachState === 'loading' && (
+        <p className="font-mono text-xs text-on-surface-variant animate-pulse">
+          Thinking…
+        </p>
+      )}
+
+      {(coachState === 'streaming' || coachState === 'done') && (
+        <div>
+          <p className="text-on-surface text-sm leading-relaxed whitespace-pre-wrap">
+            {text}
+            {coachState === 'streaming' && (
+              <span className="animate-pulse">|</span>
+            )}
+          </p>
+          {coachState === 'done' && (
+            <button
+              type="button"
+              onClick={() => { setText(''); setCoachState('idle'); }}
+              className="mt-3 font-mono text-xs text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-widest"
+            >
+              Ask again
+            </button>
+          )}
+        </div>
+      )}
+
+      {coachState === 'error' && (
+        <p className="text-on-surface-variant text-sm">Coach unavailable</p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Dashboard
 // ---------------------------------------------------------------------------
 
@@ -287,6 +398,18 @@ function PatrolDashboard({
 }: { data: PatrolData; startIso: string; endIso: string; todayIso: string }) {
   const { stats, activities, nextRace, activePlan } = data;
   const currentDow = todayDow();
+
+  const [coachEnabled, setCoachEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (WORKER_URL_PATROL === '') {
+      setCoachEnabled(false);
+      return;
+    }
+    getSetting('ai_coach_enabled').then((v) => {
+      setCoachEnabled(v !== '0');
+    }).catch(() => setCoachEnabled(false));
+  }, []);
 
   // Derive plan — memoised so it doesn't recalculate on every render
   const derived = useMemo(() => {
@@ -372,6 +495,9 @@ function PatrolDashboard({
       ) : (
         <GenericStatsRow stats={stats} />
       )}
+
+      {/* AI Coach weekly briefing — only when worker is configured and coach is enabled */}
+      {coachEnabled === true && <CoachBriefingCard />}
 
       {/* Body */}
       <div className="grid lg:grid-cols-[3fr_2fr] gap-8">
