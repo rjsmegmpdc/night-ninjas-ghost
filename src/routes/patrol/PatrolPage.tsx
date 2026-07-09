@@ -17,7 +17,7 @@ import { formatSpk } from '@/lib/plans/derive';
 import { ENGINES, type Dojo } from '@/lib/plans/index';
 import type { WeekTemplate, DayPlan, PlanParams } from '@/lib/plans/types';
 import { getFrameworkStats, type FrameworkStat } from '@/lib/analysis/framework-stats';
-import type { Activity } from '@/lib/db/schema';
+import type { Activity } from '@/lib/db/types';
 import type { ProgramPhase } from '@/lib/plans/program-phase';
 import { evaluateWeek, type WeekCompliance, type ComplianceFlag } from '@/lib/analysis/compliance';
 

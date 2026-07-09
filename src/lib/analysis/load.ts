@@ -1,4 +1,4 @@
-import type { Activity } from '@/lib/db/schema';
+import type { Activity } from '@/lib/db/types';
 import { classifySport, isRunning, type SportCategory } from './sport-classifier';
 
 const SPORT_BASELINE: Record<SportCategory, number> = {

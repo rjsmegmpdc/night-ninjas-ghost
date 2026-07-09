@@ -1,5 +1,5 @@
 import type { WeekTemplate, SessionTarget } from '@/lib/plans/types';
-import type { Activity } from '@/lib/db/schema';
+import type { Activity } from '@/lib/db/types';
 
 export type ComplianceFlag = 'ok' | 'warn' | 'miss' | 'fast' | 'slow' | 'short' | 'none';
 
