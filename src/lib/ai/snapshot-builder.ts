@@ -1,6 +1,7 @@
 import { query } from '@/db/client';
 import { ENGINES, type Dojo } from '@/lib/plans/index';
 import type { AthleteSnapshot, BiometricsSnapshot, RecentActivitySnapshot } from './context-pure';
+import { loadCoachingHistory } from './coaching-memory';
 import {
   computeEwma,
   classifyForm,
@@ -243,6 +244,32 @@ export async function buildAthleteSnapshot(): Promise<AthleteSnapshot> {
     biometrics = { rhrBpm, hrvMs, sleepDurationS, sleepScore, stressScore, bodyBattery };
   }
 
+  // -- Coaching history (last 8 sessions + dojo trail + 12-week compliance) -
+  const coachingHistory = await loadCoachingHistory().then((h) => {
+    const total = h.complianceRecord.length;
+    const compliant = h.complianceRecord.filter((w) => w.score >= 0.75).length;
+    let consecutiveMissed = 0;
+    for (const w of h.complianceRecord) {
+      if (w.score < 0.75) consecutiveMissed++;
+      else break;
+    }
+    const compliancePattern =
+      total === 0
+        ? 'no data'
+        : consecutiveMissed > 0
+          ? `${compliant}/${total} weeks compliant, ${consecutiveMissed} consecutive missed`
+          : `${compliant}/${total} weeks compliant`;
+    return {
+      recentSessions: h.recentSessions.map((s) => ({
+        type: s.sessionType,
+        date: s.referenceDate,
+        summary: s.response.slice(0, 120).replace(/\n/g, ' '),
+      })),
+      dojoHistory: h.dojoHistory,
+      compliancePattern,
+    };
+  }).catch(() => undefined as AthleteSnapshot['coachingHistory']);
+
   return {
     asOfIso: todayIso,
     dojo,
@@ -256,5 +283,6 @@ export async function buildAthleteSnapshot(): Promise<AthleteSnapshot> {
     biometrics,
     recentActivities,
     activeInjuries: [],
+    coachingHistory,
   };
 }

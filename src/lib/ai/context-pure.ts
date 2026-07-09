@@ -51,6 +51,15 @@ export interface AthleteSnapshot {
   biometrics: BiometricsSnapshot | null;
   recentActivities: RecentActivitySnapshot[];
   activeInjuries: ActiveInjurySnapshot[];
+  /** Coaching session history — injected for continuity across coach interactions. */
+  coachingHistory?: {
+    /** Summaries of the last 8 sessions (most recent first). */
+    recentSessions: { type: string; date: string; summary: string }[];
+    /** Distinct training methods used, most recent first. */
+    dojoHistory: string[];
+    /** Human-readable compliance pattern summary (e.g. "7/8 weeks compliant, 2 consecutive missed"). */
+    compliancePattern: string;
+  };
 }
 
 function fmtPace(spk: number | null): string {
@@ -120,6 +129,28 @@ export function snapshotToText(s: AthleteSnapshot): string {
     }
   } else {
     lines.push(`Active injuries/illness: none logged`);
+  }
+  const historySection = historyToText(s.coachingHistory);
+  if (historySection) lines.push(historySection);
+  return lines.join('\n');
+}
+
+/**
+ * Serialise the optional coaching history block into prompt text.
+ * Returns an empty string when there is no history to include.
+ */
+export function historyToText(h: AthleteSnapshot['coachingHistory']): string {
+  if (!h) return '';
+  const lines: string[] = ['--- Coaching history ---'];
+  lines.push(
+    `Training method history: ${h.dojoHistory.length ? h.dojoHistory.join(' → ') : 'none recorded'}`
+  );
+  lines.push(`Compliance pattern (last 8 weeks): ${h.compliancePattern}`);
+  if (h.recentSessions.length > 0) {
+    lines.push('Recent coaching sessions:');
+    for (const s of h.recentSessions) {
+      lines.push(`  [${s.date} ${s.type}] ${s.summary}`);
+    }
   }
   return lines.join('\n');
 }
