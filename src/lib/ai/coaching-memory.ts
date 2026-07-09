@@ -111,6 +111,54 @@ export async function loadCoachingHistory(): Promise<CoachingHistory> {
 }
 
 // ---------------------------------------------------------------------------
+// Per-day note types and loader
+// (Stub implementations — real versions land from feat/coaching-notes-backend)
+// ---------------------------------------------------------------------------
+
+export interface DayNote {
+  sessionType: string;
+  referenceDate: string; // ISO date YYYY-MM-DD
+  response: string;      // the stored coach text
+}
+
+/**
+ * Load all coach notes for a given week (Mon–Sun).
+ * Excludes weekly_tldr entries so dots only reflect per-day coaching.
+ * Returns empty array if none stored.
+ *
+ * Stub: returns [] until coach_sessions table rows exist.
+ * The real implementation on feat/coaching-notes-backend queries the DB.
+ */
+export async function loadWeekNotes(
+  weekStart: string,
+  weekEnd: string,
+): Promise<DayNote[]> {
+  const rows = await query(
+    `SELECT session_type, reference_date, response
+     FROM coach_sessions
+     WHERE reference_date >= ? AND reference_date <= ?
+       AND session_type != 'weekly_tldr'
+     ORDER BY reference_date ASC`,
+    [weekStart, weekEnd],
+  ).catch(() => [] as unknown[][]);
+  return rows.map((r) => ({
+    sessionType: r[0] as string,
+    referenceDate: r[1] as string,
+    response: r[2] as string,
+  }));
+}
+
+/** Check if a weekly TLDR has already been generated for this week. */
+export async function hasWeekTldr(weekStart: string): Promise<boolean> {
+  const rows = await query(
+    `SELECT id FROM coach_sessions
+     WHERE reference_date = ? AND session_type = 'weekly_tldr' LIMIT 1`,
+    [weekStart]
+  );
+  return rows.length > 0;
+}
+
+// ---------------------------------------------------------------------------
 // Compliance record builder
 // ---------------------------------------------------------------------------
 

@@ -7,12 +7,15 @@ import { streamCoachReply } from '@/lib/ai/coach-client';
 import { buildAthleteSnapshot } from '@/lib/ai/snapshot-builder';
 import { snapshotToText } from '@/lib/ai/context-pure';
 import { getSetting, setSetting } from '@/lib/db/settings';
-import { saveCoachSession } from '@/lib/ai/coaching-memory';
+import { loadWeekNotes, saveCoachSession } from '@/lib/ai/coaching-memory';
+import type { DayNote } from '@/lib/ai/coaching-memory';
 import {
   getLatestActivityForReview,
   activityToCoachContext,
   checkLastWeekCompliance,
   parseAdjustmentMarker,
+  buildWeekTldrPrompt,
+  getWeekBounds,
 } from '@/lib/ai/coach-triggers';
 import type { ActivityForReview, ComplianceWeekResult, CoachAdjustment } from '@/lib/ai/coach-triggers';
 import { applyCoachAdjustment } from '@/lib/db/plan-adjuster';
@@ -399,6 +402,272 @@ function CoachBriefingCard() {
 }
 
 // ---------------------------------------------------------------------------
+// WeekNotesDots — Mon–Sun dot row showing coach note presence
+// ---------------------------------------------------------------------------
+
+const DOT_DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const;
+
+interface WeekNotesDotsProps {
+  weekStart: string;
+  weekEnd: string;
+}
+
+function WeekNotesDots({ weekStart, weekEnd }: WeekNotesDotsProps) {
+  const [loading, setLoading] = useState(true);
+  const [noteMap, setNoteMap] = useState<Map<string, DayNote>>(new Map());
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
+
+  // Build the 7 ISO dates for Mon–Sun
+  const weekDates = useMemo<string[]>(() => {
+    const dates: string[] = [];
+    const base = new Date(weekStart + 'T12:00:00');
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      dates.push(
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+      );
+    }
+    return dates;
+  }, [weekStart]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setExpandedDate(null);
+    loadWeekNotes(weekStart, weekEnd)
+      .then((notes) => {
+        if (cancelled) return;
+        const map = new Map<string, DayNote>();
+        for (const n of notes) {
+          // Keep the latest note if multiple exist for the same date
+          map.set(n.referenceDate, n);
+        }
+        setNoteMap(map);
+      })
+      .catch(() => { /* non-critical */ })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [weekStart, weekEnd]);
+
+  function handleDotClick(date: string) {
+    if (!noteMap.has(date)) return;
+    setExpandedDate((prev) => (prev === date ? null : date));
+  }
+
+  const expandedNote = expandedDate ? noteMap.get(expandedDate) : null;
+
+  return (
+    <div className="rounded-2xl bg-surface-container p-5 mt-4">
+      <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-4">
+        coach notes · this week
+      </p>
+
+      {/* Dot row */}
+      <div className="flex items-start gap-3" role="group" aria-label="Coach notes for each day this week">
+        {weekDates.map((date, i) => {
+          const hasNote = noteMap.has(date);
+          const isExpanded = expandedDate === date;
+          const label = DOT_DAY_LABELS[i];
+
+          return (
+            <div key={date} className="flex flex-col items-center gap-1.5">
+              <span className="font-mono text-[10px] text-on-surface-variant uppercase select-none">
+                {label}
+              </span>
+              {loading ? (
+                <span
+                  className="w-3 h-3 rounded-full bg-on-surface/15 animate-pulse"
+                  aria-hidden="true"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleDotClick(date)}
+                  disabled={!hasNote}
+                  aria-label={
+                    hasNote
+                      ? `${DOT_DAY_LABELS[i]} — coach note available, ${isExpanded ? 'collapse' : 'expand'}`
+                      : `${DOT_DAY_LABELS[i]} — no note`
+                  }
+                  aria-expanded={hasNote ? isExpanded : undefined}
+                  className={[
+                    'w-3 h-3 rounded-full transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
+                    hasNote
+                      ? 'bg-[#69c08b] ring-2 ring-[#69c08b]/30 cursor-pointer hover:scale-125 focus-visible:outline-[#69c08b]'
+                      : 'bg-on-surface/15 cursor-default',
+                  ].join(' ')}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Inline expansion */}
+      {expandedNote && (
+        <div className="rounded-xl bg-surface-container-high p-4 mt-3 text-sm text-on-surface leading-relaxed relative">
+          <button
+            type="button"
+            onClick={() => setExpandedDate(null)}
+            aria-label="Dismiss note"
+            className="absolute top-2 right-2 text-on-surface-variant text-xs hover:text-on-surface transition-colors leading-none p-1"
+          >
+            &times;
+          </button>
+          <p className="whitespace-pre-wrap pr-6">{expandedNote.response}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WeekTldrCard — Monday-only prior-week summary card
+// ---------------------------------------------------------------------------
+
+interface WeekTldrCardProps {
+  prevWeekStart: string;
+  prevWeekEnd: string;
+  athleteId: number;
+  model: string;
+}
+
+function WeekTldrCard({ prevWeekStart, prevWeekEnd, athleteId }: WeekTldrCardProps) {
+  const [tldrState, setTldrState] = useState<CoachState>('idle');
+  const [text, setText] = useState('');
+  const [noteCount, setNoteCount] = useState<number | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const isMondayOrCached = new Date().getUTCDay() === 1;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function init() {
+      // Load prior-week notes to gate on ≥3
+      const notes = await loadWeekNotes(prevWeekStart, prevWeekEnd);
+      if (cancelled) return;
+      setNoteCount(notes.length);
+
+      if (notes.length < 3) return;
+
+      // Check for cached TLDR
+      const cached = await getSetting('week_tldr_' + prevWeekStart);
+      if (cancelled) return;
+      if (cached) {
+        setText(cached);
+        setTldrState('done');
+      }
+    }
+
+    init().catch(() => { /* non-critical */ });
+    return () => { cancelled = true; };
+  }, [prevWeekStart, prevWeekEnd]);
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
+
+  // Hide if: not Monday and not cached, or fewer than 3 notes
+  if (!isMondayOrCached && tldrState !== 'done') return null;
+  if (noteCount !== null && noteCount < 3) return null;
+  if (noteCount === null) return null; // still loading — render nothing
+
+  async function handleGenerate() {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setTldrState('loading');
+    setText('');
+
+    try {
+      const notes = await loadWeekNotes(prevWeekStart, prevWeekEnd);
+      const { context, question } = buildWeekTldrPrompt(prevWeekStart, notes);
+
+      setTldrState('streaming');
+
+      const gen = streamCoachReply(
+        {
+          athleteId,
+          context,
+          question,
+          // ALWAYS Haiku regardless of user model setting — cost control
+          model: 'claude-haiku-4-5-20251001',
+        },
+        ctrl.signal,
+      );
+
+      let fullText = '';
+      for await (const chunk of gen) {
+        if (ctrl.signal.aborted) break;
+        fullText += chunk;
+        setText(fullText);
+      }
+
+      if (!ctrl.signal.aborted) {
+        setTldrState('done');
+        // Cache so revisits don't regenerate
+        await setSetting('week_tldr_' + prevWeekStart, fullText);
+        // Persist to coach_sessions
+        await saveCoachSession({
+          sessionType: 'weekly_tldr',
+          referenceDate: prevWeekStart,
+          response: fullText,
+        });
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      setTldrState('error');
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-surface-container p-5 mt-4">
+      <p className="font-mono text-xs text-on-surface-variant font-semibold uppercase tracking-wide mb-3">
+        Last week — coach summary
+      </p>
+
+      {tldrState === 'idle' && (
+        <button
+          type="button"
+          onClick={() => { void handleGenerate(); }}
+          className="rounded-full bg-secondary-container text-on-secondary-container px-5 py-2.5 text-sm font-mono uppercase tracking-widest hover:shadow-sm transition-all"
+        >
+          Get week summary
+        </button>
+      )}
+
+      {tldrState === 'loading' && (
+        <p className="font-mono text-xs text-on-surface-variant animate-pulse">
+          Thinking&hellip;
+        </p>
+      )}
+
+      {(tldrState === 'streaming' || tldrState === 'done') && (
+        <p className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap">
+          {text}
+          {tldrState === 'streaming' && <span className="animate-pulse">|</span>}
+        </p>
+      )}
+
+      {tldrState === 'error' && (
+        <div className="space-y-2">
+          <p className="text-on-surface-variant text-sm">Summary unavailable</p>
+          <button
+            type="button"
+            onClick={() => { void handleGenerate(); }}
+            className="font-mono text-xs text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-widest"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // T2 — Activity review card
 // ---------------------------------------------------------------------------
 
@@ -719,6 +988,13 @@ function PatrolDashboard({
   const { stats, activities, nextRace, activePlan } = data;
   const currentDow = todayDow();
 
+  // Compute prior week bounds: one week before the current week start
+  const { weekStart: prevWeekStart, weekEnd: prevWeekEnd } = useMemo(() => {
+    const prevSunday = new Date(startIso + 'T12:00:00');
+    prevSunday.setDate(prevSunday.getDate() - 1); // one day before Monday = prior Sunday
+    return getWeekBounds(prevSunday);
+  }, [startIso]);
+
   const [coachEnabled, setCoachEnabled] = useState<boolean | null>(null);
   const [coachAthleteId, setCoachAthleteId] = useState(0);
   const [coachModel, setCoachModel] = useState('claude-haiku-4-5-20251001');
@@ -830,8 +1106,17 @@ function PatrolDashboard({
       {/* AI Coach cards — only when worker is configured and coach is enabled */}
       {coachEnabled === true && (
         <>
+          {/* Weekly TLDR — Monday only, prior week ≥3 notes */}
+          <WeekTldrCard
+            prevWeekStart={prevWeekStart}
+            prevWeekEnd={prevWeekEnd}
+            athleteId={coachAthleteId}
+            model={coachModel}
+          />
           {/* Weekly brief */}
           <CoachBriefingCard />
+          {/* Coach note dots — current week Mon–Sun */}
+          <WeekNotesDots weekStart={startIso} weekEnd={endIso} />
           {/* T2 — Activity review: latest unreviewed activity after sync */}
           <ActivityReviewCard
             athleteId={coachAthleteId}

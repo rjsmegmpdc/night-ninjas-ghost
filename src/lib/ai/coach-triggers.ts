@@ -1,4 +1,5 @@
 import { query } from '@/db/client';
+import type { DayNote } from '@/lib/ai/coaching-memory';
 
 export interface ActivityForReview {
   stravaId: number;
@@ -97,6 +98,51 @@ export interface CoachAdjustment {
   type: 'reduce_load' | 'extend_recovery' | 'change_dojo' | 'none';
   params: Record<string, string>;
   reason: string;
+}
+
+// ---------------------------------------------------------------------------
+// Week TLDR helpers
+// (Stub implementations — real versions land from feat/coaching-notes-backend)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build the lean TLDR prompt from stored notes only.
+ * Deliberately excludes full athlete snapshot to keep tokens low.
+ * Model must be Haiku — callers enforce this.
+ */
+export function buildWeekTldrPrompt(
+  weekStart: string,
+  notes: DayNote[],
+): { context: string; question: string } {
+  const DAY_LABELS: Record<number, string> = {
+    1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 0: 'Sun',
+  };
+  const noteLines = notes.map((n) => {
+    const d = new Date(n.referenceDate + 'T00:00:00Z');
+    const day = DAY_LABELS[d.getUTCDay()] ?? n.referenceDate;
+    const excerpt =
+      n.response.length > 200 ? n.response.slice(0, 197) + '…' : n.response;
+    return `${day}: ${excerpt}`;
+  });
+  return {
+    context: `Week of ${weekStart}. Coaching notes:\n${noteLines.join('\n')}`,
+    question:
+      'Summarize this week in 2 sentences: what the athlete did well and the single most important focus for next week.',
+  };
+}
+
+/**
+ * Derive ISO week boundaries (Mon–Sun) for a given date.
+ * Returns { weekStart: 'YYYY-MM-DD', weekEnd: 'YYYY-MM-DD' }
+ */
+export function getWeekBounds(fromDate: Date): { weekStart: string; weekEnd: string } {
+  const d = new Date(fromDate);
+  const dayOfWeek = (d.getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+  d.setUTCDate(d.getUTCDate() - dayOfWeek);
+  const weekStart = d.toISOString().slice(0, 10);
+  d.setUTCDate(d.getUTCDate() + 6);
+  const weekEnd = d.toISOString().slice(0, 10);
+  return { weekStart, weekEnd };
 }
 
 export function parseAdjustmentMarker(response: string): CoachAdjustment | null {
