@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useDb } from '@/db/DbContext';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { query, exec } from '@/db/client';
+import { getSetting, setSetting } from '@/lib/db/settings';
 import {
   extractSleep,
   extractDailySummary,
@@ -617,6 +618,113 @@ function DataManagementSection() {
 }
 
 // ---------------------------------------------------------------------------
+// Section 4b: AI Coach — Worker toggle + model selector
+// ---------------------------------------------------------------------------
+
+const WORKER_URL_SETTINGS = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
+
+const MODEL_OPTIONS = [
+  { value: 'claude-haiku-4-5-20251001', label: 'Haiku — fast & free' },
+  { value: 'claude-sonnet-4-6',         label: 'Sonnet — smarter, costs more' },
+] as const;
+
+function AiCoachWorkerSection() {
+  const { ready } = useDb();
+  const [enabled, setEnabled] = useState(true);
+  const [model, setModel] = useState('claude-haiku-4-5-20251001');
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!ready) return;
+    Promise.all([
+      getSetting('ai_coach_enabled'),
+      getSetting('ai_coach_model'),
+    ]).then(([enabledVal, modelVal]) => {
+      setEnabled(enabledVal !== '0');
+      if (modelVal) setModel(modelVal);
+      setLoaded(true);
+    }).catch(() => setLoaded(true));
+  }, [ready]);
+
+  async function handleToggle() {
+    const next = !enabled;
+    setEnabled(next);
+    await setSetting('ai_coach_enabled', next ? '1' : '0');
+  }
+
+  async function handleModelChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const val = e.target.value;
+    setModel(val);
+    await setSetting('ai_coach_model', val);
+  }
+
+  if (!loaded) return null;
+
+  const workerSet = WORKER_URL_SETTINGS !== '';
+
+  return (
+    <section aria-labelledby="ai-coach-worker-heading" className="m3-card p-6 space-y-4">
+      <SectionLabel>ai coach</SectionLabel>
+      <h2 id="ai-coach-worker-heading" className="font-display text-2xl tracking-widest uppercase text-bone leading-none">
+        AI Coach
+      </h2>
+
+      {/* Toggle row */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-0.5">
+          <p className="font-mono text-sm text-on-surface">AI Coach</p>
+          <p className="font-mono text-xs text-on-surface-variant">Weekly briefs and daily coaching notes</p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          onClick={() => { void handleToggle(); }}
+          className={[
+            'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+            enabled ? 'bg-primary' : 'bg-surface-container-high',
+          ].join(' ')}
+        >
+          <span className="sr-only">{enabled ? 'Disable AI Coach' : 'Enable AI Coach'}</span>
+          <span
+            aria-hidden="true"
+            className={[
+              'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-on-primary shadow ring-0 transition duration-200 ease-in-out',
+              enabled ? 'translate-x-5' : 'translate-x-0',
+            ].join(' ')}
+          />
+        </button>
+      </div>
+
+      {/* Model selector — visible only when enabled */}
+      {enabled && (
+        <div className="space-y-1.5">
+          <label htmlFor="ai-coach-model" className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">
+            Model
+          </label>
+          <select
+            id="ai-coach-model"
+            value={model}
+            onChange={(e) => { void handleModelChange(e); }}
+            className="bg-surface-container-high rounded-lg border border-transparent px-3 py-2 text-on-surface focus:outline-none focus:border-primary transition-colors font-mono text-sm"
+          >
+            {MODEL_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          {/* Status line */}
+          <p className="text-xs text-on-surface-variant mt-1">
+            {workerSet
+              ? 'Coach powered by Anthropic · key managed by Night Ninjas'
+              : 'Worker not configured — coach unavailable'}
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Section 5: AI Coach — BYOK
 // ---------------------------------------------------------------------------
 
@@ -1161,6 +1269,9 @@ export default function SettingsPage() {
 
       {/* Section 1: Strava */}
       <StravaSection settings={settings} />
+
+      {/* Section 1b: AI Coach toggle + model selector */}
+      <AiCoachWorkerSection />
 
       {/* Profile sync pointer — the feature lives on /setup */}
       <section aria-labelledby="profile-sync-pointer" className="m3-card p-6 space-y-2">
