@@ -790,7 +790,8 @@ function PrivacyNotice({ onAcknowledge }: { onAcknowledge: () => void }) {
         <p>
           <strong className="text-bone">In your browser's private storage:</strong>{' '}
           All your activities, shoes, journal entries, plans, and race calendar.
-          This storage is tied to this browser and device. Clearing your browser
+          Stored locally in your browser's Origin Private File System (OPFS),
+          sandboxed to this browser and device — not encrypted at rest. Clearing your browser
           site data deletes it.
         </p>
         <p>
