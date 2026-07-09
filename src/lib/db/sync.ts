@@ -19,6 +19,8 @@ export interface SyncProgress {
   phase: SyncPhase;
   fetched: number;
   inserted: number;
+  newActivityCount?: number;    // count of newly inserted activities (set on 'done')
+  latestActivityDate?: string;  // ISO date of newest activity (set on 'done')
   error?: string;
 }
 
@@ -149,7 +151,15 @@ export async function syncActivities(onProgress: ProgressCallback): Promise<void
     if (latestEpoch > 0) await setSetting('strava_last_sync_epoch', String(latestEpoch));
     await setLastSync(new Date().toISOString());
 
-    onProgress({ phase: 'done', fetched: totalFetched, inserted: totalInserted });
+    onProgress({
+      phase: 'done',
+      fetched: totalFetched,
+      inserted: totalInserted,
+      newActivityCount: totalInserted,
+      latestActivityDate: latestEpoch > 0
+        ? new Date(latestEpoch * 1000).toISOString().slice(0, 10)
+        : undefined,
+    });
   } catch (e) {
     if (e instanceof RateLimitError) {
       // Cursor already saved above — just signal paused, don't throw.
