@@ -1,4 +1,33 @@
 ## Branch
+test/coverage-expansion
+
+## Session: 2026-07-09
+
+### Completed
+
+**test/coverage-expansion — in progress, not yet merged**
+
+- Added 65 new tests across 5 new files; total suite now 662 passing (was 597)
+- `vitest.config.ts`: widened `include` to `{ts,tsx}`; added `environmentMatchGlobs` (`.test.tsx` → jsdom, `.test.ts` stays node); added `coverage` block (provider: v8, reporters: text + html)
+- New dev deps: `@vitest/coverage-v8`, `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/dom`, `jsdom@24`
+- `src/lib/analysis/compliance.test.ts` (21 tests): `evaluateWeek` + `evaluateSession`; pace-band boundaries at min/max/inside/outside; NZ Monday 00:30 UTC-boundary DOW fix; rest/cross/strength session types; multi-run best-selection
+- `src/db/migrations.test.ts` (13 tests): structural contract (4-digit prefix ordering, unique names, IF NOT EXISTS on all CREATE TABLE/INDEX); per-migration table presence; mock runner idempotency (run once then zero on second pass)
+- `src/lib/db/sync.test.ts` (14 tests): 5 prod-incident scenarios — empty sync, duplicate strava_id upsert, missing optional fields, token expiry error propagation, RateLimitError → paused (not error), latestEpoch max epoch tracking. Used `vi.hoisted()` to solve RateLimitError class identity across mocks
+- `src/lib/strava/credentials.test.ts` (12 tests): DB creds present/absent, env var fallback (documents module-load boundary limitation), getTokenCredentials filtering, save/clear trimming
+- `src/routes/patrol/PatrolPage.test.tsx` (5 tests): jsdom smoke — not-ready → PageSkeleton, DB error → error message, ready + no data → "No activities synced", error path doesn't render skeleton
+
+### In progress
+- Nothing
+
+### Blocked
+- Nothing
+
+### Next session should
+- Merge test/coverage-expansion to main after Matt reviews
+
+---
+
+## Branch
 main (feat/sync-e2e-encryption merged)
 
 ## Session: 2026-07-08

@@ -11,9 +11,16 @@ export default defineConfig({
     postcss: { plugins: [] },
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
     exclude: [],
     environment: 'node',
+    environmentMatchGlobs: [['**/*.test.tsx', 'jsdom']],
     env: { TZ: 'Pacific/Auckland' },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: ['src/**/*.test.*', 'src/main.tsx'],
+    },
   },
 });
