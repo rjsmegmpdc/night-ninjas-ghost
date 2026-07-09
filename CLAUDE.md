@@ -27,7 +27,7 @@ A fork of VELOCITY (night-ninjas-shadow-trackerv2). Same training-science brain,
 - **PWA**: vite-plugin-pwa + Workbox service worker
 - **Desktop**: Tauri 2 (~5 MB installer, unsigned)
 - **OAuth proxy**: Cloudflare Worker (30 lines — the only server code)
-- **Tests**: Vitest — 474 pure `*-pure.ts` engine tests from VELOCITY, unchanged
+- **Tests**: Vitest — 597+ tests covering pure analysis engines, sync, and UI smoke tests
 - **Hosting**: Cloudflare Pages (free) + GitHub Releases for desktop installers
 
 ## Architecture
@@ -47,7 +47,6 @@ src/
   lib/              Pure analysis engines copied from VELOCITY (unchanged)
     analysis/       *-pure.ts: load, trends, athlete-state, vo2max, biometrics, compliance…
     plans/          *-pure.ts: capacity, pace-compliance, recovery, state-awareness
-                    NOTE: individual plan engines (hansons, pfitzinger etc.) not yet ported
     coach/          *-pure.ts: coach voice
     race/           *-pure.ts: fueling, taper, execution, debrief, macrocycle
     ai/             *-pure.ts: context builder
