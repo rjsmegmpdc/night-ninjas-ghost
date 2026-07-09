@@ -46,8 +46,8 @@ const { MockRateLimitError } = vi.hoisted(() => {
 // ---------------------------------------------------------------------------
 
 vi.mock('@/db/client', () => ({
-  exec:  vi.fn().mockResolvedValue(undefined),
-  query: vi.fn().mockResolvedValue([]),
+  execBatch: vi.fn().mockResolvedValue(undefined),
+  query:     vi.fn().mockResolvedValue([]),
 }));
 
 // MockRateLimitError is hoisted so it's available here AND in the test body.
@@ -80,7 +80,7 @@ vi.mock('./settings', () => ({
 // ---------------------------------------------------------------------------
 
 import { syncActivities } from './sync';
-import { exec } from '@/db/client';
+import { execBatch } from '@/db/client';
 import { fetchActivitiesPage } from '@/lib/strava/client';
 import {
   getStoredTokens,
@@ -141,7 +141,7 @@ beforeEach(() => {
   vi.mocked(setSetting).mockResolvedValue(undefined);
   vi.mocked(setSyncCursor).mockResolvedValue(undefined);
   vi.mocked(getSyncCursor).mockResolvedValue(null);
-  vi.mocked(exec).mockResolvedValue(undefined);
+  vi.mocked(execBatch).mockResolvedValue(undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -157,7 +157,7 @@ describe('syncActivities — scenario 1: empty activities array', () => {
     await syncActivities(cb);
 
     expect(phases).toEqual(['token', 'fetching', 'done']);
-    expect(vi.mocked(exec)).not.toHaveBeenCalled();
+    expect(vi.mocked(execBatch)).not.toHaveBeenCalled();
   });
 
   it('final progress has fetched=0, inserted=0 on empty sync', async () => {
@@ -185,18 +185,19 @@ describe('syncActivities — scenario 2: duplicate strava_id (upsert semantics)'
     const { phases, cb } = collectPhases();
     await syncActivities(cb);
 
-    expect(vi.mocked(exec)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(execBatch)).toHaveBeenCalledTimes(1);
     expect(phases).toContain('done');
   });
 
-  it('exec receives strava_id 42 as the first element of the params array', async () => {
+  it('execBatch receives strava_id 42 as the first param of the first statement', async () => {
     setupValidTokens();
     vi.mocked(fetchActivitiesPage).mockResolvedValueOnce([makeStravaActivity({ id: 42 })]);
 
     await syncActivities(() => {});
 
-    const params = vi.mocked(exec).mock.calls[0][1];
-    expect(params[0]).toBe(42); // strava_id is first param in upsertActivity
+    // execBatch(stmts[]) — stmts[0].params[0] is strava_id
+    const stmts = vi.mocked(execBatch).mock.calls[0][0];
+    expect(stmts[0].params![0]).toBe(42);
   });
 
   it('does not throw when a second page returns the same strava_id (mock ON CONFLICT)', async () => {
@@ -207,7 +208,7 @@ describe('syncActivities — scenario 2: duplicate strava_id (upsert semantics)'
       .mockResolvedValueOnce(fullPage)
       .mockResolvedValueOnce([]);
 
-    vi.mocked(exec).mockResolvedValue(undefined);
+    vi.mocked(execBatch).mockResolvedValue(undefined);
 
     await expect(syncActivities(() => {})).resolves.not.toThrow();
   });
@@ -240,14 +241,14 @@ describe('syncActivities — scenario 3: activities with missing optional fields
 
     await syncActivities(() => {});
 
-    const params = vi.mocked(exec).mock.calls[0][1];
-    // upsertActivity param order (0-indexed):
+    // execBatch(stmts[]) — stmts[0].params holds the upsert values
     // [0]=strava_id [1]=name [2]=type [3]=sport_type [4]=start_date
     // [5]=distance [6]=moving_time [7]=elapsed_time [8]=total_elevation_gain
     // [9]=average_speed [10]=max_speed [11]=average_heartrate [12]=max_heartrate
     // [13]=suffer_score [14]=gear_id [15]=raw_json
-    expect(params[11]).toBeNull(); // average_heartrate
-    expect(params[12]).toBeNull(); // max_heartrate
+    const stmts = vi.mocked(execBatch).mock.calls[0][0];
+    expect(stmts[0].params![11]).toBeNull(); // average_heartrate
+    expect(stmts[0].params![12]).toBeNull(); // max_heartrate
   });
 
   it('handles zero distance without throwing', async () => {
@@ -277,7 +278,7 @@ describe('syncActivities — scenario 4: token expiry mid-sync', () => {
   it('emits error phase when exec throws mid-sync (DB write failure)', async () => {
     setupValidTokens();
     vi.mocked(fetchActivitiesPage).mockResolvedValueOnce([makeStravaActivity()]);
-    vi.mocked(exec).mockRejectedValueOnce(new Error('SQLITE_CONSTRAINT: strava_id unique'));
+    vi.mocked(execBatch).mockRejectedValueOnce(new Error('SQLITE_CONSTRAINT: strava_id unique'));
 
     let errorPhase: SyncProgress | null = null;
     await syncActivities((p) => { if (p.phase === 'error') errorPhase = p; });
