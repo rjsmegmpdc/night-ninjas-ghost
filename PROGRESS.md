@@ -1,6 +1,66 @@
 ## Branch
 main (feat/sync-e2e-encryption merged)
 
+---
+
+## Remediation backlog — 3-lens review (added 2026-07-09)
+
+Source: parallel read-only review by security / performance / test-coverage agents.
+Repo confirmed **public** (`github.com/rjsmegmpdc/night-ninjas-ghost`) — raises stakes on committed config + leftover VELOCITY server code.
+Ordered by priority. Check off as done; each is a `feat/`- or `fix/`-branch candidate.
+
+### P0 — do first (highest impact, cross-lens)
+
+- [ ] **R1 — Harden the OAuth Worker** (`oauth-worker/src/index.ts`) — hits security AND test top findings:
+  - [ ] Close the origin-less bypass: `if (origin && origin !== allowed)` lets a request with **no** Origin header through. Change so a *missing* Origin on `/exchange`, `/refresh`, `/revoke` is rejected (drop the `origin &&` short-circuit for those routes). (~line 400)
+  - [ ] `/revoke` is unauthenticated — anyone can revoke a leaked token. Gate it. (~line 415)
+  - [ ] Add rate limiting (Cloudflare rules or KV/DO token bucket keyed by IP + email) — no throttle on any endpoint today.
+  - [ ] Add a worker test suite (miniflare / `@cloudflare/vitest-pool-workers`): JWT verify (valid/expired/wrong-aud/wrong-iss/bad-sig), CORS allow/deny incl. no-Origin case, admin allowlist matching, credential precedence. Currently **zero** tests + **zero** infra.
+  - [ ] Add a test/typecheck gate to `.github/workflows/worker.yml` — it deploys to prod on every push with **no gate** (unlike deploy.yml/desktop.yml which run `npm test`). At minimum `tsc --noEmit`.
+
+- [ ] **R2 — Client secret storage** (`src/lib/db/settings.ts:60`, `src/lib/strava/credentials.ts:42`, SettingsPage Anthropic key) — Strava access+refresh tokens, `client_secret`, and Anthropic key are stored **plaintext** in the SQLite `settings` table. The "encrypted in IndexedDB" claim only covers the profile-sync blob in transit, NOT tokens at rest. (VELOCITY used the OS keychain — this is a regression.)
+  - [ ] Decide: wrap at-rest with a non-extractable WebCrypto `CryptoKey`, and/or route desktop secrets through a Tauri OS-keychain command; **or** at minimum correct the docs (CLAUDE.md contract + privacy notice) to stop claiming at-rest encryption, and add CSP as compensating control (R4).
+
+- [ ] **R3 — `/club/data` PII exposure** (`oauth-worker/src/index.ts:257`) — public unauthenticated endpoint returns every member's name + sex + year-of-birth + results. Decide: intentional (members consented to public listing) → leave; else gate behind Access or drop `yob`/`sex` from the public payload.
+
+### P1 — high impact, single-lens
+
+- [ ] **R4 — Add CSP** — Tauri `security.csp` is `null` (`src-tauri/tauri.conf.json:24`) = no CSP in the desktop shell; combined with plaintext secrets, XSS = full exfil. Add explicit `connect-src` allowlist (strava / anthropic / worker), `script-src 'self'`, `default-src 'self'`. Mirror it on the PWA via a `public/_headers` file (none exists) + `nosniff` / `Referrer-Policy` / `frame-ancestors 'none'`.
+
+- [ ] **R5 — Batch the Strava sync writes** (`src/lib/db/sync.ts:123`) — upserts one row per worker round-trip inside the loop, no transaction → ~1500 postMessage round-trips + 1500 implicit transactions for a 5-year backfill. Add an `execBatch()`/`execMany()` primitive wrapping a page (≤200 rows) in one `BEGIN`/`COMMIT` / one worker message. The Garmin import path (`upsertHealthRows`) already does this correctly — copy the pattern. (10–50× faster backfill.)
+
+- [ ] **R6 — Drop Recharts from manualChunks** (`vite.config.ts:63`) — `manualChunks: { charts: ['recharts'] }` forces the 412 KB chart chunk to be `modulepreload`'d on **every** page load, even though only StrikePage uses it (already `lazy()`). Remove the entry; let Rollup auto-split it behind the dynamic import. One-line change, removes 412 KB from every first load.
+
+- [ ] **R7 — Test `compliance.ts` + `migrations.ts`**:
+  - [ ] `evaluateWeek`/`evaluateSession` (`src/lib/analysis/compliance.ts`) — live on PatrolPage, **zero** direct tests (framework-stats.test.ts only borrows its type). Test pace-band boundaries, same-day best-run selection, rest/cross/strength cases, empty input. Also: `dowOf()` uses `.getDay()` (local) not `.getUTCDay()` — untested deviation from the UTC rule.
+  - [ ] `migrations.ts` idempotency — later migrations mix non-idempotent `ALTER TABLE ADD COLUMN` with `CREATE TABLE IF NOT EXISTS` in one `exec()`, and the `_migrations` ledger INSERT runs *after* `exec()`. A mid-migration failure re-runs the whole thing → "duplicate column" → **permanently bricked local DB, no recovery**. Test idempotency + mid-migration-failure recovery, or fix the ordering (insert ledger row per-statement / split migrations).
+
+- [ ] **R8 — Test Strava sync + credential precedence** (`src/lib/db/sync.ts`, `src/lib/strava/credentials.ts`) — this is the exact bug class that already caused a logged prod incident ("app locked to Matt"). Mock fetch/getSetting: stored-creds-win, env fallback, null-when-neither, token-refresh-only-near-expiry, rate-limit cursor resume.
+
+### P2 — hygiene, lower impact
+
+- [ ] **R9 — Prune dead code** (recommend to Matt before deleting, per repo rules):
+  - [ ] ~180 tracked VELOCITY server files under root `lib/` (keytar secrets, Garmin MFA scraper, PATs) — dead, but public. Not imported by `src/`.
+  - [ ] `src/lib/db/schema.ts` + `drizzle-orm` dep — only reached via `import type` (erased at compile), and the table defs don't match live `migrations.ts` (misleading).
+  - [ ] `@anthropic-ai/sdk` (`package.json:19`) — listed dep, never imported (CoachLogPage uses raw fetch); 8.7 MB dead node_modules weight.
+  - [ ] `src/routes/shoes/ShoesPage.tsx` (512 lines) — `/shoes` redirects to `/gear`; unreferenced, already excluded from build.
+  - [ ] `.github/workflows/build.yml` — stale Electron/Next.js workflow from pre-fork VELOCITY; would fail if triggered.
+  - [ ] `.env.example` — stale Next.js/`NN_DATA_DIR` refs.
+- [ ] **R10 — Worker error hygiene** (`oauth-worker/src/index.ts:421,464`) — proxies raw upstream Strava error bodies into UI strings; normalize to generic message + status.
+- [ ] **R11 — Query micro-opts** (all Low, bounded at current scale):
+  - [ ] `getStoredTokens()` (`src/lib/db/settings.ts:42`) — 5 single-key queries → one `WHERE key IN (...)`; runs every app load + token refresh.
+  - [ ] StrikePage (`src/routes/strike/StrikePage.tsx:191`) — 3 identical full-window queries for 3 aggregates; fetch once, pass rows to pure aggregators.
+  - [ ] ReconPage (`src/routes/recon/ReconPage.tsx:121`) — 3 sequential `await`s → `Promise.all`.
+  - [ ] `activities.gear_id` unindexed (used in GearPage shoe-stats JOIN) — add index if activity volume grows.
+- [ ] **R12 — Supply chain / infra**: add `npm audit` + Dependabot to CI (not run today); add `@vitest/coverage-v8` so there's a hard coverage number (none configured).
+- [ ] **R13 — Docs correction**: CLAUDE.md says "~474 tests" and PHASES.md "574/574" — actual is **597**. Update. Also note the plan engines (hansons/pfitzinger etc.) **are** ported + tested — CLAUDE.md's "not yet ported" note is stale.
+- [ ] **R14 — Component tests (bigger investment)**: zero React component tests exist. If pursued, add `@testing-library/react` + jsdom as a second vitest env; start with PatrolPage (compliance grid) and SetupPage (onboarding/OAuth state machine).
+
+### What the review confirmed is already solid
+OAuth CSRF `state` (128-bit, single-use, strict validate) · E2E sync crypto (PBKDF2 310k / AES-256-GCM / non-extractable) · Access JWT verify (real RS256, not claim-decode) · all SQL parameterized · route-level `lazy()` on all 15 screens · correct sync (not async) wa-sqlite WASM + CacheFirst · date-bounded queries hitting `idx_activities_start_date` · CTL/ATL/TSB math O(window-days) not O(activity-count) · PatrolPage memoization · 597 pure-layer tests, no skipped/`.only`, realistic fixtures, NZ-Monday/UTC-Sunday boundary coverage.
+
+---
+
 ## Session: 2026-07-08
 
 ### Completed

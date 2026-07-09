@@ -4,7 +4,7 @@ import type { WeekCompliance } from './compliance';
 import type { IntensityDistribution } from './intensity-distribution';
 import type { ProgramPhase } from '@/lib/plans/program-phase';
 import type { NsGuardReport } from './ns-guardrails';
-import type { Activity } from '@/lib/db/schema';
+import type { Activity } from '@/lib/db/types';
 
 export interface FrameworkStat {
   label: string;

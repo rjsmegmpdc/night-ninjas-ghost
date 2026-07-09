@@ -4,7 +4,7 @@
  */
 
 import type { GarminDailySnapshot } from './types';
-import type { NewDailyHealthMetric } from '@/lib/db/schema';
+import type { NewDailyHealthMetric } from '@/lib/db/types';
 
 function positiveOrNull(v: unknown): number | null {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null;
