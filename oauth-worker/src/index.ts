@@ -1,3 +1,5 @@
+import { COACH_SYSTEM_PROMPT } from './coach-prompt';
+
 /**
  * GHOST — Strava OAuth token-swap Worker
  *
@@ -40,6 +42,8 @@ interface Env {
   CLUB_DB?: D1Database;
   /** Comma-separated emails allowed to write club data (race-day admins). */
   ADMIN_EMAILS?: string;
+  /** AI coach — set via: npx wrangler secret put ANTHROPIC_API_KEY */
+  ANTHROPIC_API_KEY: string;
 }
 
 const STRAVA_TOKEN_URL  = 'https://www.strava.com/oauth/token';
@@ -369,6 +373,83 @@ async function handleClub(request: Request, env: Env, url: URL): Promise<Respons
   return new Response('Not found', { status: 404, headers: cors(allowed) });
 }
 
+// ---------------------------------------------------------------------------
+// /ai — streaming Claude coach endpoint
+// ---------------------------------------------------------------------------
+
+async function handleAi(request: Request, env: Env, allowed: string): Promise<Response> {
+  const corsHeaders = (o: string) => ({
+    'Access-Control-Allow-Origin': o,
+    'Access-Control-Allow-Headers': 'Content-Type',
+  });
+
+  let body: { athleteId?: unknown; context?: unknown; question?: unknown; model?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders(allowed) } });
+  }
+
+  const athleteId = Number(body.athleteId);
+  if (!athleteId || athleteId <= 0) {
+    return new Response(JSON.stringify({ error: 'athleteId required' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders(allowed) } });
+  }
+
+  const context = String(body.context ?? '').trim();
+  const question = String(body.question ?? '').trim();
+  if (!context || !question) {
+    return new Response(JSON.stringify({ error: 'context and question required' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders(allowed) } });
+  }
+
+  const model = String(body.model ?? 'claude-haiku-4-5-20251001');
+  const ALLOWED_MODELS = ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6'];
+  if (!ALLOWED_MODELS.includes(model)) {
+    return new Response(JSON.stringify({ error: 'Invalid model' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders(allowed) } });
+  }
+
+  // Import Anthropic SDK (dynamic import so it only loads when needed)
+  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+
+  // Stream in background — Cloudflare Workers support this pattern
+  (async () => {
+    try {
+      const stream = await anthropic.messages.stream({
+        model,
+        max_tokens: 512,
+        system: COACH_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: `${context}\n\n${question}` }],
+      });
+
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          const data = `data: ${JSON.stringify({ text: event.delta.text })}\n\n`;
+          await writer.write(encoder.encode(data));
+        }
+      }
+      await writer.write(encoder.encode('data: [DONE]\n\n'));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'AI error';
+      await writer.write(encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`));
+    } finally {
+      await writer.close();
+    }
+  })();
+
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      ...corsHeaders(allowed),
+    },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin  = request.headers.get('Origin') ?? '';
@@ -404,6 +485,10 @@ export default {
     if (request.method !== 'POST' || origin !== allowed) {
       return new Response('Forbidden', { status: 403 });
     }
+
+    // AI coach streaming endpoint — handles its own body parsing
+    if (url.pathname === '/ai') return handleAi(request, env, allowed);
+
     const body = await request.json<{
       code?: string;
       refresh_token?: string;
