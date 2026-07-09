@@ -12,7 +12,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'icons/*.png'],
       manifest: {
-        name: 'GHOST â€” Night Ninjas',
+        name: 'GHOST — Night Ninjas',
         short_name: 'GHOST',
         description: 'Training tracker. No server. Just you and the run.',
         theme_color: '#1e100b',
@@ -44,7 +44,7 @@ export default defineConfig({
     alias: { '@': path.resolve(__dirname, './src') },
   },
 
-  // wa-sqlite ships WASM â€” tell Vite to serve it with correct MIME type
+  // wa-sqlite ships WASM — tell Vite to serve it with correct MIME type
   assetsInclude: ['**/*.wasm'],
 
   // Exclude wa-sqlite from optimisation; it uses dynamic imports internally
@@ -62,7 +62,6 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router'],
-          charts: ['recharts'],
         },
       },
     },

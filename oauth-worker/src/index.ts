@@ -389,16 +389,19 @@ export default {
       return handleSync(request, env, url);
     }
 
-    // Club datastore routes (public GET /club/data; admin-gated writes)
+    // Club datastore routes (public GET /club/data; admin-gated writes).
+    // No-Origin callers are non-browser and must be rejected — /club/data is
+    // always called via browser fetch, which always sends Origin.
     if (url.pathname.startsWith('/club/')) {
-      if (origin && origin !== allowed) {
+      if (!origin || origin !== allowed) {
         return new Response('Forbidden', { status: 403 });
       }
       return handleClub(request, env, url);
     }
 
-    // Only accept POST from the allowed origin
-    if (request.method !== 'POST' || (origin && origin !== allowed)) {
+    // Only accept POST from the allowed origin.
+    // No short-circuit: a missing Origin is treated the same as a wrong one.
+    if (request.method !== 'POST' || origin !== allowed) {
       return new Response('Forbidden', { status: 403 });
     }
     const body = await request.json<{
@@ -410,17 +413,38 @@ export default {
     }>();
 
     // -----------------------------------------------------------------------
-    // POST /revoke — revoke access token (Strava deauthorisation)
+    // Credential resolution — per-user credentials win; env secrets are the
+    // fallback. Resolved here so /revoke can gate on them too.
+    // -----------------------------------------------------------------------
+    const clientId     = body.client_id     ?? env.STRAVA_CLIENT_ID;
+    const clientSecret = body.client_secret ?? env.STRAVA_CLIENT_SECRET;
+
+    // -----------------------------------------------------------------------
+    // POST /revoke — revoke access token (Strava deauthorisation).
+    // Requires valid credentials so the worker cannot be used as an
+    // unauthenticated proxy to revoke arbitrary tokens.
     // -----------------------------------------------------------------------
     if (url.pathname === '/revoke' && body.token) {
-      const res = await fetch(STRAVA_REVOKE_URL, {
+      if (!clientId || !clientSecret) {
+        return new Response(
+          JSON.stringify({ error: 'Forbidden — supply client_id/client_secret or configure worker secrets' }),
+          { status: 403, headers: { 'Content-Type': 'application/json', ...cors(allowed) } },
+        );
+      }
+      const revokeRes = await fetch(STRAVA_REVOKE_URL, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ token: body.token }),
       });
-      const data = await res.text();
-      return new Response(data, {
-        status:  res.status,
+      if (!revokeRes.ok) {
+        return new Response(
+          JSON.stringify({ error: 'Strava request failed', status: revokeRes.status }),
+          { status: revokeRes.status, headers: { 'Content-Type': 'application/json', ...cors(allowed) } },
+        );
+      }
+      const revokeData = await revokeRes.text();
+      return new Response(revokeData, {
+        status:  revokeRes.status,
         headers: { 'Content-Type': 'application/json', ...cors(allowed) },
       });
     }
@@ -428,9 +452,6 @@ export default {
     // -----------------------------------------------------------------------
     // POST /exchange or /refresh — token operations that need client_secret
     // -----------------------------------------------------------------------
-    // Per-user credentials from the request win; env secrets are the fallback.
-    const clientId     = body.client_id     ?? env.STRAVA_CLIENT_ID;
-    const clientSecret = body.client_secret ?? env.STRAVA_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
       return new Response('No API credentials — supply client_id/client_secret or configure worker secrets', { status: 400 });
     }
@@ -461,6 +482,12 @@ export default {
       body:    JSON.stringify(stravaPayload),
     });
 
+    if (!res.ok) {
+      return new Response(
+        JSON.stringify({ error: 'Strava request failed', status: res.status }),
+        { status: res.status, headers: { 'Content-Type': 'application/json', ...cors(allowed) } },
+      );
+    }
     const data = await res.text();
     return new Response(data, {
       status:  res.status,
