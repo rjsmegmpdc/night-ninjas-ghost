@@ -435,7 +435,7 @@ function ActivityReviewCard({ athleteId, model, snapshotContext }: ActivityRevie
 
   if (!activity || dismissed) return null;
 
-  const distKm = activity.distanceM / 1000;
+  const distKm = activity.distanceKm;
   const paceSpk =
     activity.movingTimeS > 0 && distKm > 0 ? activity.movingTimeS / distKm : null;
   const durationMin = Math.round(activity.movingTimeS / 60);
@@ -592,7 +592,7 @@ function ComplianceCoachCard({ athleteId, model, snapshotContext }: ComplianceCo
 
   useEffect(() => {
     checkLastWeekCompliance()
-      .then((r) => { if (r.needsCoaching) setResult(r); })
+      .then((r) => { if (r?.needsCoaching) setResult(r); })
       .catch(() => { /* non-critical */ });
   }, []);
 
@@ -602,7 +602,7 @@ function ComplianceCoachCard({ athleteId, model, snapshotContext }: ComplianceCo
 
   if (!result) return null;
 
-  const { completed, planned, score, weekStart } = result;
+  const { sessionsCompleted: completed, sessionsPlanned: planned, complianceScore: score, weekStart } = result;
   const scoreColor = score < 0.4 ? 'text-error' : 'text-signal-warn';
 
   async function handleAnalyse() {
@@ -694,7 +694,7 @@ function ComplianceCoachCard({ athleteId, model, snapshotContext }: ComplianceCo
               onClick={() => { void handleApplyAdjustment(); }}
               className="inline-flex items-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1.5 text-sm hover:shadow-sm transition-all"
             >
-              Apply: {adjustment.description}
+              Apply: {adjustment.reason}
             </button>
           )}
           {adjustApplied && (
