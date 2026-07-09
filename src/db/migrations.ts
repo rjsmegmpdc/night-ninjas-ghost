@@ -224,4 +224,21 @@ export const MIGRATIONS: { name: string; sql: string }[] = [
       ON CONFLICT(key) DO NOTHING;
     `,
   },
+  {
+    name: '0007_coach_sessions',
+    sql: `
+      CREATE TABLE IF NOT EXISTS coach_sessions (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_type     TEXT NOT NULL,
+        reference_date   TEXT NOT NULL,
+        context_snapshot TEXT,
+        response         TEXT NOT NULL,
+        adjustment_json  TEXT,
+        applied          INTEGER DEFAULT 0,
+        created_at       TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_coach_sessions_created_at ON coach_sessions (created_at DESC);
+    `,
+  },
 ];
