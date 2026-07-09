@@ -187,15 +187,17 @@ interface StrikeData {
 // Query helpers
 // ---------------------------------------------------------------------------
 
-async function fetchAthleteState(cutoffIso: string, todayIso: string): Promise<AthleteStateData> {
-  const rows = await query(
+async function fetchActivitiesWindow(cutoffIso: string, todayIso: string): Promise<unknown[][]> {
+  return query(
     `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed, name, type
      FROM activities
      WHERE start_date >= ? AND start_date <= ?
      ORDER BY start_date`,
     [cutoffIso, todayIso + 'T99:99:99'],
   );
+}
 
+function computeAthleteState(rows: unknown[][], todayIso: string): AthleteStateData {
   const dailyLoads = new Map<string, number>();
   let activityCount = 0;
   const confCounts = { calibrated: 0, 'pace-only': 0, estimated: 0 };
@@ -248,15 +250,7 @@ async function fetchAthleteState(cutoffIso: string, todayIso: string): Promise<A
   };
 }
 
-async function fetchIntensityWeeks(cutoffIso: string, todayIso: string): Promise<WeekIntensity[]> {
-  const rows = await query(
-    `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed, name, type
-     FROM activities
-     WHERE start_date >= ? AND start_date <= ?
-     ORDER BY start_date`,
-    [cutoffIso, todayIso + 'T99:99:99'],
-  );
-
+function computeIntensityWeeks(rows: unknown[][]): WeekIntensity[] {
   const weekMap = new Map<string, WeekIntensity>();
 
   for (const r of rows) {
@@ -315,15 +309,7 @@ async function fetchIntensityWeeks(cutoffIso: string, todayIso: string): Promise
   return allKeys.map((k) => weekMap.get(k)!);
 }
 
-async function fetchMileageWeeks(cutoffIso: string, todayIso: string): Promise<WeekMileage[]> {
-  const rows = await query(
-    `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed, name, type
-     FROM activities
-     WHERE start_date >= ? AND start_date <= ?
-     ORDER BY start_date`,
-    [cutoffIso, todayIso + 'T99:99:99'],
-  );
-
+function computeMileageWeeks(rows: unknown[][]): WeekMileage[] {
   const weekMap = new Map<string, WeekMileage>();
 
   for (const r of rows) {
@@ -621,15 +607,16 @@ export default function StrikePage() {
     const bioFrom = utcDaysAgo(28);
 
     Promise.all([
-      fetchAthleteState(cutoffIso, todayIso),
-      fetchIntensityWeeks(cutoffIso, todayIso),
-      fetchMileageWeeks(cutoffIso, todayIso),
+      fetchActivitiesWindow(cutoffIso, todayIso),
       fetchLongRun(weekMonday, twoWeeksAgo, weekSunday),
       fetchBiometrics(bioFrom, todayIso),
       fetchRollingVolume(todayIso),
     ])
-      .then(([athleteState, intensityWeeks, mileageWeeks, longRun, biometrics, rollingRes]) => {
+      .then(([windowRows, longRun, biometrics, rollingRes]) => {
         if (cancelled) return;
+        const athleteState = computeAthleteState(windowRows, todayIso);
+        const intensityWeeks = computeIntensityWeeks(windowRows);
+        const mileageWeeks = computeMileageWeeks(windowRows);
         setData({
           athleteState, intensityWeeks, mileageWeeks, longRun, biometrics,
           rolling: rollingRes.rolling, hasPlan: rollingRes.hasPlan,

@@ -117,24 +117,32 @@ async function loadReconData(): Promise<ReconData> {
   const ninetyEightDaysAgo = isoDate(addDays(now, -98));
   const displayStart = isoDate(addDays(now, -WINDOW_DAYS));
 
-  // --- Query 1: monthly volume ---
-  const volRows: RawRow[] = await query(
-    'SELECT start_date, distance FROM activities WHERE start_date >= ? ORDER BY start_date ASC',
-    [sixMonthsAgoIso]
-  );
+  // All three queries are independent — fire in parallel
+  const [volRows, zoneRows, fitnessRows]: [RawRow[], RawRow[], RawRow[]] = await Promise.all([
+    // Query 1: monthly volume
+    query(
+      'SELECT start_date, distance FROM activities WHERE start_date >= ? ORDER BY start_date ASC',
+      [sixMonthsAgoIso]
+    ),
+    // Query 2: zone distribution (28 days)
+    query(
+      `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed
+       FROM activities WHERE start_date >= ? ORDER BY start_date ASC`,
+      [twentyEightDaysAgo]
+    ),
+    // Query 3: fitness/fatigue (98 days)
+    query(
+      `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed
+       FROM activities WHERE start_date >= ? ORDER BY start_date ASC`,
+      [ninetyEightDaysAgo]
+    ),
+  ]);
 
   const volSamples = volRows.map((r) => ({
     dateIso: String(r[0]),
     km: Number(r[1]) / 1000,
   }));
   const monthlyVols = monthlyVolume(volSamples, todayIso, 6);
-
-  // --- Query 2: zone distribution (28 days) ---
-  const zoneRows: RawRow[] = await query(
-    `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed
-     FROM activities WHERE start_date >= ? ORDER BY start_date ASC`,
-    [twentyEightDaysAgo]
-  );
 
   const zoneActivities = zoneRows.map((r) => ({
     moving_time: Number(r[2]),
@@ -147,13 +155,6 @@ async function loadReconData(): Promise<ReconData> {
     confidence: 'pace-only' as const,
   }));
   const zoneDist = zoneDistribution(zoneInputs);
-
-  // --- Query 3: fitness/fatigue (98 days) ---
-  const fitnessRows: RawRow[] = await query(
-    `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed
-     FROM activities WHERE start_date >= ? ORDER BY start_date ASC`,
-    [ninetyEightDaysAgo]
-  );
 
   const fitnessActivities = fitnessRows.map((r) => ({
     start_date: String(r[0]).slice(0, 10),

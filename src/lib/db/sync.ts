@@ -1,4 +1,4 @@
-import { exec } from '@/db/client';
+import { execBatch } from '@/db/client';
 import { fetchActivitiesPage, refreshAccessToken, RateLimitError } from '@/lib/strava/client';
 import { getTokenCredentials } from '@/lib/strava/credentials';
 import type { StravaActivity } from '@/lib/strava/types';
@@ -49,33 +49,35 @@ async function ensureFreshToken(): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// Activity upsert
+// Activity upsert — builds a single execBatch statement for one activity
 // ---------------------------------------------------------------------------
 
-async function upsertActivity(a: StravaActivity): Promise<void> {
-  await exec(
-    `INSERT INTO activities (
-       strava_id, name, type, sport_type, start_date,
-       distance, moving_time, elapsed_time, total_elevation,
-       average_speed, max_speed, average_heartrate, max_heartrate,
-       suffer_score, gear_id, raw_json
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-     ON CONFLICT(strava_id) DO UPDATE SET
-       name              = excluded.name,
-       start_date        = excluded.start_date,
-       distance          = excluded.distance,
-       moving_time       = excluded.moving_time,
-       elapsed_time      = excluded.elapsed_time,
-       total_elevation   = excluded.total_elevation,
-       average_speed     = excluded.average_speed,
-       max_speed         = excluded.max_speed,
-       average_heartrate = excluded.average_heartrate,
-       max_heartrate     = excluded.max_heartrate,
-       suffer_score      = excluded.suffer_score,
-       gear_id           = excluded.gear_id,
-       raw_json          = excluded.raw_json,
-       synced_at         = datetime('now')`,
-    [
+const UPSERT_SQL = `INSERT INTO activities (
+   strava_id, name, type, sport_type, start_date,
+   distance, moving_time, elapsed_time, total_elevation,
+   average_speed, max_speed, average_heartrate, max_heartrate,
+   suffer_score, gear_id, raw_json
+ ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+ ON CONFLICT(strava_id) DO UPDATE SET
+   name              = excluded.name,
+   start_date        = excluded.start_date,
+   distance          = excluded.distance,
+   moving_time       = excluded.moving_time,
+   elapsed_time      = excluded.elapsed_time,
+   total_elevation   = excluded.total_elevation,
+   average_speed     = excluded.average_speed,
+   max_speed         = excluded.max_speed,
+   average_heartrate = excluded.average_heartrate,
+   max_heartrate     = excluded.max_heartrate,
+   suffer_score      = excluded.suffer_score,
+   gear_id           = excluded.gear_id,
+   raw_json          = excluded.raw_json,
+   synced_at         = datetime('now')`;
+
+function activityToStmt(a: StravaActivity): { sql: string; params: unknown[] } {
+  return {
+    sql: UPSERT_SQL,
+    params: [
       a.id, a.name, a.type, a.sport_type, a.start_date,
       a.distance, a.moving_time, a.elapsed_time, a.total_elevation_gain,
       a.average_speed, a.max_speed,
@@ -85,8 +87,10 @@ async function upsertActivity(a: StravaActivity): Promise<void> {
       a.gear_id ?? null,
       JSON.stringify(a),
     ],
-  );
+  };
 }
+
+const BATCH_SIZE = 200;
 
 // ---------------------------------------------------------------------------
 // Full / incremental sync
@@ -120,11 +124,15 @@ export async function syncActivities(onProgress: ProgressCallback): Promise<void
 
       onProgress({ phase: 'writing', fetched: totalFetched + activities.length, inserted: totalInserted });
 
-      for (const a of activities) {
-        await upsertActivity(a);
-        totalInserted++;
-        const epoch = Math.floor(new Date(a.start_date).getTime() / 1000);
-        if (epoch > latestEpoch) latestEpoch = epoch;
+      // Build epoch tracking and batch statements together
+      for (let i = 0; i < activities.length; i += BATCH_SIZE) {
+        const batch = activities.slice(i, i + BATCH_SIZE);
+        await execBatch(batch.map(activityToStmt));
+        for (const a of batch) {
+          totalInserted++;
+          const epoch = Math.floor(new Date(a.start_date).getTime() / 1000);
+          if (epoch > latestEpoch) latestEpoch = epoch;
+        }
       }
 
       totalFetched += activities.length;
