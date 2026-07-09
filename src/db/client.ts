@@ -42,6 +42,14 @@ export function exec(sql: string, params: unknown[] = []): Promise<void> {
   return query(sql, params).then(() => undefined);
 }
 
+export function execBatch(stmts: { sql: string; params?: unknown[] }[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const id = nextId++;
+    pending.set(id, { resolve: () => resolve(), reject });
+    getWorker().postMessage({ id, type: 'execBatch', stmts });
+  });
+}
+
 /** Typed helper — returns objects keyed by column name. */
 export async function queryRows<T extends Record<string, unknown>>(
   sql: string,

@@ -79,13 +79,37 @@ async function runMigrations() {
 }
 
 self.onmessage = async (e: MessageEvent) => {
-  const { id, sql, params } = e.data as {
+  const msg = e.data as {
     id: number;
-    sql: string;
+    type?: string;
+    sql?: string;
     params?: unknown[];
+    stmts?: { sql: string; params?: unknown[] }[];
   };
+  const { id } = msg;
+
+  if (msg.type === 'execBatch') {
+    try {
+      await exec('BEGIN');
+      try {
+        for (const stmt of msg.stmts ?? []) {
+          await exec(stmt.sql, stmt.params ?? []);
+        }
+        await exec('COMMIT');
+      } catch (innerErr) {
+        await exec('ROLLBACK').catch(() => undefined);
+        throw innerErr;
+      }
+      self.postMessage({ id, rows: [] });
+    } catch (err) {
+      self.postMessage({ id, error: String(err) });
+    }
+    return;
+  }
+
+  // Default: single query
   try {
-    const rows = await exec(sql, params ?? []);
+    const rows = await exec(msg.sql ?? '', msg.params ?? []);
     self.postMessage({ id, rows });
   } catch (err) {
     self.postMessage({ id, error: String(err) });
