@@ -6,7 +6,16 @@ import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { streamCoachReply } from '@/lib/ai/coach-client';
 import { buildAthleteSnapshot } from '@/lib/ai/snapshot-builder';
 import { snapshotToText } from '@/lib/ai/context-pure';
-import { getSetting } from '@/lib/db/settings';
+import { getSetting, setSetting } from '@/lib/db/settings';
+import { saveCoachSession } from '@/lib/ai/coaching-memory';
+import {
+  getLatestActivityForReview,
+  activityToCoachContext,
+  checkLastWeekCompliance,
+  parseAdjustmentMarker,
+} from '@/lib/ai/coach-triggers';
+import type { ActivityForReview, ComplianceWeekResult, CoachAdjustment } from '@/lib/ai/coach-triggers';
+import { applyCoachAdjustment } from '@/lib/db/plan-adjuster';
 import {
   getActivitiesInRange,
   getTotalActivityCount,
@@ -390,6 +399,317 @@ function CoachBriefingCard() {
 }
 
 // ---------------------------------------------------------------------------
+// T2 — Activity review card
+// ---------------------------------------------------------------------------
+
+interface ActivityReviewCardProps {
+  athleteId: number;
+  model: string;
+  snapshotContext: string;
+}
+
+function ActivityReviewCard({ athleteId, model, snapshotContext }: ActivityReviewCardProps) {
+  const [activity, setActivity] = useState<ActivityForReview | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+  const [coachState, setCoachState] = useState<CoachState>('idle');
+  const [text, setText] = useState('');
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkLatest() {
+      const latest = await getLatestActivityForReview();
+      if (!latest || cancelled) return;
+      const lastReviewed = await getSetting('last_reviewed_activity');
+      if (lastReviewed === null || lastReviewed !== String(latest.stravaId)) {
+        setActivity(latest);
+      }
+    }
+    checkLatest().catch(() => { /* non-critical */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
+
+  if (!activity || dismissed) return null;
+
+  const distKm = activity.distanceM / 1000;
+  const paceSpk =
+    activity.movingTimeS > 0 && distKm > 0 ? activity.movingTimeS / distKm : null;
+  const durationMin = Math.round(activity.movingTimeS / 60);
+
+  async function handleGetFeedback() {
+    if (!activity) return;
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setCoachState('loading');
+    setText('');
+    try {
+      const activityContext = activityToCoachContext(activity);
+      const fullContext = `${activityContext}\n\n${snapshotContext}`;
+      setCoachState('streaming');
+      const gen = streamCoachReply(
+        {
+          athleteId,
+          context: fullContext,
+          question:
+            'Review this training session against my committed goal and current plan. Be honest about execution quality.',
+          model,
+        },
+        ctrl.signal,
+      );
+      let fullText = '';
+      for await (const chunk of gen) {
+        if (ctrl.signal.aborted) break;
+        fullText += chunk;
+        setText(fullText);
+      }
+      if (!ctrl.signal.aborted) {
+        setCoachState('done');
+        await saveCoachSession({
+          sessionType: 'activity_review',
+          referenceDate: activity.date,
+          response: fullText,
+        });
+        await setSetting('last_reviewed_activity', String(activity.stravaId));
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      setCoachState('error');
+    }
+  }
+
+  async function handleDismiss() {
+    if (!activity) return;
+    await setSetting('last_reviewed_activity', String(activity.stravaId));
+    setDismissed(true);
+  }
+
+  return (
+    <div className="rounded-2xl bg-surface-container p-5 mt-4">
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">
+          ai coach · activity review
+        </p>
+        {coachState === 'idle' && (
+          <button
+            type="button"
+            onClick={() => { void handleDismiss(); }}
+            aria-label="Skip activity review"
+            className="font-mono text-xs text-on-surface-variant hover:text-on-surface transition-colors leading-none"
+          >
+            Skip
+          </button>
+        )}
+      </div>
+
+      <p className="text-on-surface text-sm font-medium mb-2 truncate">{activity.name}</p>
+      <div className="flex flex-wrap gap-x-5 gap-y-1 mb-4">
+        <div>
+          <span className="text-on-surface-variant text-xs">Distance</span>
+          <span className="ml-1.5 text-on-surface text-sm tabular-nums">
+            {distKm.toFixed(2)} km
+          </span>
+        </div>
+        <div>
+          <span className="text-on-surface-variant text-xs">Time</span>
+          <span className="ml-1.5 text-on-surface text-sm tabular-nums">{durationMin} min</span>
+        </div>
+        {paceSpk && (
+          <div>
+            <span className="text-on-surface-variant text-xs">Pace</span>
+            <span className="ml-1.5 text-on-surface text-sm tabular-nums">
+              {formatSpk(paceSpk)}/km
+            </span>
+          </div>
+        )}
+        {activity.avgHr && (
+          <div>
+            <span className="text-on-surface-variant text-xs">HR</span>
+            <span className="ml-1.5 text-on-surface text-sm tabular-nums">
+              {Math.round(activity.avgHr)} bpm
+            </span>
+          </div>
+        )}
+      </div>
+
+      {coachState === 'idle' && (
+        <button
+          type="button"
+          onClick={() => { void handleGetFeedback(); }}
+          className="rounded-full bg-secondary-container text-on-secondary-container px-5 py-2.5 text-sm font-mono uppercase tracking-widest hover:shadow-sm transition-all"
+        >
+          Get coach feedback
+        </button>
+      )}
+      {coachState === 'loading' && (
+        <p className="font-mono text-xs text-on-surface-variant animate-pulse">Thinking&hellip;</p>
+      )}
+      {(coachState === 'streaming' || coachState === 'done') && (
+        <div>
+          <p className="text-on-surface text-sm leading-relaxed whitespace-pre-wrap">
+            {text}
+            {coachState === 'streaming' && <span className="animate-pulse">|</span>}
+          </p>
+          {coachState === 'done' && (
+            <button
+              type="button"
+              onClick={() => setDismissed(true)}
+              className="mt-3 font-mono text-xs text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-widest"
+            >
+              Dismiss
+            </button>
+          )}
+        </div>
+      )}
+      {coachState === 'error' && (
+        <p className="text-on-surface-variant text-sm">Coach review unavailable</p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// T3 — Compliance coaching card
+// ---------------------------------------------------------------------------
+
+interface ComplianceCoachCardProps {
+  athleteId: number;
+  model: string;
+  snapshotContext: string;
+}
+
+function ComplianceCoachCard({ athleteId, model, snapshotContext }: ComplianceCoachCardProps) {
+  const [result, setResult] = useState<ComplianceWeekResult | null>(null);
+  const [coachState, setCoachState] = useState<CoachState>('idle');
+  const [text, setText] = useState('');
+  const [adjustment, setAdjustment] = useState<CoachAdjustment | null>(null);
+  const [adjustApplied, setAdjustApplied] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    checkLastWeekCompliance()
+      .then((r) => { if (r.needsCoaching) setResult(r); })
+      .catch(() => { /* non-critical */ });
+  }, []);
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
+
+  if (!result) return null;
+
+  const { completed, planned, score, weekStart } = result;
+  const scoreColor = score < 0.4 ? 'text-error' : 'text-signal-warn';
+
+  async function handleAnalyse() {
+    if (!result) return;
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setCoachState('loading');
+    setText('');
+    setAdjustment(null);
+    setAdjustApplied(false);
+    try {
+      setCoachState('streaming');
+      const gen = streamCoachReply(
+        {
+          athleteId,
+          context: snapshotContext,
+          question: `Last week I completed ${completed} of ${planned} planned sessions. Analyse what happened based on my training data and biometrics, and tell me what to adjust.`,
+          model,
+        },
+        ctrl.signal,
+      );
+      let fullText = '';
+      for await (const chunk of gen) {
+        if (ctrl.signal.aborted) break;
+        fullText += chunk;
+        setText(fullText);
+      }
+      if (!ctrl.signal.aborted) {
+        setCoachState('done');
+        const parsed = parseAdjustmentMarker(fullText);
+        let adjustmentJson: string | null = null;
+        if (parsed) {
+          setAdjustment(parsed);
+          adjustmentJson = JSON.stringify(parsed);
+        }
+        await saveCoachSession({
+          sessionType: 'compliance_check',
+          referenceDate: weekStart,
+          response: fullText,
+          adjustmentJson,
+        });
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      setCoachState('error');
+    }
+  }
+
+  async function handleApplyAdjustment() {
+    if (!adjustment) return;
+    await applyCoachAdjustment(adjustment);
+    setAdjustApplied(true);
+  }
+
+  return (
+    <div className="rounded-2xl bg-surface-container p-5 mt-4">
+      <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-3">
+        ai coach · last week
+      </p>
+      <p className="text-on-surface text-sm mb-4">
+        Last week:{' '}
+        <span className={scoreColor}>
+          {completed}/{planned} sessions
+        </span>
+      </p>
+
+      {coachState === 'idle' && (
+        <button
+          type="button"
+          onClick={() => { void handleAnalyse(); }}
+          className="rounded-full bg-secondary-container text-on-secondary-container px-5 py-2.5 text-sm font-mono uppercase tracking-widest hover:shadow-sm transition-all"
+        >
+          Analyse with coach
+        </button>
+      )}
+      {coachState === 'loading' && (
+        <p className="font-mono text-xs text-on-surface-variant animate-pulse">Thinking&hellip;</p>
+      )}
+      {(coachState === 'streaming' || coachState === 'done') && (
+        <div className="space-y-3">
+          <p className="text-on-surface text-sm leading-relaxed whitespace-pre-wrap">
+            {text}
+            {coachState === 'streaming' && <span className="animate-pulse">|</span>}
+          </p>
+          {coachState === 'done' && adjustment && !adjustApplied && (
+            <button
+              type="button"
+              onClick={() => { void handleApplyAdjustment(); }}
+              className="inline-flex items-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1.5 text-sm hover:shadow-sm transition-all"
+            >
+              Apply: {adjustment.description}
+            </button>
+          )}
+          {adjustApplied && (
+            <p className="font-mono text-xs text-signal-ok">Adjustment applied to your plan.</p>
+          )}
+        </div>
+      )}
+      {coachState === 'error' && (
+        <p className="text-on-surface-variant text-sm">Coach analysis unavailable</p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Dashboard
 // ---------------------------------------------------------------------------
 
@@ -400,14 +720,25 @@ function PatrolDashboard({
   const currentDow = todayDow();
 
   const [coachEnabled, setCoachEnabled] = useState<boolean | null>(null);
+  const [coachAthleteId, setCoachAthleteId] = useState(0);
+  const [coachModel, setCoachModel] = useState('claude-haiku-4-5-20251001');
+  const [coachContext, setCoachContext] = useState('');
 
   useEffect(() => {
     if (WORKER_URL_PATROL === '') {
       setCoachEnabled(false);
       return;
     }
-    getSetting('ai_coach_enabled').then((v) => {
-      setCoachEnabled(v !== '0');
+    Promise.all([
+      getSetting('ai_coach_enabled'),
+      getSetting('strava_athlete_id'),
+      getSetting('ai_coach_model'),
+      buildAthleteSnapshot().then(snapshotToText),
+    ]).then(([enabled, athleteIdRaw, modelRaw, ctx]) => {
+      setCoachEnabled(enabled !== '0');
+      setCoachAthleteId(athleteIdRaw ? Number(athleteIdRaw) : 0);
+      setCoachModel(modelRaw ?? 'claude-haiku-4-5-20251001');
+      setCoachContext(ctx);
     }).catch(() => setCoachEnabled(false));
   }, []);
 
@@ -496,8 +827,25 @@ function PatrolDashboard({
         <GenericStatsRow stats={stats} />
       )}
 
-      {/* AI Coach weekly briefing — only when worker is configured and coach is enabled */}
-      {coachEnabled === true && <CoachBriefingCard />}
+      {/* AI Coach cards — only when worker is configured and coach is enabled */}
+      {coachEnabled === true && (
+        <>
+          {/* Weekly brief */}
+          <CoachBriefingCard />
+          {/* T2 — Activity review: latest unreviewed activity after sync */}
+          <ActivityReviewCard
+            athleteId={coachAthleteId}
+            model={coachModel}
+            snapshotContext={coachContext}
+          />
+          {/* T3 — Compliance coaching: shown when last week score < 0.6 */}
+          <ComplianceCoachCard
+            athleteId={coachAthleteId}
+            model={coachModel}
+            snapshotContext={coachContext}
+          />
+        </>
+      )}
 
       {/* Body */}
       <div className="grid lg:grid-cols-[3fr_2fr] gap-8">
