@@ -4,6 +4,8 @@ import {
   TrendingUp,
   Swords,
   Users,
+  Calendar,
+  Backpack,
   Settings,
   type LucideIcon,
 } from 'lucide-react';
@@ -16,7 +18,7 @@ import {
  * App.tsx pads <main> to clear both (pb on mobile, pl on desktop).
  *
  * Nav flow: Setup → Strava Sync → AI Coach Feedback
- * Destination order: Patrol · Recon · Strike · Club · Settings (last, always)
+ * Destination order: Patrol · Calendar · Gear · Recon · Strike · Club · Settings (last, always)
  */
 
 interface Destination {
@@ -29,18 +31,22 @@ interface Destination {
  * Primary nav destinations — BottomNavBar (mobile) and NavigationRail body (desktop).
  *
  * Order is intentional and matches the Setup → Sync → Coach Feedback flow:
- *   0  Patrol  — daily dashboard + AI coach feedback hub (default / first tab)
- *   1  Recon   — training analysis
- *   2  Strike  — PMC / fitness chart
- *   3  Club    — leaderboard
+ *   0  Patrol    — daily dashboard + AI coach feedback hub (default / first tab)
+ *   1  Calendar  — workout commitments, life events
+ *   2  Gear      — shoe intelligence + kit tracking
+ *   3  Recon     — training analysis
+ *   4  Strike    — PMC / fitness chart
+ *   5  Club      — leaderboard
  *
  * Settings is pinned separately: rail foot on desktop, top-bar icon on mobile.
  */
 const PRIMARY: Destination[] = [
-  { to: '/patrol', label: 'Patrol', icon: Shield },
-  { to: '/recon',  label: 'Recon',  icon: TrendingUp },
-  { to: '/dojo',   label: 'Strike', icon: Swords },
-  { to: '/club',   label: 'Club',   icon: Users },
+  { to: '/patrol',   label: 'Patrol',   icon: Shield },
+  { to: '/calendar', label: 'Calendar', icon: Calendar },
+  { to: '/gear',     label: 'Gear',     icon: Backpack },
+  { to: '/recon',    label: 'Recon',    icon: TrendingUp },
+  { to: '/dojo',     label: 'Strike',   icon: Swords },
+  { to: '/club',     label: 'Club',     icon: Users },
 ];
 
 function homeHref(): string {
