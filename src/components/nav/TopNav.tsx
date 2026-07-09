@@ -3,9 +3,7 @@ import {
   Shield,
   TrendingUp,
   Swords,
-  CalendarDays,
   Users,
-  Footprints,
   Settings,
   type LucideIcon,
 } from 'lucide-react';
@@ -13,9 +11,12 @@ import {
 /**
  * Material 3 navigation:
  *  - Mobile (< md): small top app bar (brand + secondary actions) and a
- *    fixed bottom navigation bar with the five primary destinations.
+ *    fixed bottom navigation bar with the four primary destinations.
  *  - Desktop (md+): a left navigation rail with everything.
  * App.tsx pads <main> to clear both (pb on mobile, pl on desktop).
+ *
+ * Nav flow: Setup → Strava Sync → AI Coach Feedback
+ * Destination order: Patrol · Recon · Strike · Club · Settings (last, always)
  */
 
 interface Destination {
@@ -24,21 +25,26 @@ interface Destination {
   icon: LucideIcon;
 }
 
+/**
+ * Primary nav destinations — BottomNavBar (mobile) and NavigationRail body (desktop).
+ *
+ * Order is intentional and matches the Setup → Sync → Coach Feedback flow:
+ *   0  Patrol  — daily dashboard + AI coach feedback hub (default / first tab)
+ *   1  Recon   — training analysis
+ *   2  Strike  — PMC / fitness chart
+ *   3  Club    — leaderboard
+ *
+ * Settings is pinned separately: rail foot on desktop, top-bar icon on mobile.
+ */
 const PRIMARY: Destination[] = [
-  { to: '/patrol',   label: 'Patrol',   icon: Shield },
-  { to: '/dojo',     label: 'Dojo',     icon: Swords },
-  { to: '/calendar', label: 'Calendar', icon: CalendarDays },
-  { to: '/club',     label: 'Club',     icon: Users },
-  { to: '/gear',     label: 'Gear',     icon: Footprints },
-];
-
-const SECONDARY: Destination[] = [
-  { to: '/recon',    label: 'Recon',    icon: TrendingUp },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/patrol', label: 'Patrol', icon: Shield },
+  { to: '/recon',  label: 'Recon',  icon: TrendingUp },
+  { to: '/dojo',   label: 'Strike', icon: Swords },
+  { to: '/club',   label: 'Club',   icon: Users },
 ];
 
 function homeHref(): string {
-  return localStorage.getItem('ghost.home_page') ?? '/calendar';
+  return localStorage.getItem('ghost.home_page') ?? '/patrol';
 }
 
 // ---------------------------------------------------------------------------
@@ -55,22 +61,19 @@ function TopAppBar() {
         GHOST
       </Link>
       <div className="flex items-center gap-1">
-        {SECONDARY.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            aria-label={label}
-            className={({ isActive }) =>
-              `p-2.5 rounded-full transition-colors ${
-                isActive
-                  ? 'bg-secondary-container text-on-secondary-container'
-                  : 'text-on-surface-variant hover:bg-on-surface/8'
-              }`
-            }
-          >
-            <Icon size={20} />
-          </NavLink>
-        ))}
+        <NavLink
+          to="/settings"
+          aria-label="Settings"
+          className={({ isActive }) =>
+            `p-2.5 rounded-full transition-colors ${
+              isActive
+                ? 'bg-secondary-container text-on-secondary-container'
+                : 'text-on-surface-variant hover:bg-on-surface/8'
+            }`
+          }
+        >
+          <Settings size={20} />
+        </NavLink>
       </div>
     </header>
   );
@@ -125,7 +128,6 @@ function BottomNavBar() {
 // ---------------------------------------------------------------------------
 
 function NavigationRail() {
-  const items = [...PRIMARY.slice(0, 3), SECONDARY[0], ...PRIMARY.slice(3)];
   return (
     <nav
       aria-label="Main navigation"
@@ -139,7 +141,7 @@ function NavigationRail() {
       </Link>
 
       <div className="flex flex-col items-center gap-3 flex-1">
-        {items.map(({ to, label, icon: Icon }) => (
+        {PRIMARY.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className="flex flex-col items-center gap-1 group">
             {({ isActive }) => (
               <>
