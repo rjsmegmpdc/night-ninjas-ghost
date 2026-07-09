@@ -12,6 +12,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: oauth-worker/package-lock.json
+
+      - run: npm ci
+        working-directory: oauth-worker
+
+      - run: npx tsc --noEmit
+        working-directory: oauth-worker
+
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
