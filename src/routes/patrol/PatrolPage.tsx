@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { RefreshCw } from 'lucide-react';
 import { useDb } from '@/db/DbContext';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { streamCoachReply } from '@/lib/ai/coach-client';
 import { buildAthleteSnapshot } from '@/lib/ai/snapshot-builder';
 import { snapshotToText } from '@/lib/ai/context-pure';
-import { getSetting, setSetting } from '@/lib/db/settings';
+import { getSetting, setSetting, deleteSetting } from '@/lib/db/settings';
 import { loadWeekNotes, saveCoachSession } from '@/lib/ai/coaching-memory';
 import type { DayNote } from '@/lib/ai/coaching-memory';
 import {
@@ -985,6 +985,7 @@ function ComplianceCoachCard({ athleteId, model, snapshotContext }: ComplianceCo
 function PatrolDashboard({
   data, startIso, endIso, todayIso,
 }: { data: PatrolData; startIso: string; endIso: string; todayIso: string }) {
+  const navigate = useNavigate();
   const { stats, activities, nextRace, activePlan } = data;
   const currentDow = todayDow();
 
@@ -999,6 +1000,7 @@ function PatrolDashboard({
   const [coachAthleteId, setCoachAthleteId] = useState(0);
   const [coachModel, setCoachModel] = useState('claude-haiku-4-5-20251001');
   const [coachContext, setCoachContext] = useState('');
+  const [entryAssessmentDone, setEntryAssessmentDone] = useState(false);
 
   useEffect(() => {
     if (WORKER_URL_PATROL === '') {
@@ -1017,6 +1019,17 @@ function PatrolDashboard({
       setCoachContext(ctx);
     }).catch(() => setCoachEnabled(false));
   }, []);
+
+  useEffect(() => {
+    getSetting('entry_assessment_done')
+      .then((val) => setEntryAssessmentDone(val !== null))
+      .catch(() => { /* non-critical */ });
+  }, []);
+
+  async function handleReassess() {
+    await deleteSetting('entry_assessment_done').catch(() => { /* non-critical */ });
+    void navigate('/setup');
+  }
 
   // Derive plan — memoised so it doesn't recalculate on every render
   const derived = useMemo(() => {
@@ -1115,6 +1128,16 @@ function PatrolDashboard({
           />
           {/* Weekly brief */}
           <CoachBriefingCard />
+          {/* Reassess fitness baseline — compact link for returning athletes */}
+          {entryAssessmentDone && (
+            <button
+              type="button"
+              onClick={() => { void handleReassess(); }}
+              className="text-xs text-on-surface-variant underline underline-offset-2 hover:text-on-surface transition-colors mt-2"
+            >
+              Reassess my fitness baseline
+            </button>
+          )}
           {/* Coach note dots — current week Mon–Sun */}
           <WeekNotesDots weekStart={startIso} weekEnd={endIso} />
           {/* T2 — Activity review: latest unreviewed activity after sync */}

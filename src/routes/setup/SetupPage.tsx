@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams, useNavigate } from 'react-router';
+import { useSearchParams, useNavigate, Link } from 'react-router';
 import { RefreshCw, CheckCircle, AlertCircle, Loader, Clock } from 'lucide-react';
 import { useDb } from '@/db/DbContext';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
@@ -32,8 +32,21 @@ import {
   applyProfileBlob,
   type SyncIntent,
 } from '@/lib/sync-profile';
+import { buildAssessmentContext } from '@/lib/ai/assessment-builder';
+import type { AssessmentContext } from '@/lib/ai/assessment-builder';
+import { streamCoachReply } from '@/lib/ai/coach-client';
+import { saveCoachSession } from '@/lib/ai/coaching-memory';
 
 const WORKER_URL = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
+
+const ASSESSMENT_QUESTION =
+  'Give me an honest entry fitness assessment in 180–220 words. Cover: ' +
+  '(1) my current training load and form in plain terms, ' +
+  '(2) when I was fittest in the last year and how that compares to now, ' +
+  '(3) my estimated race-ready paces for each distance I have data for, ' +
+  '(4) my training consistency and any pattern you notice, ' +
+  '(5) one specific thing to build on and one risk to watch. ' +
+  'Be direct. Use the numbers. No generic advice.';
 
 // ---------------------------------------------------------------------------
 // OAuth helpers
@@ -970,6 +983,180 @@ function AthleteMismatchView({
 }
 
 // ---------------------------------------------------------------------------
+// FitnessAssessmentCard — shown in ConnectedView after sync completes
+// ---------------------------------------------------------------------------
+
+type AssessmentCardState = 'idle' | 'loading' | 'streaming' | 'done' | 'error';
+
+function FitnessAssessmentCard({ athleteId }: { athleteId: number }) {
+  const [cardState, setCardState] = useState<AssessmentCardState>('idle');
+  const [assessmentDone, setAssessmentDone] = useState<boolean | null>(null); // null = loading
+  const [activityCount, setActivityCount] = useState(0);
+  const [text, setText] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getSetting('entry_assessment_done').then((val) => {
+      if (!cancelled) setAssessmentDone(val !== null);
+    }).catch(() => { if (!cancelled) setAssessmentDone(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
+
+  // Still loading settings — render nothing to avoid flash
+  if (assessmentDone === null) return null;
+
+  // Prior assessment exists — show compact reassess link
+  if (assessmentDone) {
+    return (
+      <div className="rounded-2xl bg-surface-container p-6 mt-6">
+        <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-2">
+          fitness baseline
+        </p>
+        <p className="font-mono text-xs text-on-surface-variant leading-relaxed mb-3">
+          Entry assessment already complete.
+        </p>
+        <button
+          type="button"
+          onClick={() => setAssessmentDone(false)}
+          className="font-mono text-xs text-on-surface-variant underline underline-offset-2 hover:text-on-surface transition-colors"
+        >
+          Reassess my fitness baseline
+        </button>
+      </div>
+    );
+  }
+
+  async function handleGetAssessment() {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setCardState('loading');
+    setText('');
+    setErrorMsg('');
+
+    try {
+      const ctx: AssessmentContext = await buildAssessmentContext();
+      if (ctrl.signal.aborted) return;
+
+      setActivityCount(ctx.activityCount);
+
+      if (!ctx.hasSufficientData) {
+        setCardState('error');
+        setErrorMsg('Sync more runs to unlock your assessment (10+ needed)');
+        return;
+      }
+
+      const today = new Date().toISOString().slice(0, 10);
+      setCardState('streaming');
+
+      const gen = streamCoachReply(
+        {
+          athleteId,
+          context: ctx.contextText,
+          question: ASSESSMENT_QUESTION,
+          model: 'claude-haiku-4-5-20251001',
+        },
+        ctrl.signal,
+      );
+
+      let fullText = '';
+      for await (const chunk of gen) {
+        if (ctrl.signal.aborted) break;
+        fullText += chunk;
+        setText(fullText);
+      }
+
+      if (!ctrl.signal.aborted) {
+        await saveCoachSession({
+          sessionType: 'entry_assessment',
+          referenceDate: today,
+          contextSnapshot: ctx.contextText,
+          response: fullText,
+        });
+        await setSetting('entry_assessment_done', today);
+        await setSetting('entry_assessment_text', fullText);
+        setCardState('done');
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      setCardState('error');
+      setErrorMsg((err as Error).message ?? 'Assessment failed — try again.');
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-surface-container p-6 mt-6">
+      <p className="text-base font-bold text-on-surface">Your fitness baseline</p>
+      {cardState === 'idle' && (
+        <>
+          {activityCount > 0 && (
+            <p className="text-sm text-on-surface-variant mt-0.5">
+              {activityCount} Strava runs analysed
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => { void handleGetAssessment(); }}
+            className="rounded-full bg-primary text-on-primary px-6 py-2.5 text-sm font-semibold mt-4 hover:shadow-md active:opacity-90 transition-all"
+          >
+            Get my fitness assessment
+          </button>
+        </>
+      )}
+
+      {cardState === 'loading' && (
+        <p className="text-sm text-on-surface-variant mt-4 animate-pulse font-mono">
+          Building your assessment…
+        </p>
+      )}
+
+      {(cardState === 'streaming' || cardState === 'done') && (
+        <div>
+          <p className="text-sm text-on-surface leading-relaxed mt-4 whitespace-pre-wrap">
+            {text}
+            {cardState === 'streaming' && (
+              <span
+                className="inline-block w-0.5 h-4 bg-on-surface ml-0.5 animate-pulse align-middle"
+                aria-hidden="true"
+              />
+            )}
+          </p>
+          {cardState === 'done' && (
+            <Link
+              to="/patrol"
+              className="inline-block mt-5 rounded-full bg-primary text-on-primary px-6 py-2.5 text-sm font-semibold hover:shadow-md active:opacity-90 transition-all"
+            >
+              Continue to dashboard
+            </Link>
+          )}
+        </div>
+      )}
+
+      {cardState === 'error' && (
+        <div className="mt-4 space-y-3">
+          <p className="text-sm text-on-surface-variant leading-relaxed">
+            {errorMsg || 'Assessment unavailable — try again.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => setCardState('idle')}
+            className="font-mono text-xs text-on-surface-variant underline underline-offset-2 hover:text-on-surface transition-colors"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Connected
 // ---------------------------------------------------------------------------
 
@@ -1055,6 +1242,9 @@ function ConnectedView({
           </a>
         </div>
       )}
+
+      {/* Entry fitness assessment — shown after sync, hidden once completed */}
+      <FitnessAssessmentCard athleteId={tokens.athleteId} />
 
       <div className="flex items-center gap-3">
         <button
