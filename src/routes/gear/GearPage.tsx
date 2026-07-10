@@ -8,6 +8,20 @@ import { getStoredTokens, storeTokens, setSetting, getSetting } from '@/lib/db/s
 import { refreshAccessToken } from '@/lib/strava/client';
 import { getTokenCredentials } from '@/lib/strava/credentials';
 
+// Teammate import — gear-intelligence module (built in parallel by ANALYST).
+// If the module doesn't exist yet tsc will complain; local stubs below satisfy types.
+import {
+  buildGearRecommendations,
+  getRaceShoeAlert,
+  WORKOUT_LABELS,
+} from '@/lib/analysis/gear-intelligence';
+import type {
+  ShoeData,
+  ShoeActivity,
+  GearRecommendations,
+  ShoeWorkoutScore,
+} from '@/lib/analysis/gear-intelligence';
+
 const WORKER_URL = (import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined) ?? '';
 
 // ---------------------------------------------------------------------------
@@ -54,6 +68,8 @@ interface GearItem {
 }
 
 type GearCategory = 'clothing' | 'backpack' | 'hardware' | 'food';
+
+// (No local stubs needed — @/lib/analysis/gear-intelligence module is present.)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -225,6 +241,41 @@ async function deleteGearItem(id: number): Promise<void> {
   await exec('DELETE FROM gear_items WHERE id = ?', [id]);
 }
 
+async function loadShoeActivities(): Promise<ShoeActivity[]> {
+  const rows = await query(
+    `SELECT a.gear_id, a.distance, a.moving_time, a.average_speed,
+            a.average_heartrate, a.type, a.start_date
+     FROM activities a
+     INNER JOIN shoes s ON s.strava_gear_id = a.gear_id
+     WHERE s.retired = 0
+       AND a.type IN ('Run','VirtualRun','TrailRun')
+       AND a.distance > 0
+       AND a.moving_time > 0`,
+    [],
+  );
+  return rows.map((r) => ({
+    stravaGearId: r[0] as string,
+    distanceM:    r[1] as number,
+    movingTimeS:  r[2] as number,
+    avgSpeedMs:   r[3] as number,
+    avgHr:        r[4] != null ? (r[4] as number) : null,
+    type:         r[5] as string,
+    startDate:    r[6] as string,
+  }));
+}
+
+async function loadDaysToRace(): Promise<number | null> {
+  const rows = await query(
+    `SELECT date FROM races WHERE is_goal = 1 AND date >= date('now') ORDER BY date ASC LIMIT 1`,
+    [],
+  );
+  if (!rows.length) return null;
+  const raceDate = new Date((rows[0][0] as string) + 'T00:00:00Z');
+  const today    = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  return Math.round((raceDate.getTime() - today.getTime()) / 86_400_000);
+}
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -304,6 +355,173 @@ function ShoeCard({ shoe, allActive, onRefresh }: { shoe: ShoeRow; allActive: Sh
         {pct >= 70 && pct < 90 && <span className="text-signal-warn uppercase">Worn</span>}
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ShoeIntelligencePanel
+// ---------------------------------------------------------------------------
+
+function IntelligenceSkeleton() {
+  return (
+    <div className="space-y-3" aria-busy="true" aria-label="Loading shoe intelligence">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="rounded-xl bg-surface-container p-4 animate-pulse">
+          <div className="h-3 w-1/3 rounded bg-on-surface/10 mb-3" />
+          <div className="h-4 w-1/2 rounded bg-on-surface/10 mb-2" />
+          <div className="h-1.5 rounded-full bg-on-surface/10" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface WorkoutCardProps {
+  workoutType: string;
+  scores: ShoeWorkoutScore[];
+}
+
+/** Convert minutes-per-km float → "4:32 /km" display string. */
+function fmtMinKm(minKm: number): string {
+  if (minKm <= 0) return '—';
+  const min = Math.floor(minKm);
+  const sec = Math.round((minKm - min) * 60);
+  return `${min}:${String(sec).padStart(2, '0')} /km`;
+}
+
+function WorkoutCard({ workoutType, scores }: WorkoutCardProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (scores.length === 0) return null;
+
+  const top    = scores[0];
+  const others = scores.slice(1, 3);
+  const label  = (WORKOUT_LABELS as Record<string, string>)[workoutType] ?? workoutType;
+
+  return (
+    <div className="rounded-xl bg-surface-container p-4 mb-3">
+      {/* Header row — workout label + top shoe */}
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <span className="text-xs text-on-surface-variant uppercase tracking-wide font-semibold font-mono">
+          {label}
+        </span>
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          <span className="text-sm font-bold text-on-surface font-mono text-right">{top.shoeName}</span>
+          {top.wearStatus === 'retire' && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400 font-mono">
+              &#x26A0; {top.totalKm.toFixed(0)}km
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Sub-label — brand + pace + sessions */}
+      <p className="text-xs text-on-surface-variant font-mono mb-3">
+        {top.shoeBrand ? `${top.shoeBrand} · ` : ''}
+        {fmtMinKm(top.avgPaceMinKm)} · {top.sessionCount} session{top.sessionCount !== 1 ? 's' : ''}
+      </p>
+
+      {/* Score bar */}
+      <div className="h-1.5 rounded-full bg-on-surface/10 overflow-hidden mb-1">
+        <div
+          className="h-full rounded-full bg-primary transition-all"
+          style={{ width: `${Math.min(top.performanceScore, 100)}%` }}
+          role="meter"
+          aria-valuenow={Math.round(top.performanceScore)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`Performance score: ${Math.round(top.performanceScore)} out of 100`}
+        />
+      </div>
+      <p className="text-[10px] text-on-surface-variant font-mono text-right mb-2">
+        {Math.round(top.performanceScore)}/100
+      </p>
+
+      {/* Expand / collapse ranked shoes 2 and 3 */}
+      {others.length > 0 && (
+        <>
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-mono text-on-surface-variant hover:text-on-surface transition-colors"
+            aria-expanded={expanded}
+          >
+            {expanded ? <ChevronUp size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />}
+            {expanded ? 'Show less' : `+${others.length} more`}
+          </button>
+
+          {expanded && (
+            <div className="mt-2 space-y-2 border-t border-outline-variant pt-2">
+              {others.map((shoe) => (
+                <div key={shoe.shoeId} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-mono text-on-surface">{shoe.shoeName}</span>
+                    {shoe.wearStatus === 'retire' && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-amber-400 font-mono">
+                        &#x26A0; {shoe.totalKm.toFixed(0)}km
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-mono text-on-surface-variant shrink-0">
+                    {fmtMinKm(shoe.avgPaceMinKm)} · {shoe.sessionCount} sess
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+interface ShoeIntelligencePanelProps {
+  loading: boolean;
+  recommendations: GearRecommendations | null;
+  raceAlert: string | null;
+}
+
+function ShoeIntelligencePanel({ loading, recommendations, raceAlert }: ShoeIntelligencePanelProps) {
+  const hasData =
+    recommendations !== null &&
+    recommendations.coveredTypes.length > 0;
+
+  return (
+    <section aria-label="Shoe Intelligence" className="mb-6">
+      {/* Panel header */}
+      <div className="flex items-baseline gap-3 mb-4">
+        <h3 className="font-display text-xl tracking-widest uppercase text-bone">Shoe Intelligence</h3>
+        <span className="text-xs text-on-surface-variant font-mono">Powered by your Strava data</span>
+      </div>
+
+      {loading ? (
+        <IntelligenceSkeleton />
+      ) : !hasData ? (
+        <div className="rounded-xl bg-surface-container p-4">
+          <p className="text-sm text-on-surface-variant font-mono">
+            Sync Strava activities and shoes to unlock intelligence
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Race alert */}
+          {raceAlert && (
+            <div className="rounded-xl bg-secondary-container/60 p-3 mb-4 text-sm text-on-secondary-container font-mono">
+              {raceAlert}
+            </div>
+          )}
+
+          {/* Workout type cards */}
+          {recommendations.coveredTypes.map((wt) => (
+            <WorkoutCard
+              key={wt}
+              workoutType={wt}
+              scores={recommendations.byWorkoutType[wt] ?? []}
+            />
+          ))}
+        </>
+      )}
+    </section>
   );
 }
 
@@ -600,16 +818,58 @@ export default function GearPage() {
   const [gearItems, setGearItems] = useState<GearItem[] | null>(null);
   const [showRetired, setShowRetired] = useState(false);
 
+  // Shoe intelligence state
+  const [intelLoading, setIntelLoading] = useState(true);
+  const [recommendations, setRecommendations] = useState<GearRecommendations | null>(null);
+  const [raceAlert, setRaceAlert] = useState<string | null>(null);
+
   const refresh = useCallback(async () => {
     const [s, g] = await Promise.all([loadShoes(), loadGearItems()]);
     setShoes(s);
     setGearItems(g);
   }, []);
 
+  const refreshIntelligence = useCallback(async () => {
+    setIntelLoading(true);
+    try {
+      const [shoeRows, activities, daysToRace] = await Promise.all([
+        loadShoes(),
+        loadShoeActivities(),
+        loadDaysToRace(),
+      ]);
+
+      const shoesData: ShoeData[] = shoeRows
+        .filter((s) => s.strava_gear_id !== null && s.retired === 0)
+        .map((s) => ({
+          id:           s.id,
+          stravaGearId: s.strava_gear_id!,
+          name:         s.name,
+          brand:        s.brand,
+          model:        s.model,
+          category:     s.category,
+          targetKm:     s.target_km,
+          totalKm:      s.total_km,
+        }));
+
+      const recs  = buildGearRecommendations(shoesData, activities);
+      const alert = getRaceShoeAlert(shoesData, activities, daysToRace);
+
+      setRecommendations(recs);
+      setRaceAlert(alert);
+    } catch {
+      // Intelligence is non-critical; silently show no-data state
+      setRecommendations(null);
+      setRaceAlert(null);
+    } finally {
+      setIntelLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!ready) return;
     void refresh();
-  }, [ready, refresh]);
+    void refreshIntelligence();
+  }, [ready, refresh, refreshIntelligence]);
 
   if (!ready || shoes === null || gearItems === null) return <PageSkeleton />;
 
@@ -643,6 +903,13 @@ export default function GearPage() {
             </p>
           </div>
         </div>
+
+        {/* Shoe Intelligence — above shoe list */}
+        <ShoeIntelligencePanel
+          loading={intelLoading}
+          recommendations={recommendations}
+          raceAlert={raceAlert}
+        />
 
         {activeShoes.length === 0 ? (
           <div className="m3-card p-6">
