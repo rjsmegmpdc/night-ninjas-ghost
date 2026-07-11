@@ -37,7 +37,8 @@ import type { AssessmentContext } from '@/lib/ai/assessment-builder';
 import { streamCoachReply } from '@/lib/ai/coach-client';
 import { saveCoachSession } from '@/lib/ai/coaching-memory';
 
-const WORKER_URL = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
+const WORKER_URL    = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
+const SHARED_APP_ID = import.meta.env.VITE_STRAVA_CLIENT_ID   as string | undefined;
 
 const ASSESSMENT_QUESTION =
   'Give me an honest entry fitness assessment in 180–220 words. Cover: ' +
@@ -812,17 +813,22 @@ function PrivacyNotice({ onAcknowledge }: { onAcknowledge: () => void }) {
           Your display preferences (theme, font size) and your home page. These
           are lightweight settings, not your training data.
         </p>
-        <p>
-          <strong className="text-bone">Your Strava API app details:</strong>{' '}
-          The Client ID and Secret you enter during setup are saved to this
-          device's private storage. They identify your API app to Strava —
-          they are not your Strava password, and GHOST never sees or stores
-          your password.
-        </p>
+        {!SHARED_APP_ID && (
+          <p>
+            <strong className="text-bone">Your Strava API app details:</strong>{' '}
+            The Client ID and Secret you enter during setup are saved to this
+            device's private storage. They identify your API app to Strava —
+            they are not your Strava password, and GHOST never sees or stores
+            your password.
+          </p>
+        )}
         <p>
           <strong className="text-bone">Your Strava connection:</strong>{' '}
-          Stored in private browser storage after you connect. GHOST uses it to
-          pull your activities. You can revoke access at any time at{' '}
+          When you connect, Strava grants GHOST permission tokens to read your
+          activities. These tokens are stored in private browser storage on
+          this device only. Your Strava password is never shared with GHOST —
+          you log in on strava.com directly. You can revoke access at any time
+          at{' '}
           <a
             href="https://www.strava.com/settings/apps"
             target="_blank"
@@ -923,13 +929,15 @@ function NotConnected({
             Strava must have <strong className="text-bone">{window.location.hostname}</strong> set as
             the Authorization Callback Domain.
           </p>
-          <button
-            type="button"
-            onClick={onChangeCredentials}
-            className="font-mono text-xs text-bone-mute hover:text-accent transition-colors mt-2"
-          >
-            Change API credentials →
-          </button>
+          {!SHARED_APP_ID && (
+            <button
+              type="button"
+              onClick={onChangeCredentials}
+              className="font-mono text-xs text-bone-mute hover:text-accent transition-colors mt-2"
+            >
+              Change API credentials →
+            </button>
+          )}
         </div>
       </details>
     </div>
