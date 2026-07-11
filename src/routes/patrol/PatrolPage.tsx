@@ -2,7 +2,14 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { RefreshCw } from 'lucide-react';
 import { useDb } from '@/db/DbContext';
+import { query } from '@/db/client';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import {
+  computeReadiness,
+  computeBaselineFromHistory,
+  type ReadinessInputs,
+  type ReadinessScore,
+} from '@/lib/analysis/readiness-pure';
 import { streamCoachReply } from '@/lib/ai/coach-client';
 import { buildAthleteSnapshot } from '@/lib/ai/snapshot-builder';
 import { snapshotToText } from '@/lib/ai/context-pure';
@@ -216,6 +223,191 @@ interface PatrolData {
 }
 
 // ---------------------------------------------------------------------------
+// ReadinessCard
+// ---------------------------------------------------------------------------
+
+type ReadinessLoadState = 'loading' | 'no-data' | 'ready';
+
+interface ReadinessState {
+  loadState: ReadinessLoadState;
+  score: ReadinessScore | null;
+  inputs: ReadinessInputs | null;
+}
+
+function ReadinessCard() {
+  const [state, setState] = useState<ReadinessState>({ loadState: 'loading', score: null, inputs: null });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        // Today's values from daily_health_metrics (prefer this source)
+        const todayRows = await query(
+          `SELECT hrv_ms, rhr_bpm, sleep_score, body_battery, stress_score
+           FROM daily_health_metrics
+           WHERE date = date('now')
+           ORDER BY synced_at DESC LIMIT 1`,
+          [],
+        );
+
+        // Fallback to journal for HRV + RHR if no daily_health_metrics today
+        const journalRows = await query(
+          `SELECT hrv, resting_hr FROM journal WHERE date = date('now') LIMIT 1`,
+          [],
+        );
+
+        // 28-day history for baseline
+        const historyRows = await query(
+          `SELECT hrv_ms, rhr_bpm, sleep_score, body_battery, stress_score
+           FROM daily_health_metrics
+           WHERE date >= date('now', '-28 days') AND date < date('now')
+           ORDER BY date ASC`,
+          [],
+        );
+
+        if (cancelled) return;
+
+        // Build today's inputs — prefer daily_health_metrics, fallback to journal
+        let inputs: ReadinessInputs | null = null;
+
+        if (todayRows.length > 0) {
+          const r = todayRows[0];
+          inputs = {
+            hrvMs:      r[0] != null ? Number(r[0]) : null,
+            rhrBpm:     r[1] != null ? Number(r[1]) : null,
+            sleepScore: r[2] != null ? Number(r[2]) : null,
+            bodyBattery: r[3] != null ? Number(r[3]) : null,
+            stressScore: r[4] != null ? Number(r[4]) : null,
+            sleepDurationS: null,
+          };
+        } else if (journalRows.length > 0) {
+          const j = journalRows[0];
+          inputs = {
+            hrvMs:       j[0] != null ? Number(j[0]) : null,
+            rhrBpm:      j[1] != null ? Number(j[1]) : null,
+            sleepScore:  null,
+            bodyBattery: null,
+            stressScore: null,
+            sleepDurationS: null,
+          };
+        }
+
+        // If all fields are null, treat as no-data
+        const hasAnyData = inputs !== null && Object.values(inputs).some((v) => v !== null);
+
+        if (!hasAnyData) {
+          setState({ loadState: 'no-data', score: null, inputs: null });
+          return;
+        }
+
+        // Build baseline from history
+        const history: ReadinessInputs[] = historyRows.map((r) => ({
+          hrvMs:       r[0] != null ? Number(r[0]) : null,
+          rhrBpm:      r[1] != null ? Number(r[1]) : null,
+          sleepScore:  r[2] != null ? Number(r[2]) : null,
+          bodyBattery: r[3] != null ? Number(r[3]) : null,
+          stressScore: r[4] != null ? Number(r[4]) : null,
+          sleepDurationS: null,
+        }));
+
+        const baselines = computeBaselineFromHistory(history);
+        const score = computeReadiness(inputs!, baselines);
+        setState({ loadState: 'ready', score, inputs: inputs! });
+      } catch {
+        // Non-critical — show no-data state on error
+        if (!cancelled) setState({ loadState: 'no-data', score: null, inputs: null });
+      }
+    }
+
+    void load();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Loading skeleton
+  if (state.loadState === 'loading') {
+    return (
+      <div
+        className="h-24 rounded-2xl bg-surface-container animate-pulse mb-4"
+        role="status"
+        aria-label="Loading today's readiness"
+      />
+    );
+  }
+
+  // No data state
+  if (state.loadState === 'no-data') {
+    return (
+      <div className="rounded-2xl bg-surface-container p-5 mb-4">
+        <div className="flex items-center justify-between">
+          <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">
+            Today's readiness
+          </p>
+          <Link
+            to="/coach-log"
+            className="text-xs text-primary underline"
+            aria-label="Log biometrics to get a readiness score"
+          >
+            Log now →
+          </Link>
+        </div>
+        <p className="text-4xl font-bold tabular-nums text-on-surface-variant mt-2">— / 100</p>
+        <p className="text-sm text-on-surface-variant mt-1">No biometrics logged today</p>
+      </div>
+    );
+  }
+
+  // Data available
+  const { score, inputs } = state;
+  if (!score || !inputs) return null;
+
+  // Build compact biometrics row — only non-null values, stress only if > 60
+  const biometricItems: string[] = [];
+  if (inputs.hrvMs !== null)       biometricItems.push(`HRV ${Math.round(inputs.hrvMs)}ms`);
+  if (inputs.sleepScore !== null)  biometricItems.push(`Sleep ${Math.round(inputs.sleepScore)}`);
+  if (inputs.bodyBattery !== null) biometricItems.push(`BB ${Math.round(inputs.bodyBattery)}`);
+  if (inputs.stressScore !== null && inputs.stressScore > 60) biometricItems.push(`Stress ${Math.round(inputs.stressScore)}`);
+  if (inputs.rhrBpm !== null)      biometricItems.push(`RHR ${Math.round(inputs.rhrBpm)}bpm`);
+
+  return (
+    <div className="rounded-2xl bg-surface-container p-5 mb-4" role="region" aria-label="Today's readiness">
+      <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-3">
+        Today's readiness
+      </p>
+
+      <div className="flex items-baseline gap-3">
+        <span className={`text-4xl font-bold tabular-nums ${score.color}`}>
+          {score.score}
+        </span>
+        <span className="font-mono text-on-surface-variant text-sm">/ 100</span>
+        <span className="font-mono text-base">●</span>
+        <span className={`text-sm font-semibold ${score.color}`}>{score.label}</span>
+      </div>
+
+      <p className="text-sm text-on-surface-variant mt-1">{score.recommendation}</p>
+
+      {biometricItems.length > 0 && (
+        <div className="text-xs text-on-surface-variant mt-3 flex flex-wrap gap-4" aria-label="Biometric details">
+          {biometricItems.map((item, i) => (
+            <span key={i}>{item}</span>
+          ))}
+        </div>
+      )}
+
+      <div className="flex justify-end mt-3">
+        <Link
+          to="/coach-log"
+          className="text-xs text-primary underline"
+          aria-label="Update today's biometrics in Coach Log"
+        >
+          Log →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // PatrolPage
 // ---------------------------------------------------------------------------
 
@@ -258,6 +450,8 @@ export default function PatrolPage() {
 
   return (
     <div className="px-4 sm:px-8 lg:px-12 py-8 sm:py-10 max-w-7xl mx-auto space-y-10">
+      {/* ReadinessCard is always first — most time-sensitive daily signal */}
+      <ReadinessCard />
       {!data.hasData ? (
         <NoDataState />
       ) : (
