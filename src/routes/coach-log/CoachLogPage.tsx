@@ -572,7 +572,7 @@ function InlineEditForm({
     energyL: entry.energyLevel,
     stressL: entry.stressLevel,
     restingHr: entry.restingHr != null ? String(entry.restingHr) : '',
-    hrv: '',
+    hrv: entry.hrv != null ? String(entry.hrv) : '',
     bodyBattery: '',
     notes: entry.notes ?? '',
   });
