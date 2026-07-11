@@ -51,6 +51,15 @@ export interface AthleteSnapshot {
   biometrics: BiometricsSnapshot | null;
   recentActivities: RecentActivitySnapshot[];
   activeInjuries: ActiveInjurySnapshot[];
+  /** 7-day biometric trend summary — populated by buildAthleteSnapshot when data is available. */
+  biometricsTrend?: {
+    hrv7dAvg: number | null;
+    hrv7dDirection: 'up' | 'down' | 'stable';
+    sleep7dAvg: number | null;
+    rhr7dAvg: number | null;
+    readinessScore: number | null;
+    readinessLabel: string | null;
+  };
 }
 
 function fmtPace(spk: number | null): string {
@@ -100,6 +109,18 @@ export function snapshotToText(s: AthleteSnapshot): string {
     if (b.stressScore != null) parts.push(`stress ${b.stressScore}/100`);
     if (b.bodyBattery != null) parts.push(`body battery ${b.bodyBattery}/100`);
     if (parts.length > 0) lines.push(`Today's biometrics: ${parts.join(', ')}`);
+  }
+  if (s.biometricsTrend) {
+    const bt = s.biometricsTrend;
+    const dirArrow = bt.hrv7dDirection === 'up' ? '↑' : bt.hrv7dDirection === 'down' ? '↓' : '→';
+    lines.push('Biometrics trends (7-day):');
+    lines.push(`  HRV: ${bt.hrv7dAvg != null ? bt.hrv7dAvg.toFixed(1) + 'ms' : '—'} (${dirArrow})`);
+    lines.push(`  Sleep: ${bt.sleep7dAvg != null ? bt.sleep7dAvg.toFixed(0) + '/100' : '—'}`);
+    lines.push(`  RHR: ${bt.rhr7dAvg != null ? bt.rhr7dAvg.toFixed(0) + 'bpm' : '—'}`);
+    lines.push(
+      `  Today's readiness: ${bt.readinessScore != null ? bt.readinessScore + '/100' : '—'}` +
+        `${bt.readinessLabel ? ' (' + bt.readinessLabel + ')' : ''}`
+    );
   }
   if (s.recentActivities.length) {
     lines.push(`Last ${s.recentActivities.length} activities:`);

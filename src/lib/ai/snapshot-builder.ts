@@ -1,6 +1,7 @@
 import { query } from '@/db/client';
 import { ENGINES, type Dojo } from '@/lib/plans/index';
 import type { AthleteSnapshot, BiometricsSnapshot, RecentActivitySnapshot } from './context-pure';
+import { computeReadiness, computeBaselineFromHistory, type ReadinessInputs } from '@/lib/analysis/readiness-pure';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -178,6 +179,180 @@ export async function buildAthleteSnapshot(): Promise<AthleteSnapshot> {
     biometrics = { rhrBpm, hrvMs, sleepDurationS, sleepScore, stressScore, bodyBattery };
   }
 
+  // -- 7-day biometric trends + readiness score ----------------------------
+  const [trendHealthRows, trendJournalRows, baselineHealthRows, baselineJournalRows] = await Promise.all([
+    query(
+      `SELECT date, hrv_ms, rhr_bpm, sleep_score, body_battery, stress_score
+       FROM daily_health_metrics
+       WHERE date >= date('now', '-14 days')
+       ORDER BY date ASC`,
+      []
+    ).catch(() => [] as unknown[][]),
+    query(
+      `SELECT date, hrv, resting_hr
+       FROM journal
+       WHERE date >= date('now', '-14 days')
+       ORDER BY date ASC`,
+      []
+    ).catch(() => [] as unknown[][]),
+    query(
+      `SELECT date, hrv_ms, rhr_bpm
+       FROM daily_health_metrics
+       WHERE date >= date('now', '-28 days') AND date < date('now', '-14 days')
+       ORDER BY date ASC`,
+      []
+    ).catch(() => [] as unknown[][]),
+    query(
+      `SELECT date, hrv, resting_hr
+       FROM journal
+       WHERE date >= date('now', '-28 days') AND date < date('now', '-14 days')
+       ORDER BY date ASC`,
+      []
+    ).catch(() => [] as unknown[][]),
+  ]);
+
+  // Merge daily_health_metrics + journal by date (prefer health metrics, fall back to journal)
+  function mergeMetricRows(
+    healthRows: unknown[][],
+    journalRows: unknown[][],
+    window: '14d' | 'baseline',
+  ): ReadinessInputs[] {
+    // Build a map from date -> health row
+    const healthByDate = new Map<string, unknown[]>();
+    for (const row of healthRows) {
+      const d = (row[0] as string).slice(0, 10);
+      if (!healthByDate.has(d)) healthByDate.set(d, row);
+    }
+    // Build a map from date -> journal row
+    const journalByDate = new Map<string, unknown[]>();
+    for (const row of journalRows) {
+      const d = (row[0] as string).slice(0, 10);
+      if (!journalByDate.has(d)) journalByDate.set(d, row);
+    }
+    const dates = new Set([...healthByDate.keys(), ...journalByDate.keys()]);
+    const result: ReadinessInputs[] = [];
+    for (const date of [...dates].sort()) {
+      const h = healthByDate.get(date);
+      const j = journalByDate.get(date);
+      if (window === '14d') {
+        // Full row: hrv_ms, rhr_bpm, sleep_score, body_battery, stress_score from health; hrv, resting_hr from journal
+        result.push({
+          hrvMs:        (h?.[1] ?? (j?.[1] != null ? j[1] : null)) as number | null,
+          rhrBpm:       (h?.[2] ?? (j?.[2] != null ? j[2] : null)) as number | null,
+          sleepScore:   (h?.[3] ?? null) as number | null,
+          sleepDurationS: null,
+          bodyBattery:  (h?.[4] ?? null) as number | null,
+          stressScore:  (h?.[5] ?? null) as number | null,
+        });
+      } else {
+        // Baseline window only needs hrv + rhr
+        result.push({
+          hrvMs:        (h?.[1] ?? (j?.[1] != null ? j[1] : null)) as number | null,
+          rhrBpm:       (h?.[2] ?? (j?.[2] != null ? j[2] : null)) as number | null,
+          sleepScore:   null,
+          sleepDurationS: null,
+          bodyBattery:  null,
+          stressScore:  null,
+        });
+      }
+    }
+    return result;
+  }
+
+  const trendInputs = mergeMetricRows(trendHealthRows, trendJournalRows, '14d');
+
+  // Split into last 7 days vs prior 7 using date-aware merge
+  const todayDate = new Date(todayIso + 'T00:00:00Z');
+  const sevenDaysAgo = new Date(todayDate);
+  sevenDaysAgo.setUTCDate(todayDate.getUTCDate() - 7);
+  const sevenDaysAgoIso = sevenDaysAgo.toISOString().slice(0, 10);
+
+  // Derive with dates so we can filter by date boundary
+  function mergeMetricRowsWithDates(
+    healthRows: unknown[][],
+    journalRows: unknown[][],
+  ): { date: string; inputs: ReadinessInputs }[] {
+    const healthByDate = new Map<string, unknown[]>();
+    for (const row of healthRows) {
+      const d = (row[0] as string).slice(0, 10);
+      if (!healthByDate.has(d)) healthByDate.set(d, row);
+    }
+    const journalByDate = new Map<string, unknown[]>();
+    for (const row of journalRows) {
+      const d = (row[0] as string).slice(0, 10);
+      if (!journalByDate.has(d)) journalByDate.set(d, row);
+    }
+    const dates = new Set([...healthByDate.keys(), ...journalByDate.keys()]);
+    return [...dates].sort().map((date) => {
+      const h = healthByDate.get(date);
+      const j = journalByDate.get(date);
+      return {
+        date,
+        inputs: {
+          hrvMs:         (h?.[1] ?? (j?.[1] != null ? j[1] : null)) as number | null,
+          rhrBpm:        (h?.[2] ?? (j?.[2] != null ? j[2] : null)) as number | null,
+          sleepScore:    (h?.[3] ?? null) as number | null,
+          sleepDurationS: null,
+          bodyBattery:   (h?.[4] ?? null) as number | null,
+          stressScore:   (h?.[5] ?? null) as number | null,
+        },
+      };
+    });
+  }
+
+  const trendWithDates = mergeMetricRowsWithDates(trendHealthRows, trendJournalRows);
+  const recent7d  = trendWithDates.filter((r) => r.date > sevenDaysAgoIso);
+  const prior7d   = trendWithDates.filter((r) => r.date <= sevenDaysAgoIso);
+
+  function avg(values: (number | null)[]): number | null {
+    const valid = values.filter((v): v is number => v !== null);
+    return valid.length > 0 ? valid.reduce((a, b) => a + b, 0) / valid.length : null;
+  }
+
+  const hrv7dAvg   = avg(recent7d.map((r) => r.inputs.hrvMs));
+  const hrvPriorAvg = avg(prior7d.map((r) => r.inputs.hrvMs));
+  let hrv7dDirection: 'up' | 'down' | 'stable' = 'stable';
+  if (hrv7dAvg !== null && hrvPriorAvg !== null && hrvPriorAvg > 0) {
+    const pctChange = (hrv7dAvg - hrvPriorAvg) / hrvPriorAvg;
+    if (pctChange > 0.05) hrv7dDirection = 'up';
+    else if (pctChange < -0.05) hrv7dDirection = 'down';
+  }
+
+  const sleep7dAvg = avg(recent7d.map((r) => r.inputs.sleepScore));
+  const rhr7dAvg   = avg(recent7d.map((r) => r.inputs.rhrBpm));
+
+  // Compute today's readiness using current biometrics + baseline from prior 28 days
+  const allBaselineInputs = [
+    ...mergeMetricRows(baselineHealthRows, baselineJournalRows, 'baseline'),
+    ...trendInputs,
+  ];
+  const baselines = computeBaselineFromHistory(allBaselineInputs);
+  const todayReadiness = biometrics
+    ? computeReadiness(
+        {
+          hrvMs:         biometrics.hrvMs,
+          rhrBpm:        biometrics.rhrBpm,
+          sleepScore:    biometrics.sleepScore,
+          sleepDurationS: biometrics.sleepDurationS,
+          stressScore:   biometrics.stressScore,
+          bodyBattery:   biometrics.bodyBattery,
+        },
+        baselines,
+      )
+    : null;
+
+  const hasTrendData = recent7d.length > 0 || biometrics !== null;
+  const biometricsTrend: AthleteSnapshot['biometricsTrend'] = hasTrendData
+    ? {
+        hrv7dAvg:        hrv7dAvg !== null ? Math.round(hrv7dAvg * 10) / 10 : null,
+        hrv7dDirection,
+        sleep7dAvg:      sleep7dAvg !== null ? Math.round(sleep7dAvg * 10) / 10 : null,
+        rhr7dAvg:        rhr7dAvg !== null ? Math.round(rhr7dAvg * 10) / 10 : null,
+        readinessScore:  todayReadiness?.score ?? null,
+        readinessLabel:  todayReadiness?.label ?? null,
+      }
+    : undefined;
+
   return {
     asOfIso: todayIso,
     dojo,
@@ -189,6 +364,7 @@ export async function buildAthleteSnapshot(): Promise<AthleteSnapshot> {
     week: { totalKm, longRunKm, avgPaceSpk, avgHr, sessions: weekRuns.length, targetKm },
     state: null,
     biometrics,
+    biometricsTrend,
     recentActivities,
     activeInjuries: [],
   };
