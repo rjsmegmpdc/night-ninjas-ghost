@@ -17,7 +17,6 @@ const Vo2max    = lazy(() => import('./routes/vo2max/Vo2maxPage'));
 const Gear      = lazy(() => import('./routes/gear/GearPage'));
 const Journal   = lazy(() => import('./routes/journal/JournalPage'));
 const Profile   = lazy(() => import('./routes/profile/ProfilePage'));
-const Club      = lazy(() => import('./routes/club/ClubPage'));
 const Settings  = lazy(() => import('./routes/settings/SettingsPage'));
 const Help      = lazy(() => import('./routes/help/HelpPage'));
 const Setup     = lazy(() => import('./routes/setup/SetupPage'));
@@ -102,7 +101,6 @@ function AppShell() {
             <Route path="/shoes"     element={<Navigate to="/gear" replace />} />
             <Route path="/journal"   element={<Journal />} />
             <Route path="/profile"   element={<Profile />} />
-            <Route path="/club"      element={<Club />} />
             <Route path="/settings"  element={<Settings />} />
             <Route path="/help"      element={<Help />} />
             <Route path="/setup/*"   element={<Setup />} />
