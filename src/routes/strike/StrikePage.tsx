@@ -347,54 +347,47 @@ async function fetchLongRun(
   twoWeeksAgoIso: string,
   weekSundayIso: string,
 ): Promise<LongRunData | null> {
-  // This week's runs
-  const thisWeekRows = await query(
-    `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed, name, type
-     FROM activities
-     WHERE start_date >= ? AND start_date <= ?
-     ORDER BY start_date`,
-    [weekMondayIso, weekSundayIso + 'T99:99:99'],
-  );
-
-  let longRunKm = 0;
-  let weekTotalKm = 0;
-
-  for (const r of thisWeekRows) {
-    const row = parseRow(r);
-    const cat = classifySport(row.sportType, row.name ?? undefined);
-    if (isRunning(cat)) {
-      const km = row.distanceM / 1000;
-      weekTotalKm += km;
-      if (km > longRunKm) longRunKm = km;
-    }
-  }
-
-  if (longRunKm < 10) return null;
-
-  // Two weeks ago's runs — use same week window offset by 14 days
+  // Compute the Sunday of the two-weeks-ago window.
   const twoWeeksAgoSundayIso = (() => {
     const d = new Date(twoWeeksAgoIso + 'T00:00:00Z');
     d.setUTCDate(d.getUTCDate() + 6);
     return utcIso(d);
   })();
 
-  const twoWeeksRows = await query(
+  // Single query covers both week windows — partition in memory.
+  const allRows = await query(
     `SELECT start_date, distance, moving_time, average_heartrate, sport_type, average_speed, name, type
      FROM activities
-     WHERE start_date >= ? AND start_date <= ?
+     WHERE (start_date >= ? AND start_date <= ?)
+        OR (start_date >= ? AND start_date <= ?)
      ORDER BY start_date`,
-    [twoWeeksAgoIso, twoWeeksAgoSundayIso + 'T99:99:99'],
+    [
+      weekMondayIso,  weekSundayIso + 'T99:99:99',
+      twoWeeksAgoIso, twoWeeksAgoSundayIso + 'T99:99:99',
+    ],
   );
 
+  let longRunKm = 0;
+  let weekTotalKm = 0;
   let twoWeeksAgoLongKm = 0;
-  for (const r of twoWeeksRows) {
+
+  for (const r of allRows) {
     const row = parseRow(r);
+    const dayIso = row.startDate.slice(0, 10);
     const cat = classifySport(row.sportType, row.name ?? undefined);
-    if (isRunning(cat)) {
-      const km = row.distanceM / 1000;
+    if (!isRunning(cat)) continue;
+    const km = row.distanceM / 1000;
+
+    if (dayIso >= weekMondayIso && dayIso <= weekSundayIso) {
+      weekTotalKm += km;
+      if (km > longRunKm) longRunKm = km;
+    } else {
+      // Falls in the two-weeks-ago window
       if (km > twoWeeksAgoLongKm) twoWeeksAgoLongKm = km;
     }
   }
+
+  if (longRunKm < 10) return null;
 
   return { longRunKm, weekTotalKm, twoWeeksAgoLongKm };
 }
