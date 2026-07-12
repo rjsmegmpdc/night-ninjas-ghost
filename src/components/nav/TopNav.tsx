@@ -44,7 +44,6 @@ const PRIMARY: Destination[] = [
   { to: '/gear',     label: 'Gear',     icon: Backpack },
   { to: '/recon',    label: 'Recon',    icon: TrendingUp },
   { to: '/dojo',     label: 'Strike',   icon: Swords },
-
 ];
 
 function homeHref(): string {

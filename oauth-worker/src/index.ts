@@ -595,11 +595,13 @@ export default {
           { status: revokeRes.status, headers: { 'Content-Type': 'application/json', ...cors(allowed) } },
         );
       }
-      const revokeData = await revokeRes.text();
-      return new Response(revokeData, {
-        status:  revokeRes.status,
-        headers: { 'Content-Type': 'application/json', ...cors(allowed) },
-      });
+      // Strava revoke success body is not meaningful to the client; discard it.
+      const revokeRaw = await revokeRes.text();
+      console.log(`Strava revoke upstream ${revokeRes.status}:`, revokeRaw);
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: revokeRes.status, headers: { 'Content-Type': 'application/json', ...cors(allowed) } },
+      );
     }
 
     // -----------------------------------------------------------------------

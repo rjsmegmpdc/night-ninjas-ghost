@@ -17,7 +17,6 @@ const Vo2max    = lazy(() => import('./routes/vo2max/Vo2maxPage'));
 const Gear      = lazy(() => import('./routes/gear/GearPage'));
 const Journal   = lazy(() => import('./routes/journal/JournalPage'));
 const Profile   = lazy(() => import('./routes/profile/ProfilePage'));
-
 const Settings  = lazy(() => import('./routes/settings/SettingsPage'));
 const Help      = lazy(() => import('./routes/help/HelpPage'));
 const Setup     = lazy(() => import('./routes/setup/SetupPage'));
