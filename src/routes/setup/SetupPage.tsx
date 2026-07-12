@@ -39,21 +39,7 @@ import { saveCoachSession } from '@/lib/ai/coaching-memory';
 import { query, exec } from '@/db/client';
 import { ALL_ENGINES } from '@/lib/plans/index';
 
-// ---------------------------------------------------------------------------
-// plan-client stubs — replaced when feat/ai-plan-backend is merged
-// ---------------------------------------------------------------------------
-
-interface AiPlan {
-  summary: string;
-  weeks: { weekNumber: number; totalKmTarget: number; phaseName: string }[];
-}
-
-async function callGeneratePlan(_p: unknown): Promise<AiPlan> {
-  throw new Error('plan-client not loaded — feat/ai-plan-backend not merged yet');
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function saveAiPlan(_id: number, _plan: AiPlan): Promise<void> {}
+import { callGeneratePlan, saveAiPlan } from '@/lib/ai/plan-client';
 
 const WORKER_URL    = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
 const SHARED_APP_ID = import.meta.env.VITE_STRAVA_CLIENT_ID   as string | undefined;
@@ -1484,7 +1470,7 @@ function TrainingWizard({ tokens }: { tokens: StoredTokens }) {
         goalTimeS: selectedGoal.goalTime
           ? selectedGoal.goalTime.split(':').reduce((acc, v, i, a) =>
               acc + Number(v) * Math.pow(60, a.length - 1 - i), 0)
-          : null,
+          : 0,
         weeksAvailable: weeksAvail,
       });
       await saveAiPlan(planId, plan);

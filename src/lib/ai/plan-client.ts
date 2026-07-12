@@ -1,5 +1,7 @@
 import type { AiPlan } from '@/../oauth-worker/src/plan-prompt';
 
+export type { AiPlan };
+
 const WORKER_URL =
   (import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined) ?? '';
 
