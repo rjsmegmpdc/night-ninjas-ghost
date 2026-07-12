@@ -862,6 +862,29 @@ function PrivacyNotice({ onAcknowledge }: { onAcknowledge: () => void }) {
 // Official Strava brand: #FC4C02 orange, 48px height, white text.
 // ---------------------------------------------------------------------------
 
+const HOW_IT_WORKS = [
+  {
+    step: '01',
+    title: 'Connect once',
+    body: 'Tap the button below. You\'ll approve access on strava.com — your password never touches GHOST. Your last 90 days of activities sync the moment you\'re in.',
+  },
+  {
+    step: '02',
+    title: 'AI coach reads your history',
+    body: 'After setup your coach assesses your current fitness: training load, best paces, patterns and risk areas. Honest, specific, no generic advice.',
+  },
+  {
+    step: '03',
+    title: 'Set a race goal',
+    body: 'Lock in a race and a training style. Your calendar fills with the right sessions at the right volume for where you are right now.',
+  },
+  {
+    step: '04',
+    title: 'Coach feedback after every run',
+    body: 'Each Strava sync triggers a review. Your coach checks compliance, adjusts the plan if life gets in the way, and flags recovery signals from your biometrics.',
+  },
+];
+
 function NotConnected({
   clientId,
   onChangeCredentials,
@@ -887,28 +910,46 @@ function NotConnected({
   }
 
   return (
-    <div className="space-y-6">
-      <p className="font-mono text-sm text-bone-dim leading-relaxed">
-        Connect your Strava account and GHOST will pull in your activity history
-        automatically — your last 90 days sync the moment you're in.
-      </p>
+    <div className="space-y-8">
+      {/* How it works — step flow */}
+      <div className="space-y-4">
+        <p className="font-mono text-xs text-accent uppercase tracking-widest">How it works</p>
+        <ol className="space-y-4">
+          {HOW_IT_WORKS.map(({ step, title, body }) => (
+            <li key={step} className="flex gap-4">
+              <span className="font-display text-2xl text-accent/40 leading-none w-8 shrink-0 select-none">
+                {step}
+              </span>
+              <div className="space-y-0.5">
+                <p className="font-mono text-xs font-bold text-bone uppercase tracking-wide">{title}</p>
+                <p className="font-mono text-xs text-bone-dim leading-relaxed">{body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
 
       {/* Official Strava "Connect with Strava" button — Strava brand colour #FC4C02 */}
-      <a
-        href={authUrl}
-        className={`inline-flex items-center gap-3 rounded-full px-5 py-3 font-mono text-sm font-bold transition-opacity ${
-          clientId ? 'cursor-pointer hover:opacity-90' : 'cursor-not-allowed opacity-50'
-        }`}
-        style={{ backgroundColor: '#FC4C02', color: '#fff', height: 48 }}
-        onClick={(e) => !clientId && e.preventDefault()}
-        aria-label="Connect with Strava"
-      >
-        {/* Strava S-logo mark */}
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.599h4.172L10.463 0l-7 13.828h4.169" />
-        </svg>
-        Connect with Strava
-      </a>
+      <div className="space-y-3">
+        <a
+          href={authUrl}
+          className={`inline-flex items-center gap-3 rounded-full px-5 py-3 font-mono text-sm font-bold transition-opacity ${
+            clientId ? 'cursor-pointer hover:opacity-90' : 'cursor-not-allowed opacity-50'
+          }`}
+          style={{ backgroundColor: '#FC4C02', color: '#fff', height: 48 }}
+          onClick={(e) => !clientId && e.preventDefault()}
+          aria-label="Connect with Strava"
+        >
+          {/* Strava S-logo mark */}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.599h4.172L10.463 0l-7 13.828h4.169" />
+          </svg>
+          Connect with Strava
+        </a>
+        <p className="font-mono text-[10px] text-bone-mute leading-relaxed">
+          One-time setup. Once connected, GHOST remembers you — no re-login needed.
+        </p>
+      </div>
 
       <details className="bg-surface-container rounded-xl">
         <summary className="px-4 py-3 font-mono text-xs text-bone-mute uppercase tracking-widest cursor-pointer select-none hover:text-bone transition-colors">
