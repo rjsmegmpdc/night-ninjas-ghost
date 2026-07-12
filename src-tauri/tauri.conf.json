@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://www.strava.com https://ghost-strava-oauth.onlinemyassistant.workers.dev https://api.anthropic.com; img-src 'self' data: https://dgtzuqphqg23d.cloudfront.net ipc: asset:"
+      "csp": "default-src 'self' tauri:; script-src 'self' tauri: 'unsafe-inline'; style-src 'self' tauri: 'unsafe-inline'; connect-src 'self' tauri: https://www.strava.com https://*.workers.dev; img-src 'self' tauri: data: https://dgalywyr863hv.cloudfront.net asset: https://asset.localhost; font-src 'self' tauri:; frame-ancestors 'none'; form-action 'none'; base-uri 'self'"
     }
   },
   "bundle": {
