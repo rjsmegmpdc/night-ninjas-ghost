@@ -1,4 +1,33 @@
 ## Branch
+feat/r2-settings-fix (merging to main)
+
+## Session: 2026-07-13
+
+### Completed
+
+**Remediation wave 2 — R2, R4**
+- **R2**: WebCrypto AES-256-GCM at-rest encryption for `strava_access_token`, `strava_refresh_token`, `strava.client_secret`, `ai.anthropic_key` — non-extractable CryptoKey in IndexedDB (`ghost-keystore`); `getSetting`/`setSetting` transparently encrypt/decrypt; plaintext migration on first read (fire-and-forget re-encrypt); 6 new tests (704 total). Follow-up applied: `SettingsPage.tsx` Anthropic key bypassed raw SQL — now routes through helpers.
+- **R4**: CSP added — `public/_headers` for Cloudflare Pages PWA (`connect-src` Strava + `*.workers.dev`, `'wasm-unsafe-eval'` for wa-sqlite, no `'unsafe-inline'` in script-src); `src-tauri/tauri.conf.json` updated with Tauri 2 CSP including `tauri:` + `asset:` schemes. `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` also added.
+
+**Research dispatched (pending results)**
+- Garmin health metrics + workout push API feasibility
+- Coros API feasibility
+- Polar Accesslink API feasibility
+
+### In progress
+- Waiting on Garmin / Coros / Polar research results
+
+### Blocked
+- Profile Sync E2E verify — parked on Cloudflare Access OTP issue
+- Club admin writes E2E — same Access issue
+
+### Next session should
+- Review device API research briefings and decide build order
+- Address remaining open remediation items: R1 (Worker hardening), R13 (docs stale counts)
+
+---
+
+## Branch
 feat/r3-r9-cleanup · feat/r10-worker-errors · feat/r11-query-opts (merging to main)
 
 ## Session: 2026-07-12
