@@ -1,15 +1,44 @@
 import { query, exec } from '@/db/client';
+import {
+  SENSITIVE_SETTINGS,
+  getOrCreateAtRestKey,
+  encryptValue,
+  decryptValue,
+  isEncryptedEnvelope,
+} from '@/lib/crypto/at-rest';
 
 export async function getSetting(key: string): Promise<string | null> {
   const rows = await query('SELECT value FROM settings WHERE key = ?', [key]);
-  return rows.length ? (rows[0][0] as string) : null;
+  if (!rows.length) return null;
+  let value = rows[0][0] as string | null;
+  if (value !== null && SENSITIVE_SETTINGS.has(key)) {
+    if (isEncryptedEnvelope(value)) {
+      const atKey = await getOrCreateAtRestKey();
+      value = await decryptValue(atKey, value);
+    } else {
+      // Plaintext migration: re-encrypt in background (fire-and-forget)
+      const atKey = await getOrCreateAtRestKey();
+      encryptValue(atKey, value).then(enc =>
+        exec(
+          `UPDATE settings SET value=?, updated_at=datetime('now') WHERE key=?`,
+          [enc, key],
+        )
+      ).catch(() => { /* non-fatal */ });
+    }
+  }
+  return value;
 }
 
 export async function setSetting(key: string, value: string): Promise<void> {
+  let stored = value;
+  if (SENSITIVE_SETTINGS.has(key)) {
+    const atKey = await getOrCreateAtRestKey();
+    stored = await encryptValue(atKey, value);
+  }
   await exec(
     `INSERT INTO settings (key, value) VALUES (?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`,
-    [key, value],
+    [key, stored],
   );
 }
 
