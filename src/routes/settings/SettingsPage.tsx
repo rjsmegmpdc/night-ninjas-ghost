@@ -738,10 +738,7 @@ function AiCoachSection() {
 
   useEffect(() => {
     if (!ready) return;
-    query("SELECT value FROM settings WHERE key = 'ai.anthropic_key'").then((rows) => {
-      const k = rows[0]?.[0] as string | null ?? '';
-      setSavedKey(k);
-    });
+    getSetting('ai.anthropic_key').then((k) => setSavedKey(k ?? ''));
   }, [ready]);
 
   async function handleSave() {
@@ -749,11 +746,7 @@ function AiCoachSection() {
     if (!key) return;
     setSaving(true);
     try {
-      await exec(
-        `INSERT INTO settings (key, value) VALUES ('ai.anthropic_key', ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`,
-        [key]
-      );
+      await setSetting('ai.anthropic_key', key);
       setSavedKey(key);
       setInputKey('');
       setStatus('saved');
