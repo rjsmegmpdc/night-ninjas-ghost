@@ -241,4 +241,24 @@ export const MIGRATIONS: { name: string; sql: string }[] = [
       CREATE INDEX IF NOT EXISTS idx_coach_sessions_created_at ON coach_sessions (created_at DESC);
     `,
   },
+  {
+    name: '0008_ai_plan_sessions',
+    sql: `
+      CREATE TABLE IF NOT EXISTS ai_plan_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_id INTEGER REFERENCES plans(id) ON DELETE CASCADE,
+        week_number INTEGER NOT NULL,
+        dow INTEGER NOT NULL,
+        session_type TEXT NOT NULL,
+        label TEXT NOT NULL,
+        distance_km_min REAL,
+        distance_km_max REAL,
+        pace_target TEXT,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_ai_plan_sessions_plan_week
+        ON ai_plan_sessions(plan_id, week_number);
+    `,
+  },
 ];
