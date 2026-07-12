@@ -1,4 +1,37 @@
 ## Branch
+feat/r3-r9-cleanup · feat/r10-worker-errors · feat/r11-query-opts (merging to main)
+
+## Session: 2026-07-12
+
+### Completed
+
+**Phase 2 — AI Coach plan generation + setup wizard (merged)**
+- `ai_plan_sessions` table (migration 0008), Worker `/generate-plan` endpoint (`claude-sonnet-4-6`, JSON plan)
+- AI Coach dojo stub registered in ENGINES; snapshot-builder reads DB for AI Coach athletes
+- 3-step setup wizard inline on SetupPage: Goal → Dojo → Plan generation; `wizard_complete` flag prevents re-showing
+- CalendarPage Section 2: 6-week training plan view — AI Coach reads `ai_plan_sessions`, template dojos use `engine.renderWeek()`
+- 698/698 tests throughout
+
+**Remediation wave 1 — R3, R9, R10, R11**
+- **R3**: Club hidden from nav and routing (`App.tsx` + `TopNav.tsx`); code preserved in `src/routes/club/` for later
+- **R9**: Deleted stale VELOCITY artefacts — `.env.example`, `.github/workflows/build.yml` (Electron builder), `ShoesPage.tsx`; removed `drizzle-orm` dep; `lib/` root dir and `@anthropic-ai/sdk` verified in-use — kept
+- **R10**: Worker `/revoke` success path normalised — no longer forwards raw Strava body; `console.error` logs upstream for diagnosability
+- **R11**: `StrikePage.tsx` long-run query deduped (was 2 round-trips, now 1); `getStoredTokens` and `ReconPage` already optimal — no change needed
+
+### In progress
+- Wave 2 pending: R2 (WebCrypto at-rest token encryption) + R4 (CSP headers)
+
+### Blocked
+- Profile Sync E2E verify — parked on Cloudflare Access OTP issue
+- Club admin writes E2E — same Access issue
+
+### Next session should
+- Spawn R2 + R4 agents (after wave 1 merged to main)
+- Decision still open: R3 `/club/data` PII (Matt: "underwhelming, parked")
+
+---
+
+## Branch
 test/coverage-expansion
 
 ## Session: 2026-07-09
