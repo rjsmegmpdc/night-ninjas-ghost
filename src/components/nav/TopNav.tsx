@@ -3,7 +3,6 @@ import {
   Shield,
   TrendingUp,
   Swords,
-  Users,
   Calendar,
   Backpack,
   Settings,
@@ -18,7 +17,7 @@ import {
  * App.tsx pads <main> to clear both (pb on mobile, pl on desktop).
  *
  * Nav flow: Setup → Strava Sync → AI Coach Feedback
- * Destination order: Patrol · Calendar · Gear · Recon · Strike · Club · Settings (last, always)
+ * Destination order: Patrol · Calendar · Gear · Recon · Strike · Settings (last, always)
  */
 
 interface Destination {
@@ -36,7 +35,6 @@ interface Destination {
  *   2  Gear      — shoe intelligence + kit tracking
  *   3  Recon     — training analysis
  *   4  Strike    — PMC / fitness chart
- *   5  Club      — leaderboard
  *
  * Settings is pinned separately: rail foot on desktop, top-bar icon on mobile.
  */
@@ -46,7 +44,7 @@ const PRIMARY: Destination[] = [
   { to: '/gear',     label: 'Gear',     icon: Backpack },
   { to: '/recon',    label: 'Recon',    icon: TrendingUp },
   { to: '/dojo',     label: 'Strike',   icon: Swords },
-  { to: '/club',     label: 'Club',     icon: Users },
+
 ];
 
 function homeHref(): string {
