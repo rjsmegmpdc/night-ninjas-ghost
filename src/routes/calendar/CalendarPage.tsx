@@ -4,6 +4,8 @@ import { useDb } from '@/db/DbContext';
 import { query, exec } from '@/db/client';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { NZ_RACES, type NzRace } from '@/data/nz-races-2026';
+import { ENGINES } from '@/lib/plans/index';
+import type { PlanParams } from '@/lib/plans/types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,6 +32,23 @@ interface CalendarEvent {
 interface CapacitySettings {
   weekly_cap_km: string;
   long_run_cap_km: string;
+}
+
+interface ActivePlan {
+  id: number;
+  dojo: string;
+  params: Record<string, unknown>;
+  startDate: string; // 'YYYY-MM-DD'
+}
+
+interface PlanSession {
+  weekNumber: number;
+  dow: number;
+  sessionType: string;
+  label: string;
+  distanceKmMin: number | null;
+  distanceKmMax: number | null;
+  paceTarget: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,6 +110,19 @@ function formatDisplayDate(iso: string): string {
   return new Date(iso + 'T12:00:00').toLocaleDateString('en-NZ', {
     day: '2-digit', month: 'short', year: 'numeric',
   });
+}
+
+/** Returns 1-indexed week number for a given date relative to a plan's start. */
+function weekNumberForDate(date: Date, planStartIso: string): number {
+  const startMs = new Date(planStartIso + 'T00:00:00Z').getTime();
+  const daysDiff = Math.floor((date.getTime() - startMs) / 86400000);
+  return Math.floor(daysDiff / 7) + 1; // 1-indexed
+}
+
+/** Returns the Date for a given (weekNumber, dow) pair in the plan. */
+function dateForPlanDay(planStartIso: string, weekNumber: number, dow: number): Date {
+  const startMs = new Date(planStartIso + 'T00:00:00Z').getTime();
+  return new Date(startMs + ((weekNumber - 1) * 7 + dow) * 86400000);
 }
 
 function distanceLabelFromKm(km: number): string {
@@ -161,13 +193,16 @@ export default function CalendarPage() {
     weekly_cap_km:  '',
     long_run_cap_km: '',
   });
+  const [activePlan, setActivePlan]       = useState<ActivePlan | null>(null);
+  const [aiSessions, setAiSessions]       = useState<PlanSession[]>([]);
 
   const loadData = useCallback(async () => {
-    const [goalRows, tuneupRows, eventRows, capRows] = await Promise.all([
+    const [goalRows, tuneupRows, eventRows, capRows, planRows] = await Promise.all([
       query('SELECT id, date, name, distance_km, goal_time, is_goal, level FROM races WHERE is_goal = 1 ORDER BY created_at DESC LIMIT 1'),
       query('SELECT id, date, name, distance_km, goal_time, is_goal, level FROM races WHERE is_goal = 0 ORDER BY date ASC'),
       query('SELECT id, date, title, type, notes FROM calendar_events ORDER BY date ASC'),
       query("SELECT key, value FROM settings WHERE key IN ('capacity.weekly_cap_km','capacity.long_run_cap_km')"),
+      query('SELECT p.id, p.dojo, p.params_json, pp.start_date FROM plans p JOIN plan_periods pp ON pp.plan_id = p.id WHERE pp.end_date IS NULL LIMIT 1'),
     ]);
 
     setGoalRace(goalRows.length ? parseRow(goalRows[0]) : null);
@@ -182,12 +217,85 @@ export default function CalendarPage() {
       if (k === 'capacity.long_run_cap_km') caps.long_run_cap_km = v;
     }
     setCapacity(caps);
+
+    if (planRows.length) {
+      const pr = planRows[0];
+      const plan: ActivePlan = {
+        id:        pr[0] as number,
+        dojo:      pr[1] as string,
+        params:    JSON.parse(pr[2] as string) as Record<string, unknown>,
+        startDate: pr[3] as string,
+      };
+      setActivePlan(plan);
+
+      // AI Coach sessions come from the DB; template dojos are computed in useMemo
+      if (plan.dojo === 'ai-coach') {
+        const sessRows = await query(
+          'SELECT week_number, dow, session_type, label, distance_km_min, distance_km_max, pace_target FROM ai_plan_sessions WHERE plan_id = ? ORDER BY week_number, dow',
+          [plan.id],
+        );
+        setAiSessions(sessRows.map((r) => ({
+          weekNumber:      r[0] as number,
+          dow:             r[1] as number,
+          sessionType:     r[2] as string,
+          label:           r[3] as string,
+          distanceKmMin:   r[4] as number | null,
+          distanceKmMax:   r[5] as number | null,
+          paceTarget:      r[6] as string | null,
+        })));
+      } else {
+        setAiSessions([]);
+      }
+    } else {
+      setActivePlan(null);
+      setAiSessions([]);
+    }
   }, []);
 
   useEffect(() => {
     if (!ready) return;
     loadData();
   }, [ready, loadData]);
+
+  // Compute the sessions to display across the 6-week window
+  const planSessions = useMemo<PlanSession[]>(() => {
+    if (!activePlan) return [];
+
+    if (activePlan.dojo === 'ai-coach') {
+      return aiSessions;
+    }
+
+    // Template dojo: derive sessions from the engine
+    const engine = ENGINES[activePlan.dojo as keyof typeof ENGINES];
+    if (!engine) return [];
+
+    const params: PlanParams = {
+      goalDistanceKm: (activePlan.params.goalDistanceKm as number) ?? 42.195,
+      goalTimeS:      (activePlan.params.goalTimeS as number) ?? 0,
+      level:          (activePlan.params.level as 'beginner' | 'intermediate' | 'advanced') ?? 'intermediate',
+      startDate:      activePlan.startDate,
+    };
+
+    const sessions: PlanSession[] = [];
+    const totalWeeks = engine.defaultProgramWeeks;
+    for (let wk = 1; wk <= totalWeeks; wk++) {
+      const template = engine.renderWeek(params, wk);
+      for (const day of template.days) {
+        for (const s of day.sessions) {
+          sessions.push({
+            weekNumber:    wk,
+            dow:           day.dow,
+            sessionType:   s.type,
+            label:         s.label,
+            distanceKmMin: s.distanceKmMin ?? null,
+            distanceKmMax: s.distanceKmMax ?? null,
+            paceTarget:    null, // paceZone is an object; not shown as text in this UI
+          });
+        }
+      }
+    }
+    return sessions;
+  }, [activePlan, aiSessions]);
 
   if (!ready) return <PageSkeleton />;
 
@@ -206,12 +314,230 @@ export default function CalendarPage() {
         onRefresh={loadData}
       />
 
-      {/* Section 2: Capacity Caps */}
+      {/* Section 2: Training Plan */}
+      <TrainingPlanSection
+        activePlan={activePlan}
+        planSessions={planSessions}
+      />
+
+      {/* Section 3: Capacity Caps */}
       <CapacitySection capacity={capacity} onRefresh={loadData} />
 
-      {/* Section 3: Commitments */}
+      {/* Section 4: Commitments */}
       <CommitmentsSection events={events} onRefresh={loadData} />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section 2: Training Plan
+// ---------------------------------------------------------------------------
+
+const DOW_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+
+interface TrainingPlanSectionProps {
+  activePlan:   ActivePlan | null;
+  planSessions: PlanSession[];
+}
+
+function TrainingPlanSection({ activePlan, planSessions }: TrainingPlanSectionProps) {
+  // Today in UTC — consistent with the plan date arithmetic
+  const todayUtc = useMemo(() => {
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  }, []);
+
+  /** Compute the 6-week render window (week numbers). */
+  const weekWindow = useMemo<number[]>(() => {
+    if (!activePlan) return [];
+
+    const engine = ENGINES[activePlan.dojo as keyof typeof ENGINES];
+    const totalWeeks = engine?.defaultProgramWeeks ?? 16;
+
+    const currentWeek = weekNumberForDate(todayUtc, activePlan.startDate);
+    // If plan hasn't started yet (currentWeek < 1), start from week 1
+    const startWeek = Math.max(1, currentWeek);
+    const endWeek   = Math.min(totalWeeks, startWeek + 5); // 6 weeks inclusive
+
+    const weeks: number[] = [];
+    for (let wk = startWeek; wk <= endWeek; wk++) {
+      weeks.push(wk);
+    }
+    return weeks;
+  }, [activePlan, todayUtc]);
+
+  /** Group sessions by week number for fast lookup. */
+  const sessionsByWeek = useMemo(() => {
+    const map = new Map<number, PlanSession[]>();
+    for (const s of planSessions) {
+      const list = map.get(s.weekNumber) ?? [];
+      list.push(s);
+      map.set(s.weekNumber, list);
+    }
+    return map;
+  }, [planSessions]);
+
+  /** Derive phase name for a given week from the engine. */
+  function phaseForWeek(weekNumber: number): string {
+    if (!activePlan) return '';
+    const engine = ENGINES[activePlan.dojo as keyof typeof ENGINES];
+    if (!engine) return '';
+    if (activePlan.dojo === 'ai-coach') {
+      // For AI Coach, try to infer from the sessions stored
+      return 'AI Coached';
+    }
+    const params: PlanParams = {
+      goalDistanceKm: (activePlan.params.goalDistanceKm as number) ?? 42.195,
+      goalTimeS:      (activePlan.params.goalTimeS as number) ?? 0,
+      level:          (activePlan.params.level as 'beginner' | 'intermediate' | 'advanced') ?? 'intermediate',
+      startDate:      activePlan.startDate,
+    };
+    try {
+      return engine.renderWeek(params, weekNumber).phaseName;
+    } catch {
+      return '';
+    }
+  }
+
+  if (!activePlan) {
+    return (
+      <section className="m3-card p-6 space-y-4">
+        <SectionLabel>training plan</SectionLabel>
+        <p className="text-sm text-bone-mute italic">
+          No training plan active.{' '}
+          <a href="/setup" className="text-accent hover:text-accent-hover underline transition-colors">
+            Set a goal race and choose a dojo in Setup
+          </a>
+          .
+        </p>
+      </section>
+    );
+  }
+
+  if (weekWindow.length === 0) {
+    return (
+      <section className="m3-card p-6 space-y-4">
+        <SectionLabel>training plan</SectionLabel>
+        <p className="text-sm text-bone-mute italic">Plan complete — all weeks have passed.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="m3-card p-6 space-y-6">
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-4">
+        <SectionLabel>training plan</SectionLabel>
+        <span className="font-mono text-[11px] font-medium uppercase tracking-widest rounded-full px-2.5 py-0.5 bg-primary-container text-on-primary-container">
+          {activePlan.dojo}
+        </span>
+      </div>
+
+      {/* Week blocks */}
+      {weekWindow.map((wk) => {
+        const sessions = sessionsByWeek.get(wk) ?? [];
+        const phase    = phaseForWeek(wk);
+
+        // Compute total km target for this week (sum of max distances, or min if no max)
+        const totalKm = sessions.reduce((acc, s) => {
+          if (s.sessionType === 'rest' || s.sessionType === 'cross' || s.sessionType === 'strength') return acc;
+          const km = s.distanceKmMax ?? s.distanceKmMin ?? 0;
+          return acc + km;
+        }, 0);
+
+        // All 7 days in this week; sessions only have the scheduled dow values
+        // We show all dow that have sessions (plus rest days if explicit)
+        const sessionsByDow = new Map<number, PlanSession[]>();
+        for (const s of sessions) {
+          const list = sessionsByDow.get(s.dow) ?? [];
+          list.push(s);
+          sessionsByDow.set(s.dow, list);
+        }
+
+        // Build the 7-day display list — show all 7 days if any sessions exist, otherwise
+        // only show days that have sessions (avoid showing 7 empty rows for sparse AI plans)
+        const hasAllDays = sessionsByDow.size >= 5;
+        const daysToShow: number[] = hasAllDays
+          ? [0, 1, 2, 3, 4, 5, 6]
+          : Array.from(sessionsByDow.keys()).sort((a, b) => a - b);
+
+        return (
+          <div key={wk} className="space-y-2">
+            {/* Week header */}
+            <div className="flex items-center justify-between gap-4">
+              <span className="font-mono text-xs text-bone-mute uppercase tracking-widest">
+                Week {wk}{phase ? ` — ${phase}` : ''}
+              </span>
+              {totalKm > 0 && (
+                <span className="font-mono text-xs text-bone">
+                  {Math.round(totalKm)} km
+                </span>
+              )}
+            </div>
+            <div className="border-t border-ink-line" />
+
+            {/* Day rows */}
+            {sessions.length === 0 ? (
+              <p className="text-sm text-bone-mute italic py-1">No sessions planned for this week.</p>
+            ) : (
+              <div className="space-y-0.5">
+                {daysToShow.map((dow) => {
+                  const daySessions = sessionsByDow.get(dow);
+                  const dayDate     = dateForPlanDay(activePlan.startDate, wk, dow);
+                  const isToday     = dayDate.getTime() === todayUtc.getTime();
+
+                  if (!daySessions || daySessions.length === 0) {
+                    // Only shown when rendering the full 7-day grid
+                    return (
+                      <div
+                        key={dow}
+                        className={`grid grid-cols-[3rem_1fr] gap-2 items-baseline py-1 ${isToday ? 'bg-primary-container/20 rounded px-1' : ''}`}
+                      >
+                        <span className="font-mono text-xs text-bone-mute uppercase">
+                          {DOW_LABELS[dow]}
+                        </span>
+                        <span className="text-sm text-bone-mute">Rest</span>
+                      </div>
+                    );
+                  }
+
+                  return daySessions.map((s, i) => {
+                    const isRest       = s.sessionType === 'rest';
+                    const rowDimmed    = isRest ? 'text-bone-mute' : '';
+                    const labelText    = isRest ? 'Rest' : s.label;
+                    const distancePart =
+                      !isRest && (s.distanceKmMin != null || s.distanceKmMax != null)
+                        ? ` · ${
+                            s.distanceKmMin != null && s.distanceKmMax != null && s.distanceKmMin !== s.distanceKmMax
+                              ? `${s.distanceKmMin}–${s.distanceKmMax} km`
+                              : `${s.distanceKmMax ?? s.distanceKmMin} km`
+                          }`
+                        : '';
+
+                    return (
+                      <div
+                        key={`${dow}-${i}`}
+                        className={`grid grid-cols-[3rem_1fr] gap-2 items-baseline py-1 ${isToday ? 'bg-primary-container/20 rounded px-1' : ''}`}
+                      >
+                        <span className={`font-mono text-xs uppercase ${isRest ? 'text-bone-mute' : 'text-bone-mute'}`}>
+                          {i === 0 ? DOW_LABELS[dow] : ''}
+                        </span>
+                        <span className={`text-sm ${rowDimmed || 'text-bone'}`}>
+                          {labelText}
+                          {distancePart && (
+                            <span className="text-xs text-bone-mute">{distancePart}</span>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  });
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </section>
   );
 }
 
