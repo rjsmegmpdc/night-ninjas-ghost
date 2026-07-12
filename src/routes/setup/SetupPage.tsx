@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router';
-import { RefreshCw, CheckCircle, AlertCircle, Loader, Clock } from 'lucide-react';
+import { RefreshCw, CheckCircle, AlertCircle, Loader, Clock, Sparkles } from 'lucide-react';
 import { useDb } from '@/db/DbContext';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { exchangeCode, revokeToken } from '@/lib/strava/client';
@@ -36,9 +36,43 @@ import { buildAssessmentContext } from '@/lib/ai/assessment-builder';
 import type { AssessmentContext } from '@/lib/ai/assessment-builder';
 import { streamCoachReply } from '@/lib/ai/coach-client';
 import { saveCoachSession } from '@/lib/ai/coaching-memory';
+import { query, exec } from '@/db/client';
+import { ALL_ENGINES } from '@/lib/plans/index';
+
+import { callGeneratePlan, saveAiPlan } from '@/lib/ai/plan-client';
 
 const WORKER_URL    = import.meta.env.VITE_STRAVA_OAUTH_WORKER as string | undefined ?? '';
 const SHARED_APP_ID = import.meta.env.VITE_STRAVA_CLIENT_ID   as string | undefined;
+
+// ---------------------------------------------------------------------------
+// Wizard helpers
+// ---------------------------------------------------------------------------
+
+function weeksUntilRace(raceDateIso: string): number {
+  const days = Math.floor(
+    (new Date(raceDateIso + 'T00:00:00Z').getTime() - Date.now()) / 86400000,
+  );
+  return Math.max(4, Math.min(20, Math.floor(days / 7)));
+}
+
+function todayIsoWizard(): string {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+function minRaceDate(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + 30);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+const DISTANCE_OPTIONS = [
+  { label: '5K',           km: 5 },
+  { label: '10K',          km: 10 },
+  { label: 'Half Marathon', km: 21.0975 },
+  { label: 'Marathon',     km: 42.195 },
+  { label: 'Custom',       km: 0 },
+] as const;
 
 const ASSESSMENT_QUESTION =
   'Give me an honest entry fitness assessment in 180–220 words. Cover: ' +
@@ -1037,7 +1071,13 @@ function AthleteMismatchView({
 
 type AssessmentCardState = 'idle' | 'loading' | 'streaming' | 'done' | 'error';
 
-function FitnessAssessmentCard({ athleteId }: { athleteId: number }) {
+function FitnessAssessmentCard({
+  athleteId,
+  onComplete,
+}: {
+  athleteId: number;
+  onComplete?: (text: string) => void;
+}) {
   const [cardState, setCardState] = useState<AssessmentCardState>('idle');
   const [assessmentDone, setAssessmentDone] = useState<boolean | null>(null); // null = loading
   const [activityCount, setActivityCount] = useState(0);
@@ -1131,6 +1171,7 @@ function FitnessAssessmentCard({ athleteId }: { athleteId: number }) {
         await setSetting('entry_assessment_done', today);
         await setSetting('entry_assessment_text', fullText);
         setCardState('done');
+        onComplete?.(fullText);
       }
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
@@ -1199,6 +1240,600 @@ function FitnessAssessmentCard({ athleteId }: { athleteId: number }) {
           >
             Try again
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TrainingWizard — post-connection setup: Goal → Dojo → Plan → Done
+// Shown once; gated by wizard_complete setting.
+// ---------------------------------------------------------------------------
+
+type WizardStep = 'goal' | 'dojo' | 'plan' | 'done';
+
+interface WizardGoalRace {
+  id: number | null; // null = newly inserted
+  name: string;
+  date: string;
+  distanceKm: number;
+  goalTime: string | null;
+}
+
+function WizardStepIndicator({ step }: { step: WizardStep }) {
+  const steps: { key: WizardStep; label: string; num: string }[] = [
+    { key: 'goal', label: 'Goal', num: '01' },
+    { key: 'dojo', label: 'Dojo', num: '02' },
+    { key: 'plan', label: 'Plan', num: '03' },
+  ];
+
+  const activeIdx = step === 'done' ? 3 : steps.findIndex(s => s.key === step);
+
+  return (
+    <nav aria-label="Wizard progress" className="flex items-center gap-0 font-mono text-xs">
+      {steps.map((s, i) => {
+        const isDone = i < activeIdx;
+        const isActive = i === activeIdx;
+        return (
+          <span key={s.key} className="flex items-center gap-1.5">
+            {i > 0 && (
+              <span className="mx-1.5 text-bone-mute select-none" aria-hidden="true">→</span>
+            )}
+            <span
+              className={[
+                'uppercase tracking-widest',
+                isActive ? 'text-accent font-bold' : isDone ? 'text-signal-ok' : 'text-bone-mute',
+              ].join(' ')}
+              aria-current={isActive ? 'step' : undefined}
+            >
+              {s.num} {s.label}
+            </span>
+          </span>
+        );
+      })}
+    </nav>
+  );
+}
+
+function TrainingWizard({ tokens }: { tokens: StoredTokens }) {
+  const [step, setStep] = useState<WizardStep>('goal');
+  const [wizardLoading, setWizardLoading] = useState(true);
+
+  // Goal state
+  const [existingRace, setExistingRace] = useState<WizardGoalRace | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<WizardGoalRace | null>(null);
+  const [distanceOption, setDistanceOption] = useState<number>(0); // index into DISTANCE_OPTIONS
+  const [customKm, setCustomKm] = useState('');
+  const [raceDate, setRaceDate] = useState('');
+  const [targetTime, setTargetTime] = useState('');
+  const [goalSubmitting, setGoalSubmitting] = useState(false);
+  const [goalError, setGoalError] = useState<string | null>(null);
+
+  // Dojo state
+  const [selectedDojoSlug, setSelectedDojoSlug] = useState<string | null>(null);
+  const [dojoSubmitting, setDojoSubmitting] = useState(false);
+  const [planId, setPlanId] = useState<number | null>(null);
+
+  // Plan generation state
+  const [existingAssessment, setExistingAssessment] = useState<string | null>(null);
+  const [assessmentReady, setAssessmentReady] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
+
+  // Done state
+  const [todaySessionLabel, setTodaySessionLabel] = useState<string | null>(null);
+
+  // Check wizard_complete on mount — dismiss self if already done
+  const [shouldShow, setShouldShow] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function init() {
+      const done = await getSetting('wizard_complete');
+      if (cancelled) return;
+      if (done !== null) {
+        setShouldShow(false);
+        return;
+      }
+
+      // Load existing goal race
+      const rows = await query(
+        'SELECT id, name, date, distance_km, goal_time FROM races WHERE is_goal = 1 ORDER BY date ASC LIMIT 1',
+      );
+      if (!cancelled && rows.length) {
+        const r = rows[0];
+        setExistingRace({
+          id: r[0] as number,
+          name: r[1] as string,
+          date: r[2] as string,
+          distanceKm: r[3] as number,
+          goalTime: r[4] as string | null,
+        });
+      }
+      setShouldShow(true);
+      setWizardLoading(false);
+    }
+    init().catch(() => { if (!cancelled) setShouldShow(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Pre-load assessment text when we arrive at plan step
+  useEffect(() => {
+    if (step !== 'plan') return;
+    let cancelled = false;
+    getSetting('entry_assessment_text').then((text) => {
+      if (!cancelled) {
+        setExistingAssessment(text);
+        setAssessmentReady(text !== null);
+      }
+    }).catch(() => { if (!cancelled) setAssessmentReady(false); });
+    return () => { cancelled = true; };
+  }, [step]);
+
+  if (shouldShow === null || wizardLoading) return null;
+  if (shouldShow === false) return null;
+
+  // ── Step 1: Goal ──────────────────────────────────────────────────────────
+
+  async function handleUseExistingRace() {
+    if (!existingRace) return;
+    setSelectedGoal(existingRace);
+    setStep('dojo');
+  }
+
+  async function handleGoalSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setGoalError(null);
+    const option = DISTANCE_OPTIONS[distanceOption];
+    const km = option.km === 0 ? parseFloat(customKm) : option.km;
+    if (!km || km <= 0) { setGoalError('Enter a valid distance'); return; }
+    if (!raceDate) { setGoalError('Pick a race date'); return; }
+
+    setGoalSubmitting(true);
+    try {
+      const raceName = option.km === 0 ? `${km}km Race` : `${option.label} Race`;
+      const goalTimeVal = targetTime.trim() || null;
+      await exec(
+        `INSERT OR REPLACE INTO races (name, date, distance_km, goal_time, is_goal, level)
+         VALUES (?, ?, ?, ?, 1, 'intermediate')`,
+        [raceName, raceDate, km, goalTimeVal],
+      );
+      const rows = await query(
+        'SELECT id FROM races WHERE is_goal = 1 ORDER BY id DESC LIMIT 1',
+      );
+      const newId = rows[0]?.[0] as number | undefined;
+      setSelectedGoal({
+        id: newId ?? null,
+        name: raceName,
+        date: raceDate,
+        distanceKm: km,
+        goalTime: goalTimeVal,
+      });
+      setStep('dojo');
+    } catch (err) {
+      setGoalError(err instanceof Error ? err.message : 'Failed to save goal');
+    } finally {
+      setGoalSubmitting(false);
+    }
+  }
+
+  // ── Step 2: Dojo ──────────────────────────────────────────────────────────
+
+  async function handleChoosePlan() {
+    if (!selectedDojoSlug || !selectedGoal) return;
+    setDojoSubmitting(true);
+    try {
+      const weeksAvail = weeksUntilRace(selectedGoal.date);
+      await exec(
+        `INSERT OR IGNORE INTO plans (dojo, params_json) VALUES (?, ?)`,
+        [selectedDojoSlug, JSON.stringify({ level: 'intermediate', programWeeks: weeksAvail })],
+      );
+      const planRows = await query(
+        'SELECT id FROM plans WHERE dojo = ? ORDER BY id DESC LIMIT 1',
+        [selectedDojoSlug],
+      );
+      const newPlanId = planRows[0]?.[0] as number;
+      setPlanId(newPlanId);
+      await exec(
+        `INSERT OR IGNORE INTO plan_periods (plan_id, start_date) VALUES (?, date('now'))`,
+        [newPlanId],
+      );
+
+      if (selectedDojoSlug === 'ai-coach') {
+        setStep('plan');
+      } else {
+        // Template dojo path → skip to done
+        await setSetting('wizard_complete', todayIsoWizard());
+        setStep('done');
+      }
+    } catch (err) {
+      setGenError(err instanceof Error ? err.message : 'Failed to save plan');
+    } finally {
+      setDojoSubmitting(false);
+    }
+  }
+
+  // ── Step 3: Generate AI plan ──────────────────────────────────────────────
+
+  async function handleGenerate() {
+    if (!planId || !selectedGoal) return;
+    setGenerating(true);
+    setGenError(null);
+    try {
+      const weeksAvail = weeksUntilRace(selectedGoal.date);
+      const assessText = existingAssessment ?? '';
+      const plan = await callGeneratePlan({
+        athleteId: tokens.athleteId,
+        context: assessText,
+        goalDistanceKm: selectedGoal.distanceKm,
+        goalTimeS: selectedGoal.goalTime
+          ? selectedGoal.goalTime.split(':').reduce((acc, v, i, a) =>
+              acc + Number(v) * Math.pow(60, a.length - 1 - i), 0)
+          : 0,
+        weeksAvailable: weeksAvail,
+      });
+      await saveAiPlan(planId, plan);
+      await setSetting('wizard_complete', todayIsoWizard());
+      setStep('done');
+    } catch (err) {
+      setGenError(err instanceof Error ? err.message : 'Plan generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  // ── Step: Done ────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (step !== 'done') return;
+    // Best-effort: try to find today's session from the active plan
+    let cancelled = false;
+    async function loadTodaySession() {
+      const today = todayIsoWizard();
+      const rows = await query(
+        `SELECT ais.label FROM ai_plan_sessions ais
+         JOIN plan_periods pp ON pp.plan_id = ais.plan_id
+         WHERE pp.end_date IS NULL
+           AND ais.week_number = CAST((julianday(?) - julianday(pp.start_date)) / 7 AS INTEGER) + 1
+           AND ais.dow = CAST((julianday(?) - julianday(pp.start_date)) % 7 AS INTEGER)
+         LIMIT 1`,
+        [today, today],
+      ).catch(() => [] as unknown[][]);
+      if (!cancelled && rows.length) {
+        setTodaySessionLabel(rows[0][0] as string);
+      }
+    }
+    loadTodaySession().catch(() => {});
+    return () => { cancelled = true; };
+  }, [step]);
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  const weeksAvail = selectedGoal ? weeksUntilRace(selectedGoal.date) : 16;
+
+  return (
+    <div className="rounded-2xl bg-surface-container p-6 mt-6 space-y-6" role="region" aria-label="Training setup wizard">
+      {step !== 'done' && <WizardStepIndicator step={step} />}
+
+      {/* ── Step 1: Goal ── */}
+      {step === 'goal' && (
+        <div className="space-y-5">
+          <div>
+            <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-1">Step 1 of 3</p>
+            <h3 className="font-display text-2xl tracking-widest uppercase text-on-surface">Set your goal</h3>
+            <p className="font-mono text-xs text-on-surface-variant mt-1 leading-relaxed">
+              Lock in a race. Your plan will be built around it.
+            </p>
+          </div>
+
+          {existingRace && (
+            <div className="rounded-xl bg-surface-container-high border border-primary/20 p-4 space-y-3">
+              <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">Your current goal race</p>
+              <div>
+                <p className="font-mono text-sm text-on-surface font-bold">{existingRace.name}</p>
+                <p className="font-mono text-xs text-on-surface-variant mt-0.5">
+                  {new Date(existingRace.date + 'T12:00:00Z').toLocaleDateString('en-NZ', {
+                    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+                  })}
+                  {' · '}{existingRace.distanceKm}km
+                  {existingRace.goalTime && ` · Target ${existingRace.goalTime}`}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => { void handleUseExistingRace(); }}
+                  className="rounded-full bg-primary text-on-primary px-6 py-2.5 font-mono text-xs uppercase tracking-widest font-bold hover:shadow-md active:opacity-90 transition-all"
+                >
+                  Use this race
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExistingRace(null)}
+                  className="font-mono text-xs text-on-surface-variant hover:text-on-surface transition-colors underline underline-offset-2"
+                >
+                  Change goal
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!existingRace && (
+            <form onSubmit={(e) => { void handleGoalSubmit(e); }} className="space-y-4 max-w-sm" noValidate>
+              {/* Distance picker */}
+              <fieldset>
+                <legend className="font-mono text-[11px] font-medium text-on-surface-variant tracking-wide block mb-1.5">
+                  Race distance
+                </legend>
+                <div className="flex flex-wrap gap-2">
+                  {DISTANCE_OPTIONS.map((opt, i) => (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => setDistanceOption(i)}
+                      aria-pressed={distanceOption === i}
+                      className={[
+                        'rounded-full px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors',
+                        distanceOption === i
+                          ? 'bg-secondary-container text-on-secondary-container font-bold'
+                          : 'bg-surface-container-high text-on-surface-variant hover:bg-on-surface/8',
+                      ].join(' ')}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {DISTANCE_OPTIONS[distanceOption].km === 0 && (
+                  <div className="mt-2">
+                    <label htmlFor="wizard-custom-km" className="sr-only">Custom distance in km</label>
+                    <input
+                      id="wizard-custom-km"
+                      type="number"
+                      min="1"
+                      max="300"
+                      step="0.1"
+                      value={customKm}
+                      onChange={(e) => setCustomKm(e.target.value)}
+                      placeholder="Distance in km"
+                      className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                )}
+              </fieldset>
+
+              {/* Race date */}
+              <div className="space-y-1">
+                <label htmlFor="wizard-race-date" className="font-mono text-[11px] font-medium text-on-surface-variant tracking-wide block">
+                  Race date
+                </label>
+                <input
+                  id="wizard-race-date"
+                  type="date"
+                  value={raceDate}
+                  min={minRaceDate()}
+                  onChange={(e) => setRaceDate(e.target.value)}
+                  required
+                  className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+
+              {/* Target time (optional) */}
+              <div className="space-y-1">
+                <label htmlFor="wizard-target-time" className="font-mono text-[11px] font-medium text-on-surface-variant tracking-wide block">
+                  Target time <span className="text-on-surface-variant/60 normal-case font-normal">(optional)</span>
+                </label>
+                <input
+                  id="wizard-target-time"
+                  type="text"
+                  value={targetTime}
+                  onChange={(e) => setTargetTime(e.target.value)}
+                  placeholder="HH:MM:SS"
+                  className="w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+
+              {goalError && (
+                <p className="font-mono text-xs text-signal-miss" role="alert">{goalError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={goalSubmitting}
+                className="rounded-full bg-primary text-on-primary px-6 py-2.5 font-mono text-xs uppercase tracking-widest font-bold hover:shadow-md active:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                {goalSubmitting ? 'Saving…' : 'Set goal →'}
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* ── Step 2: Dojo ── */}
+      {step === 'dojo' && (
+        <div className="space-y-5">
+          <div>
+            <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-1">Step 2 of 3</p>
+            <h3 className="font-display text-2xl tracking-widest uppercase text-on-surface">Choose your dojo</h3>
+            <p className="font-mono text-xs text-on-surface-variant mt-1 leading-relaxed">
+              Pick a training methodology. Your plan will run for {weeksAvail} weeks.
+            </p>
+          </div>
+
+          {/* AI Coach — recommended, distinctive card */}
+          <button
+            type="button"
+            onClick={() => setSelectedDojoSlug(selectedDojoSlug === 'ai-coach' ? null : 'ai-coach')}
+            aria-pressed={selectedDojoSlug === 'ai-coach'}
+            className={[
+              'w-full text-left rounded-2xl border-2 p-5 transition-all',
+              selectedDojoSlug === 'ai-coach'
+                ? 'border-primary ring-2 ring-primary bg-primary/5'
+                : 'border-primary/30 bg-surface-container-high hover:border-primary/60 hover:bg-surface-container',
+            ].join(' ')}
+          >
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-primary flex-shrink-0" aria-hidden="true" />
+                <span className="font-display text-lg tracking-widest uppercase text-on-surface">AI Coach</span>
+              </div>
+              <span className="font-mono text-[10px] uppercase tracking-widest rounded-full bg-primary text-on-primary px-3 py-1">
+                Recommended
+              </span>
+            </div>
+            <p className="font-mono text-xs text-on-surface-variant mt-2 leading-relaxed">
+              A personalized plan built from your Strava history, race goal, and fitness assessment.
+            </p>
+          </button>
+
+          {/* Template dojos — 2-column grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {ALL_ENGINES.map((engine) => {
+              const firstSentence = engine.philosophy.split(/\.\s/)[0];
+              const truncated = firstSentence.length > 80
+                ? firstSentence.slice(0, 77) + '…'
+                : firstSentence;
+              const isSelected = selectedDojoSlug === engine.dojo;
+              return (
+                <button
+                  key={engine.dojo}
+                  type="button"
+                  onClick={() => setSelectedDojoSlug(isSelected ? null : engine.dojo)}
+                  aria-pressed={isSelected}
+                  className={[
+                    'text-left rounded-xl p-4 transition-all border',
+                    isSelected
+                      ? 'ring-2 ring-primary border-primary bg-primary/5'
+                      : 'border-ink-line bg-surface-container-high hover:bg-surface-container',
+                  ].join(' ')}
+                >
+                  <p className="font-mono text-xs font-bold text-on-surface uppercase tracking-wide">
+                    {engine.displayName}
+                  </p>
+                  <p className="font-mono text-[10px] text-on-surface-variant mt-1 leading-relaxed">
+                    {truncated}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          {genError && (
+            <p className="font-mono text-xs text-signal-miss" role="alert">{genError}</p>
+          )}
+
+          <button
+            type="button"
+            onClick={() => { void handleChoosePlan(); }}
+            disabled={!selectedDojoSlug || dojoSubmitting}
+            className="rounded-full bg-primary text-on-primary px-6 py-2.5 font-mono text-xs uppercase tracking-widest font-bold hover:shadow-md active:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            {dojoSubmitting ? 'Saving…' : 'Choose this plan →'}
+          </button>
+        </div>
+      )}
+
+      {/* ── Step 3: Generate AI plan ── */}
+      {step === 'plan' && (
+        <div className="space-y-5">
+          <div>
+            <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-1">Step 3 of 3</p>
+            <h3 className="font-display text-2xl tracking-widest uppercase text-on-surface">Generate your plan</h3>
+            <p className="font-mono text-xs text-on-surface-variant mt-1 leading-relaxed">
+              Your AI coach will build a {weeksAvail}-week plan tailored to your fitness and race goal.
+            </p>
+          </div>
+
+          {/* Show existing assessment text if available */}
+          {existingAssessment && (
+            <div className="rounded-xl bg-surface-container-high p-4 space-y-2">
+              <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">Fitness assessment</p>
+              <p className="font-mono text-xs text-on-surface leading-relaxed line-clamp-6 whitespace-pre-wrap">
+                {existingAssessment}
+              </p>
+            </div>
+          )}
+
+          {/* If no assessment yet, embed the card and wait */}
+          {!existingAssessment && (
+            <div className="space-y-3">
+              <p className="font-mono text-xs text-on-surface-variant leading-relaxed">
+                Your AI coach needs a fitness assessment before generating your plan. Complete the assessment below, then generate.
+              </p>
+              <FitnessAssessmentCard
+                athleteId={tokens.athleteId}
+                onComplete={(text) => {
+                  setExistingAssessment(text);
+                  setAssessmentReady(true);
+                }}
+              />
+            </div>
+          )}
+
+          {genError && (
+            <p className="font-mono text-xs text-signal-miss" role="alert">{genError}</p>
+          )}
+
+          {generating && (
+            <div className="flex items-center gap-2 font-mono text-xs text-bone-mute" role="status" aria-live="polite">
+              <Loader size={12} className="animate-spin flex-shrink-0" />
+              Generating your {weeksAvail}-week plan… this takes about 30 seconds
+            </div>
+          )}
+
+          {!generating && (assessmentReady || existingAssessment) && (
+            <button
+              type="button"
+              onClick={() => { void handleGenerate(); }}
+              className="rounded-full bg-primary text-on-primary px-6 py-2.5 font-mono text-xs uppercase tracking-widest font-bold hover:shadow-md active:opacity-90 transition-all"
+            >
+              Generate my plan →
+            </button>
+          )}
+
+          {genError && (
+            <button
+              type="button"
+              onClick={() => { setGenError(null); void handleGenerate(); }}
+              className="font-mono text-xs text-on-surface-variant underline underline-offset-2 hover:text-on-surface transition-colors"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Done ── */}
+      {step === 'done' && (
+        <div className="space-y-5">
+          <div className="flex items-start gap-3">
+            <CheckCircle size={20} className="text-signal-ok flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <div>
+              <h3 className="font-display text-2xl tracking-widest uppercase text-on-surface">
+                You're all set, {tokens.athleteName.split(' ')[0] || 'Athlete'}
+              </h3>
+              <p className="font-mono text-xs text-on-surface-variant mt-1 leading-relaxed">
+                Your {weeksAvail}-week plan starts today.
+              </p>
+            </div>
+          </div>
+
+          {todaySessionLabel ? (
+            <p className="font-mono text-xs text-on-surface leading-relaxed">
+              Tonight: <strong>{todaySessionLabel}</strong>
+            </p>
+          ) : (
+            <p className="font-mono text-xs text-on-surface-variant leading-relaxed">
+              Check your Patrol page for today's session.
+            </p>
+          )}
+
+          <Link
+            to="/patrol"
+            className="inline-block rounded-full bg-primary text-on-primary px-6 py-2.5 font-mono text-xs uppercase tracking-widest font-bold hover:shadow-md active:opacity-90 transition-all"
+          >
+            Go to Patrol →
+          </Link>
         </div>
       )}
     </div>
@@ -1291,6 +1926,9 @@ function ConnectedView({
           </a>
         </div>
       )}
+
+      {/* Training setup wizard — shown once after first connect */}
+      <TrainingWizard tokens={tokens} />
 
       {/* Entry fitness assessment — shown after sync, hidden once completed */}
       <FitnessAssessmentCard athleteId={tokens.athleteId} />

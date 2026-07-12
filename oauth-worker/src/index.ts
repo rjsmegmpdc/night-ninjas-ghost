@@ -1,4 +1,5 @@
 import { COACH_SYSTEM_PROMPT } from './coach-prompt';
+import { PLAN_SYSTEM_PROMPT } from './plan-prompt';
 
 /**
  * GHOST — Strava OAuth token-swap Worker
@@ -450,6 +451,70 @@ async function handleAi(request: Request, env: Env, allowed: string): Promise<Re
   });
 }
 
+// ---------------------------------------------------------------------------
+// /generate-plan — AI-generated personalized training plan (non-streaming)
+// ---------------------------------------------------------------------------
+
+async function handleGeneratePlan(request: Request, env: Env, allowed: string): Promise<Response> {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  let body: { athleteId?: unknown; context?: unknown; goalDistanceKm?: unknown; goalTimeS?: unknown; weeksAvailable?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+  }
+
+  const athleteId = Number(body.athleteId);
+  if (!athleteId || athleteId <= 0) {
+    return new Response(JSON.stringify({ error: 'athleteId required' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+  }
+
+  const context = String(body.context ?? '').trim();
+  const goalDistanceKm = Number(body.goalDistanceKm ?? 42.195);
+  const goalTimeS = Number(body.goalTimeS ?? 0);
+  const weeksAvailable = Math.max(4, Math.min(20, Number(body.weeksAvailable ?? 16)));
+
+  if (!context) {
+    return new Response(JSON.stringify({ error: 'context required' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+  }
+
+  const userPrompt = [
+    context,
+    '',
+    `Goal race: ${goalDistanceKm}km${goalTimeS > 0 ? ` in ${Math.floor(goalTimeS / 3600)}h${Math.floor((goalTimeS % 3600) / 60)}m` : ''}`,
+    `Weeks available to race day: ${weeksAvailable}`,
+    `Generate a ${weeksAvailable}-week personalized training plan. Return JSON only.`,
+  ].join('\n');
+
+  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 8192,
+      system: PLAN_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+
+    const text = message.content.find((b) => b.type === 'text')?.text ?? '';
+    // Validate it's JSON before returning
+    JSON.parse(text);
+
+    return new Response(text, {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Plan generation failed';
+    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin  = request.headers.get('Origin') ?? '';
@@ -488,6 +553,9 @@ export default {
 
     // AI coach streaming endpoint — handles its own body parsing
     if (url.pathname === '/ai') return handleAi(request, env, allowed);
+
+    // AI plan generation endpoint — handles its own body parsing
+    if (url.pathname === '/generate-plan') return handleGeneratePlan(request, env, allowed);
 
     const body = await request.json<{
       code?: string;

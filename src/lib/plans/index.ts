@@ -8,6 +8,7 @@ import { polarised } from './polarised';
 import { ultra } from './ultra';
 import { norwegianSingles } from './norwegian-singles';
 import { custom } from './custom';
+import { aiCoach } from './ai-coach';
 
 export const ENGINES: Record<Dojo, PlanEngine> = {
   hansons,
@@ -19,6 +20,7 @@ export const ENGINES: Record<Dojo, PlanEngine> = {
   ultra,
   'norwegian-singles': norwegianSingles,
   custom,
+  'ai-coach': aiCoach,
 };
 
 export function getEngine(dojo: Dojo): PlanEngine {
@@ -35,6 +37,7 @@ export const ALL_ENGINES: PlanEngine[] = [
   polarised,
   ultra,
   custom,
+  aiCoach,
 ];
 
 export * from './types';

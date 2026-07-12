@@ -176,20 +176,60 @@ export async function buildAthleteSnapshot(): Promise<AthleteSnapshot> {
   // -- Today's session from plan engine -------------------------------------
   let todaySession: AthleteSnapshot['todaySession'] = null;
   let targetKm = 50;
-  const engine = ENGINES[dojo as Dojo];
-  if (engine) {
-    const params = { goalDistanceKm, goalTimeS: goalTimeS ?? 12600, level, programWeeks, startDate };
-    const template = engine.renderWeek(params, wk);
-    targetKm = template.totalKmTarget;
-    const dayPlan = template.days.find((d) => d.dow === currentDow());
-    if (dayPlan && dayPlan.sessions.length > 0 && dayPlan.sessions[0].type !== 'rest') {
-      const s = dayPlan.sessions[0];
-      const dist = s.distanceKmMin != null && s.distanceKmMax != null
-        ? `${s.distanceKmMin.toFixed(0)}–${s.distanceKmMax.toFixed(0)}km`
-        : s.durationMinMin != null
-          ? `${s.durationMinMin}–${s.durationMinMax ?? s.durationMinMin}min`
-          : 'see plan';
-      todaySession = { label: s.label, type: s.type ?? 'run', prescription: dist };
+
+  if (dojo === 'ai-coach') {
+    // Load today's session from ai_plan_sessions (DB-backed AI plan)
+    const [aiRows, weekTotal] = await Promise.all([
+      query(
+        `SELECT aps.session_type, aps.label, aps.distance_km_min, aps.distance_km_max, aps.pace_target
+         FROM ai_plan_sessions aps
+         JOIN plan_periods pp ON pp.plan_id = aps.plan_id
+         WHERE pp.end_date IS NULL
+           AND aps.week_number = ?
+           AND aps.dow = ?`,
+        [wk, currentDow()]
+      ).catch(() => [] as unknown[][]),
+      query(
+        `SELECT SUM(aps.distance_km_max) as target
+         FROM ai_plan_sessions aps
+         JOIN plan_periods pp ON pp.plan_id = aps.plan_id
+         WHERE pp.end_date IS NULL AND aps.week_number = ?`,
+        [wk]
+      ).catch(() => [] as unknown[][]),
+    ]);
+    targetKm = (weekTotal[0]?.[0] as number | null) ?? 50;
+    if (aiRows.length > 0) {
+      const r = aiRows[0];
+      const sType = r[0] as string;
+      if (sType !== 'rest') {
+        const dkMin = r[2] as number | null;
+        const dkMax = r[3] as number | null;
+        const dist =
+          dkMin != null && dkMax != null
+            ? `${dkMin.toFixed(0)}–${dkMax.toFixed(0)}km`
+            : dkMin != null
+              ? `${dkMin.toFixed(0)}km`
+              : 'see plan';
+        todaySession = { label: r[1] as string, type: sType, prescription: dist };
+      }
+    }
+  } else {
+    const engine = ENGINES[dojo as Dojo];
+    if (engine) {
+      const params = { goalDistanceKm, goalTimeS: goalTimeS ?? 12600, level, programWeeks, startDate };
+      const template = engine.renderWeek(params, wk);
+      targetKm = template.totalKmTarget;
+      const dayPlan = template.days.find((d) => d.dow === currentDow());
+      if (dayPlan && dayPlan.sessions.length > 0 && dayPlan.sessions[0].type !== 'rest') {
+        const s = dayPlan.sessions[0];
+        const dist =
+          s.distanceKmMin != null && s.distanceKmMax != null
+            ? `${s.distanceKmMin.toFixed(0)}–${s.distanceKmMax.toFixed(0)}km`
+            : s.durationMinMin != null
+              ? `${s.durationMinMin}–${s.durationMinMax ?? s.durationMinMin}min`
+              : 'see plan';
+        todaySession = { label: s.label, type: s.type ?? 'run', prescription: dist };
+      }
     }
   }
 

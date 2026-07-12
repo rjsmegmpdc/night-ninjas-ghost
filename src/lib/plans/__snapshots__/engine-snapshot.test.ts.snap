@@ -1,5 +1,68 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`engine characterization snapshots (3b regression net) > ai-coach > advanced - full program span 1`] = `
+[
+  "W01 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W02 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W03 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W04 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W05 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W06 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W07 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W08 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W09 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W10 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W11 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W12 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W13 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W14 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W15 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W16 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+]
+`;
+
+exports[`engine characterization snapshots (3b regression net) > ai-coach > beginner - full program span 1`] = `
+[
+  "W01 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W02 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W03 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W04 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W05 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W06 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W07 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W08 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W09 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W10 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W11 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W12 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W13 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W14 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W15 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W16 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+]
+`;
+
+exports[`engine characterization snapshots (3b regression net) > ai-coach > intermediate - full program span 1`] = `
+[
+  "W01 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W02 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W03 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W04 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W05 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W06 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W07 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W08 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W09 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W10 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W11 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W12 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W13 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W14 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W15 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+  "W16 AI Coached | 0km L0 | Mon - / Tue - / Wed - / Thu - / Fri - / Sat - / Sun -",
+]
+`;
+
 exports[`engine characterization snapshots (3b regression net) > custom > advanced - full program span 1`] = `
 [
   "W01 Custom | 50km L25 | Mon easy7.5 / Tue easy10 / Wed rest / Thu tempo11 / Fri easy8 / Sat easy8 / Sun long22.5",

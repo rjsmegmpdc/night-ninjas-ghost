@@ -18,7 +18,8 @@ export type Dojo =
   | 'higdon'
   | 'polarised'
   | 'ultra'
-  | 'custom';
+  | 'custom'
+  | 'ai-coach';
 export type Level = 'beginner' | 'intermediate' | 'advanced';
 
 /** Day-of-week. ISO order — Mon=0, Sun=6. */
