@@ -1,5 +1,5 @@
 import { execBatch } from '@/db/client';
-import { fetchActivitiesPage, refreshAccessToken, RateLimitError } from '@/lib/strava/client';
+import { fetchActivitiesPage, fetchAthleteGear, refreshAccessToken, RateLimitError } from '@/lib/strava/client';
 import { getTokenCredentials } from '@/lib/strava/credentials';
 import type { StravaActivity } from '@/lib/strava/types';
 import {
@@ -150,6 +150,36 @@ export async function syncActivities(onProgress: ProgressCallback): Promise<void
     await clearSyncCursor();
     if (latestEpoch > 0) await setSetting('strava_last_sync_epoch', String(latestEpoch));
     await setLastSync(new Date().toISOString());
+
+    // Fetch athlete gear (shoes) and upsert into local DB.
+    // Runs after activity sync so gear_id references in activities are already stored.
+    // Silently swallows gear errors — a gear failure should not invalidate the activity sync.
+    try {
+      const { shoes } = await fetchAthleteGear(accessToken);
+      if (shoes.length > 0) {
+        await execBatch(shoes.map((shoe) => ({
+          sql: `INSERT INTO shoes (strava_gear_id, name, brand, model, description, retired)
+                VALUES (?,?,?,?,?,?)
+                ON CONFLICT(strava_gear_id) DO UPDATE SET
+                  name        = excluded.name,
+                  brand       = excluded.brand,
+                  model       = excluded.model,
+                  description = excluded.description,
+                  retired     = excluded.retired`,
+          params: [
+            shoe.id,
+            shoe.name || [shoe.brand_name, shoe.model_name].filter(Boolean).join(' ') || 'Shoe',
+            shoe.brand_name || null,
+            shoe.model_name || null,
+            shoe.description || null,
+            shoe.retired ? 1 : 0,
+          ],
+        })));
+        await setSetting('gear_strava_imported_at', new Date().toISOString());
+      }
+    } catch {
+      // Non-fatal — gear sync failure does not affect activity data
+    }
 
     onProgress({
       phase: 'done',
