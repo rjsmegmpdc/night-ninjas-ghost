@@ -69,26 +69,20 @@ export interface StoredTokens {
 }
 
 export async function getStoredTokens(): Promise<StoredTokens | null> {
-  const rows = await query(
-    `SELECT key, value FROM settings
-     WHERE key IN (
-       'strava_access_token', 'strava_refresh_token', 'strava_expires_at',
-       'strava_athlete_name', 'strava_athlete_id'
-     )`,
-  );
-  const map = new Map<string, string>();
-  for (const r of rows) map.set(r[0] as string, r[1] as string);
-
-  const at  = map.get('strava_access_token')  ?? null;
-  const rt  = map.get('strava_refresh_token') ?? null;
-  const exp = map.get('strava_expires_at')    ?? null;
+  const [at, rt, exp, an, aid] = await Promise.all([
+    getSetting('strava_access_token'),
+    getSetting('strava_refresh_token'),
+    getSetting('strava_expires_at'),
+    getSetting('strava_athlete_name'),
+    getSetting('strava_athlete_id'),
+  ]);
   if (!at || !rt || !exp) return null;
   return {
     accessToken:  at,
     refreshToken: rt,
     expiresAt:    Number(exp),
-    athleteName:  map.get('strava_athlete_name') ?? '',
-    athleteId:    map.has('strava_athlete_id') ? Number(map.get('strava_athlete_id')) : 0,
+    athleteName:  an ?? '',
+    athleteId:    aid ? Number(aid) : 0,
   };
 }
 
