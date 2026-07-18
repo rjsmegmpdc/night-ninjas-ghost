@@ -20,16 +20,20 @@ import {
   MaterialDynamicColors,
 } from '@material/material-color-utilities';
 
-const GHOST_ORANGE = '#FF5F00';
+// Kiero rebrand: brand seed flipped from GHOST orange #FF5F00 to Kiero teal.
+// Storm keeps its own blue seed (deliberate alternate identity, same call as
+// VELOCITY v2's Midnight); dusk re-seeds to a muted deep teal so the warm
+// variant stays in the new brand family.
+const GHOST_TEAL = '#2DD9CE';
 
 // theme name → { scheme class, seed, dark, contrast, overrides }
 const THEMES = [
-  { name: 'ink',           Scheme: SchemeVibrant,   seed: GHOST_ORANGE, dark: true,  contrast: 0.0 },
-  { name: 'dusk',          Scheme: SchemeContent,   seed: '#C46A33',    dark: true,  contrast: 0.0 },
-  { name: 'oled',          Scheme: SchemeVibrant,   seed: GHOST_ORANGE, dark: true,  contrast: 0.3, oledSurfaces: true },
-  { name: 'storm',         Scheme: SchemeTonalSpot, seed: '#5B7C99',    dark: true,  contrast: 0.0 },
-  { name: 'dawn',          Scheme: SchemeVibrant,   seed: GHOST_ORANGE, dark: false, contrast: 0.0 },
-  { name: 'high-contrast', Scheme: SchemeVibrant,   seed: GHOST_ORANGE, dark: true,  contrast: 1.0 },
+  { name: 'ink',           Scheme: SchemeVibrant,   seed: GHOST_TEAL, dark: true,  contrast: 0.0 },
+  { name: 'dusk',          Scheme: SchemeContent,   seed: '#1D8C84',  dark: true,  contrast: 0.0 },
+  { name: 'oled',          Scheme: SchemeVibrant,   seed: GHOST_TEAL, dark: true,  contrast: 0.3, oledSurfaces: true },
+  { name: 'storm',         Scheme: SchemeTonalSpot, seed: '#5B7C99',  dark: true,  contrast: 0.0 },
+  { name: 'dawn',          Scheme: SchemeVibrant,   seed: GHOST_TEAL, dark: false, contrast: 0.0 },
+  { name: 'high-contrast', Scheme: SchemeVibrant,   seed: GHOST_TEAL, dark: true,  contrast: 1.0 },
 ];
 
 // M3 color roles we emit (name → MaterialDynamicColors getter)
@@ -74,9 +78,9 @@ function schemeCss(theme) {
     let hex = hexFromArgb(role.getArgb(scheme));
     lines.push(`  --m3-${name}: ${hex};`);
   }
-  // GHOST brand orange — logotype + display numbers only. Darkened on light
-  // surfaces to hold contrast.
-  lines.push(`  --m3-brand: ${theme.dark ? GHOST_ORANGE : '#CC4400'};`);
+  // GHOST brand teal — logotype + display numbers only. Deepened on light
+  // surfaces to hold contrast (same pairing as VELOCITY v2's light themes).
+  lines.push(`  --m3-brand: ${theme.dark ? GHOST_TEAL : '#0D9488'};`);
   if (theme.oledSurfaces) {
     // Pure-black AMOLED: crush the low surfaces to true black
     const overrides = {
