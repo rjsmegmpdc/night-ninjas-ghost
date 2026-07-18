@@ -4,6 +4,7 @@ import { RefreshCw } from 'lucide-react';
 import { useDb } from '@/db/DbContext';
 import { query } from '@/db/client';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { RingGauge } from '@/components/ui/RingGauge';
 import {
   computeReadiness,
   computeBaselineFromHistory,
@@ -192,6 +193,15 @@ function computeDayStatus(
   return isRest ? 'rest' : 'upcoming';
 }
 
+// Kiero pass: actionable day states render as status pills (the reference's
+// "DONE"-style badges); quiet states (upcoming/rest) stay muted glyphs so
+// the week list doesn't shout about days that need no attention.
+const STATUS_PILL: Partial<Record<DayStatus, { label: string; className: string }>> = {
+  done:            { label: 'done',    className: 'border-signal-ok/50 bg-signal-ok/10 text-signal-ok' },
+  missed:          { label: 'missed',  className: 'border-signal-miss/50 bg-signal-miss/10 text-signal-miss' },
+  'today-pending': { label: 'tonight', className: 'border-primary/50 bg-primary/10 text-primary' },
+};
+
 const STATUS_DOT: Record<DayStatus, string> = {
   done:          '●',
   missed:        '○',
@@ -369,22 +379,31 @@ function ReadinessCard() {
   if (inputs.stressScore !== null && inputs.stressScore > 60) biometricItems.push(`Stress ${Math.round(inputs.stressScore)}`);
   if (inputs.rhrBpm !== null)      biometricItems.push(`RHR ${Math.round(inputs.rhrBpm)}bpm`);
 
+  // Kiero pass: readiness renders as a ring gauge (arc = score/100) with the
+  // label + recommendation beside it, matching the reference's READINESS
+  // ring. Colour still comes from the score's own engine-owned token —
+  // RingGauge strokes with currentColor, so score.color drives the arc.
   return (
     <div className="rounded-2xl bg-surface-container p-5 mb-4" role="region" aria-label="Today's readiness">
       <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mb-3">
         Today's readiness
       </p>
 
-      <div className="flex items-baseline gap-3">
-        <span className={`text-4xl font-bold tabular-nums ${score.color}`}>
-          {score.score}
-        </span>
-        <span className="font-mono text-on-surface-variant text-sm">/ 100</span>
-        <span className="font-mono text-base">●</span>
-        <span className={`text-sm font-semibold ${score.color}`}>{score.label}</span>
+      <div className="flex items-center gap-5">
+        <RingGauge
+          value={String(score.score)}
+          pct={score.score}
+          size={88}
+          className={score.color}
+        />
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2">
+            <span className={`text-lg font-semibold ${score.color}`}>{score.label}</span>
+            <span className="font-mono text-on-surface-variant text-xs">/ 100</span>
+          </div>
+          <p className="text-sm text-on-surface-variant mt-1">{score.recommendation}</p>
+        </div>
       </div>
-
-      <p className="text-sm text-on-surface-variant mt-1">{score.recommendation}</p>
 
       {biometricItems.length > 0 && (
         <div className="text-xs text-on-surface-variant mt-3 flex flex-wrap gap-4" aria-label="Biometric details">
@@ -1546,10 +1565,18 @@ function WeekPlanGrid({
                 )}
               </div>
 
-              {/* Status dot */}
-              <div className={`font-mono text-base mt-0.5 ${STATUS_COLOR[status]}`}>
-                {STATUS_DOT[status]}
-              </div>
+              {/* Status pill (Kiero) for actionable states; muted dot otherwise */}
+              {STATUS_PILL[status] ? (
+                <span
+                  className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest mt-0.5 ${STATUS_PILL[status]!.className}`}
+                >
+                  {STATUS_PILL[status]!.label}
+                </span>
+              ) : (
+                <div className={`font-mono text-base mt-0.5 ${STATUS_COLOR[status]}`}>
+                  {STATUS_DOT[status]}
+                </div>
+              )}
             </div>
           );
         })}

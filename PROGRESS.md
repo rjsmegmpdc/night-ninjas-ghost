@@ -1,4 +1,37 @@
 ## Branch
+feat/ui-kiero (merged to main, deployed via Pages CI)
+
+## Session: 2026-07-19
+
+### Completed
+
+**Kiero visual rebrand** (style reference: Kiero screenshots in the v2 repo's `brief/screenshots/AI/`; same pass already applied to VELOCITY v2)
+
+- **M3 re-seed**: `scripts/generate-m3-tokens.mjs` — seed + `--m3-brand` flipped from GHOST orange `#FF5F00` to Kiero teal `#2DD9CE` (`npm run tokens` re-run; ink primary now `#00ded2`). Storm keeps its blue seed (deliberate alternate identity); dusk re-seeded to muted deep teal `#1D8C84`; dawn brand deepens to `#0D9488` for light contrast. Every route re-themes through the M3 roles — no component changes needed for colour.
+- **Kiero radius**: `src/index.css` — `m3-card` 12px→20px, `--radius-2xl` 16px→20px (Patrol cards et al.).
+- **RingGauge** (`src/components/ui/RingGauge.tsx`, new): pure-SVG arc ring, strokes with `currentColor`, M3 outline-variant track.
+- **ReadinessCard** (`PatrolPage.tsx`): score now renders as a Kiero readiness ring (arc = score/100) with label + recommendation beside it; colour still the engine-owned score token.
+- **Week plan status pills** (`PatrolPage.tsx`): done/missed/tonight render as Kiero pill badges; upcoming/rest stay muted glyphs.
+- **DESIGN.md**: current-state note added (M3 + Kiero, where tokens actually live, tailwind.config.ts is dead); locked decisions 1–3 updated to teal/M3-nav/20px.
+
+Tests: 704/704. `tsc -b && vite build`: clean. Deployed by merge to main (deploy.yml gates on tests).
+
+### In progress
+- Nothing
+
+### Blocked
+- (carried) Profile Sync E2E verify — Cloudflare Access OTP issue
+- (carried) Club admin writes E2E — same Access issue
+
+### Next session should
+- Eyeball night-ninjas-ghost.pages.dev after CI deploy: readiness ring, teal accent across themes (ink/oled/dawn/dusk), week-plan pills, bottom-nav active pill
+- Consider ring-gauge treatment for Strike/VO2max hero numbers (same RingGauge component)
+- Review device API research briefings and decide build order (carried)
+- Address remaining open remediation items: R1 (Worker hardening), R13 (docs stale counts) (carried)
+
+---
+
+## Branch
 feat/r2-settings-fix (merging to main)
 
 ## Session: 2026-07-13

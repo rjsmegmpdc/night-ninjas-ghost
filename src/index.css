@@ -4,12 +4,14 @@
 /* ---------------------------------------------------------------------------
  * GHOST — Material 3 design system (Material-first hybrid)
  *
- * Color: full M3 dynamic schemes generated from the GHOST orange seed by
- * Google's material-color-utilities (scripts/generate-m3-tokens.mjs →
- * m3-tokens.css). Six themes switch via [data-theme] on <html>.
+ * Color: full M3 dynamic schemes generated from the Kiero teal seed
+ * (#2DD9CE — brief/screenshots Kiero rebrand) by Google's
+ * material-color-utilities (scripts/generate-m3-tokens.mjs →
+ * m3-tokens.css). Six themes switch via [data-theme] on <html>; Storm
+ * keeps its blue identity.
  *
- * Identity: --color-brand (#FF5F00) survives for the logotype and display
- * numerals; Bebas Neue remains the display face. Body text is Roboto/system.
+ * Identity: --color-brand (Kiero teal) is the logotype + display-numeral
+ * colour; Bebas Neue remains the display face. Body text is Roboto/system.
  *
  * Legacy aliases: the pre-M3 token names (ink/bone/accent/…) map onto M3
  * roles below so every existing class keeps working and re-themes live.
@@ -68,6 +70,10 @@
 @theme {
   --color-signal-ok:   #26D0AE;
   --color-signal-warn: #EAB308;
+
+  /* Kiero card radius — rounded-2xl (Patrol cards et al.) goes 16px -> 20px
+     app-wide, matching the Kiero reference and VELOCITY v2's kiero-3 pass. */
+  --radius-2xl: 1.25rem;
 
   /* M3 motion tokens — easing (ease-standard, ease-emphasized, …) */
   --ease-standard:              cubic-bezier(0.2, 0, 0, 1);
@@ -160,7 +166,8 @@
 /* Outlined card — the sweep replaces legacy `border border-ink-line` with
    this: M3 outlined-card shape without touching each section's own bg. */
 @utility m3-card {
-  border-radius: 0.75rem;
+  /* Kiero radius (was 0.75rem pre-rebrand) */
+  border-radius: 1.25rem;
   border: 1px solid var(--m3-outline-variant);
 }
 
