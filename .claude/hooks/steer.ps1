@@ -9,4 +9,6 @@ if ((Test-Path "STEER.md") -and ((Get-Content "STEER.md" -Raw -ErrorAction Silen
     Write-Output "{`"decision`":`"block`",`"reason`":`"OPERATOR STEERING: $escaped`"}"
     exit 0
 }
-Write-Output '{"decision":"allow"}'
+# No output = no opinion (allow). '{"decision":"allow"}' is not valid hook
+# JSON and produced a validation error on every tool call.
+exit 0

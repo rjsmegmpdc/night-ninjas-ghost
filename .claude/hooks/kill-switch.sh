@@ -7,4 +7,6 @@ if [ -f "AGENT_STOP" ]; then
     echo '{"decision":"block","reason":"AGENT_STOP sentinel file found in project root. Remove it to resume the agent."}'
     exit 0
 fi
-echo '{"decision":"allow"}'
+# No output = no opinion (allow). '{"decision":"allow"}' is not valid hook
+# JSON and produced a validation error on every tool call.
+exit 0

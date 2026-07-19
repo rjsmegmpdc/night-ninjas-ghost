@@ -12,4 +12,6 @@ if [ -f "STEER.md" ] && [ -s "STEER.md" ]; then
     echo "{\"decision\":\"block\",\"reason\":\"OPERATOR STEERING: $CONTENT\"}"
     exit 0
 fi
-echo '{"decision":"allow"}'
+# No output = no opinion (allow). '{"decision":"allow"}' is not valid hook
+# JSON and produced a validation error on every tool call.
+exit 0
