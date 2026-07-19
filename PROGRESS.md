@@ -1,4 +1,23 @@
 ## Branch
+fix/wizard-hooks-order (merged to main, deployed via Pages CI)
+
+## Session: 2026-07-19 (continued — the real /setup crash)
+
+### Completed
+
+**Fix: React #310 on /setup for connected users** (surfaced by the new ErrorBoundary — this, not deploy skew, was the actual cause of Matt's original blank page)
+
+- `TrainingWizard` (SetupPage.tsx) had its "load today's session on done-step" `useEffect` BELOW the `wizardLoading`/`shouldShow` early returns — first render mounted fewer hooks than later renders → React #310 → crash. Only reproducible with Strava tokens present (wizard only renders when connected), which is why the fresh-browser probe passed.
+- Moved the effect above the early returns (self-gates on `step === 'done'`; behaviour identical).
+- Swept the entire codebase with eslint react-hooks/rules-of-hooks (one-off flat config): zero violations remain.
+
+Tests: 704/704. Build clean.
+
+**Recommended follow-up**: add eslint + react-hooks rules to the repo and gate deploy.yml on it — this bug class is 100% machine-catchable and the repo has no linter today.
+
+---
+
+## Branch
 fix/blank-page-chunk-skew (merged to main, deployed via Pages CI)
 
 ## Session: 2026-07-19 (continued — blank-page fix)

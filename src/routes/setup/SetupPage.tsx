@@ -1371,6 +1371,35 @@ function TrainingWizard({ tokens }: { tokens: StoredTokens }) {
     return () => { cancelled = true; };
   }, [step]);
 
+  // Load today's session label when the wizard completes. MUST live above the
+  // early returns below — it previously sat after them, so the first render
+  // (wizardLoading) mounted fewer hooks than later renders and React threw
+  // #310 ("rendered more hooks than during the previous render"), blanking
+  // /setup for connected users. Hooks always run; the `step` guard inside
+  // keeps the behaviour identical.
+  useEffect(() => {
+    if (step !== 'done') return;
+    // Best-effort: try to find today's session from the active plan
+    let cancelled = false;
+    async function loadTodaySession() {
+      const today = todayIsoWizard();
+      const rows = await query(
+        `SELECT ais.label FROM ai_plan_sessions ais
+         JOIN plan_periods pp ON pp.plan_id = ais.plan_id
+         WHERE pp.end_date IS NULL
+           AND ais.week_number = CAST((julianday(?) - julianday(pp.start_date)) / 7 AS INTEGER) + 1
+           AND ais.dow = CAST((julianday(?) - julianday(pp.start_date)) % 7 AS INTEGER)
+         LIMIT 1`,
+        [today, today],
+      ).catch(() => [] as unknown[][]);
+      if (!cancelled && rows.length) {
+        setTodaySessionLabel(rows[0][0] as string);
+      }
+    }
+    loadTodaySession().catch(() => {});
+    return () => { cancelled = true; };
+  }, [step]);
+
   if (shouldShow === null || wizardLoading) return null;
   if (shouldShow === false) return null;
 
@@ -1482,31 +1511,6 @@ function TrainingWizard({ tokens }: { tokens: StoredTokens }) {
       setGenerating(false);
     }
   }
-
-  // ── Step: Done ────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (step !== 'done') return;
-    // Best-effort: try to find today's session from the active plan
-    let cancelled = false;
-    async function loadTodaySession() {
-      const today = todayIsoWizard();
-      const rows = await query(
-        `SELECT ais.label FROM ai_plan_sessions ais
-         JOIN plan_periods pp ON pp.plan_id = ais.plan_id
-         WHERE pp.end_date IS NULL
-           AND ais.week_number = CAST((julianday(?) - julianday(pp.start_date)) / 7 AS INTEGER) + 1
-           AND ais.dow = CAST((julianday(?) - julianday(pp.start_date)) % 7 AS INTEGER)
-         LIMIT 1`,
-        [today, today],
-      ).catch(() => [] as unknown[][]);
-      if (!cancelled && rows.length) {
-        setTodaySessionLabel(rows[0][0] as string);
-      }
-    }
-    loadTodaySession().catch(() => {});
-    return () => { cancelled = true; };
-  }, [step]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
