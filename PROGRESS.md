@@ -1,4 +1,22 @@
 ## Branch
+fix/blank-page-chunk-skew (merged to main, deployed via Pages CI)
+
+## Session: 2026-07-19 (continued — blank-page fix)
+
+### Completed
+
+**Fix: blank page when clicking Sync on Patrol** (Matt's report)
+
+- Root cause: PWA deploy skew. `registerType: 'autoUpdate'` (skipWaiting + clientsClaim) means a tab running an old build loses its old precached chunks when a new deploy's sw takes control; Pages only serves current-build assets, so the next lazy route import (Sync → `/setup`) rejects — and with no ErrorBoundary, React unmounted to a permanent blank page. Two same-day deploys made this near-certain to hit.
+- `src/main.tsx` — `vite:preloadError` self-heal: auto-reload once (fetches the fresh build), timestamp-latched to at most one reload per minute so a persistent failure can't reload-loop.
+- `src/components/ui/ErrorBoundary.tsx` (new) + wired around routes in `App.tsx` (resets on navigation) — any render/chunk error now shows a styled "This screen hit an error / RELOAD APP" card instead of a blank page.
+- Verified with headless-Edge simulation (chunk deleted from dist + caches cleared, mirroring production): one auto-reload, then ErrorBoundary; never blank. Fresh-profile probe of the live site confirmed /setup itself is healthy — the failure was state, not the page.
+
+Tests: 704/704. Build clean. User unblock: close all GHOST tabs / hard-refresh once; future deploys self-heal.
+
+---
+
+## Branch
 feat/ui-kiero-2 (merged to main, deployed via Pages CI)
 
 ## Session: 2026-07-19 (continued — Kiero across the rest of the site)

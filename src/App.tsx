@@ -3,6 +3,7 @@ import { Suspense, lazy, useState, useEffect } from 'react';
 import { DbProvider, useDb } from './db/DbContext';
 import { TopNav } from './components/nav/TopNav';
 import { PageSkeleton } from './components/ui/PageSkeleton';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { getStoredTokens } from '@/lib/db/settings';
 
 // Route-level code-split — each screen loads on demand
@@ -86,6 +87,7 @@ function AppShell() {
           Keyed wrapper re-runs the M3 fade-through entrance per route. */}
       <main className="pb-24 md:pb-0 md:pl-22">
         <div key={location.pathname} className="m3-page-enter">
+        <ErrorBoundary resetKey={location.pathname}>
         <Suspense fallback={<PageSkeleton />}>
           <Routes>
             <Route path="/" element={<Navigate to={home} replace />} />
@@ -108,6 +110,7 @@ function AppShell() {
             <Route path="*"          element={<Navigate to="/patrol" replace />} />
           </Routes>
         </Suspense>
+        </ErrorBoundary>
         </div>
       </main>
     </div>
