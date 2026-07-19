@@ -1,0 +1,4 @@
+# Vitest rewrites .snap files with LF endings on every local test run; with
+# core.autocrlf=true git then flags them modified despite a zero-content
+# diff. -text disables line-ending conversion for them entirely.
+*.snap -text
