@@ -1,4 +1,24 @@
 ## Branch
+feat/factory-reset (merged to main, deployed via Pages CI)
+
+## Session: 2026-07-19 (continued — factory reset)
+
+### Completed
+
+**Factory reset — force re-login + regeneration of keys/auth/data** (Matt's request)
+
+- `src/lib/db/factory-reset.ts` (new) — ordered, fail-open teardown: revoke Strava token (server-side, while we can still read it) → worker closes DB, releases OPFS handles, deletes the `ghost-db` directory → worker terminated → at-rest AES key destroyed (regenerated on next use) → all `ghost.*` localStorage + sessionStorage cleared → hard-navigate to `/setup` for a fresh connect.
+- `src/db/worker.ts` — new `resetStorage` message: OPFS deletion runs IN the worker because it owns the sync access handles and main-thread `navigator.storage.getDirectory` is missing in some WebKit builds (verified in Playwright WebKit — a main-thread-only delete would silently no-op there).
+- `src/db/client.ts` — `resetDbStorage()` + `terminateWorker()`.
+- `src/lib/crypto/at-rest.ts` — `resetAtRestKey()`: deletes the key entry directly (a bare `indexedDB.deleteDatabase` can block forever on the never-closed keystore connections), then best-effort DB teardown.
+- Settings → Data Management: "Factory reset — re-login & regenerate keys" with typed `RESET` confirmation, alongside the existing row-level wipe.
+- E2E (Playwright WebKit, iPhone emulation): seeded flags → reset flow → all `ghost.*` keys gone, landed on `/setup` as fresh user, no JS errors.
+
+Tests: 704/704. Lint: 0 errors. Build clean.
+
+---
+
+## Branch
 fix/pwa-auto-refresh (merged to main, deployed via Pages CI)
 
 ## Session: 2026-07-19 (continued — version check + auto-refresh)

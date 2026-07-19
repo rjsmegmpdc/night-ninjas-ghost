@@ -95,3 +95,29 @@ export async function decryptValue(key: CryptoKey, envelope: string): Promise<st
   );
   return new TextDecoder().decode(plain);
 }
+
+/**
+ * Factory reset support: destroy the at-rest key so the next
+ * getOrCreateAtRestKey() call generates a brand-new one. Deletes the key
+ * entry directly (guaranteed even while other connections are open — a
+ * bare indexedDB.deleteDatabase() can sit blocked forever because
+ * openKeyStore() connections are never closed), then best-effort deletes
+ * the whole keystore database.
+ */
+export async function resetAtRestKey(): Promise<void> {
+  const db = await openKeyStore();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    const r  = tx.objectStore(IDB_STORE).delete(KEY_ID);
+    r.onsuccess = () => resolve();
+    r.onerror   = () => reject(r.error);
+  });
+  db.close();
+  // Best-effort full teardown; 'blocked' is fine — the key entry is gone.
+  await new Promise<void>((resolve) => {
+    const req = indexedDB.deleteDatabase(IDB_NAME);
+    req.onsuccess = () => resolve();
+    req.onerror   = () => resolve();
+    req.onblocked = () => resolve();
+  });
+}
