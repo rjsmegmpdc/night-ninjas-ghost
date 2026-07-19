@@ -62,12 +62,14 @@ const SOURCE_BADGE_CLASS: Record<string, string> = {
   device: 'bg-surface-container-high text-on-surface-variant',
 };
 
+// Kiero pass: fitness band renders as a tone-tinted status pill (the
+// pattern established on Patrol's week grid), not bare coloured text.
 const BAND_CLASS: Record<string, string> = {
-  superior: 'text-accent',
-  excellent: 'text-signal-ok',
-  good: 'text-bone',
-  fair: 'text-signal-warn',
-  developing: 'text-signal-miss',
+  superior: 'border-primary/50 bg-primary/10 text-primary',
+  excellent: 'border-signal-ok/50 bg-signal-ok/10 text-signal-ok',
+  good: 'border-ink-line-bold bg-surface-container-high text-bone',
+  fair: 'border-signal-warn/50 bg-signal-warn/10 text-signal-warn',
+  developing: 'border-signal-miss/50 bg-signal-miss/10 text-signal-miss',
 };
 
 // ---------------------------------------------------------------------------
@@ -279,7 +281,9 @@ function TrendCard({
           {/* Band + delta */}
           <div className="flex flex-wrap gap-4 items-center">
             {band && (
-              <span className={`font-mono text-sm uppercase tracking-widest ${BAND_CLASS[band] ?? 'text-bone'}`}>
+              <span
+                className={`inline-flex items-center rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-widest ${BAND_CLASS[band] ?? 'border-ink-line-bold text-bone'}`}
+              >
                 {band}
               </span>
             )}

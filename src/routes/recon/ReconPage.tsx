@@ -458,12 +458,14 @@ function ZoneDistributionCard({
 // Card 3: Fitness / Fatigue (CTL / ATL)
 // ---------------------------------------------------------------------------
 
+// Kiero pass: tone-tinted status-pill classes (Patrol week-grid pattern).
+// Previously the render site discarded these in favour of a monochrome pill.
 function formBadge(tsb: number): { label: string; classes: string } {
-  if (tsb > 25)  return { label: 'Fresh',    classes: 'text-signal-ok border-signal-ok' };
-  if (tsb > 10)  return { label: 'On Form',  classes: 'text-signal-ok border-signal-ok' };
-  if (tsb >= -10) return { label: 'Neutral',  classes: 'text-bone-dim border-ink-line' };
-  if (tsb >= -25) return { label: 'Loaded',   classes: 'text-signal-warn border-signal-warn' };
-  return            { label: 'Fatigued', classes: 'text-signal-miss border-signal-miss' };
+  if (tsb > 25)  return { label: 'Fresh',    classes: 'text-signal-ok border-signal-ok/50 bg-signal-ok/10' };
+  if (tsb > 10)  return { label: 'On Form',  classes: 'text-signal-ok border-signal-ok/50 bg-signal-ok/10' };
+  if (tsb >= -10) return { label: 'Neutral',  classes: 'text-bone-dim border-ink-line bg-surface-container-high' };
+  if (tsb >= -25) return { label: 'Loaded',   classes: 'text-signal-warn border-signal-warn/50 bg-signal-warn/10' };
+  return            { label: 'Fatigued', classes: 'text-signal-miss border-signal-miss/50 bg-signal-miss/10' };
 }
 
 function FitnessFatigueCard({
@@ -510,7 +512,7 @@ function FitnessFatigueCard({
           </p>
           <p className="font-mono text-xs text-bone-mute">Last 8 weeks · CTL vs ATL</p>
         </div>
-        <div className="rounded-full px-3 py-1 bg-secondary-container text-on-secondary-container font-mono text-xs uppercase tracking-widest">
+        <div className={`rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-widest ${badge.classes}`}>
           {badge.label}
         </div>
       </div>

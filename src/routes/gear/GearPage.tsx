@@ -3,6 +3,7 @@ import { ExternalLink, Plus, X, ChevronDown, ChevronUp, RefreshCw } from 'lucide
 import { useDb } from '@/db/DbContext';
 import { query, exec } from '@/db/client';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { RingGauge } from '@/components/ui/RingGauge';
 import { fetchAthleteGear } from '@/lib/strava/client';
 import { getStoredTokens, storeTokens, setSetting, getSetting } from '@/lib/db/settings';
 import { refreshAccessToken } from '@/lib/strava/client';
@@ -98,7 +99,10 @@ function dealSearchUrl(brand: string | null, model: string | null, name: string)
   return `https://www.google.com/search?q=${encodeURIComponent(q + ' sale NZ running')}`;
 }
 
-function rotationAdvice(shoe: ShoeRow, allActive: ShoeRow[]): { badge: string; color: string; tip: string } | null {
+// Kiero pass: `pill` carries the full tone-tinted status-pill classes (the
+// pattern established on Patrol's week grid) — previously a text-* colour
+// that the render site discarded in favour of a monochrome pill.
+function rotationAdvice(shoe: ShoeRow, allActive: ShoeRow[]): { badge: string; pill: string; tip: string } | null {
   if (!shoe.strava_gear_id) return null;
   if (shoe.session_count === 0) return null;
 
@@ -109,12 +113,12 @@ function rotationAdvice(shoe: ShoeRow, allActive: ShoeRow[]): { badge: string; c
   const isRaceFocused = shoe.race_count > 0 && shoe.race_count >= shoe.session_count * 0.3;
   const pct = shoe.target_km > 0 ? shoe.total_km / shoe.target_km : 0;
 
-  if (pct >= 0.9) return { badge: 'Near limit', color: 'text-signal-miss', tip: 'Consider replacing — close to km target.' };
+  if (pct >= 0.9) return { badge: 'Near limit', pill: 'border-signal-miss/50 bg-signal-miss/10 text-signal-miss', tip: 'Consider replacing — close to km target.' };
   if (isFastest && shoe.best_speed_ms && shoe.best_speed_ms > 0)
-    return { badge: 'Race shoe', color: 'text-accent', tip: `Fastest in rotation (best ${speedToMinKm(shoe.best_speed_ms)}). Use for tempo runs, races, and PB attempts.` };
-  if (isTrailFocused) return { badge: 'Trail', color: 'text-amber-400', tip: `${shoe.trail_count} trail runs — your trail specialist.` };
-  if (isRaceFocused) return { badge: 'Racer', color: 'text-accent', tip: 'Frequently used in races — protect km for race day.' };
-  return { badge: 'Daily trainer', color: 'text-signal-ok', tip: 'Regular workhorse. Good for easy and long runs.' };
+    return { badge: 'Race shoe', pill: 'border-primary/50 bg-primary/10 text-primary', tip: `Fastest in rotation (best ${speedToMinKm(shoe.best_speed_ms)}). Use for tempo runs, races, and PB attempts.` };
+  if (isTrailFocused) return { badge: 'Trail', pill: 'border-amber-400/50 bg-amber-400/10 text-amber-400', tip: `${shoe.trail_count} trail runs — your trail specialist.` };
+  if (isRaceFocused) return { badge: 'Racer', pill: 'border-primary/50 bg-primary/10 text-primary', tip: 'Frequently used in races — protect km for race day.' };
+  return { badge: 'Daily trainer', pill: 'border-signal-ok/50 bg-signal-ok/10 text-signal-ok', tip: 'Regular workhorse. Good for easy and long runs.' };
 }
 
 // ---------------------------------------------------------------------------
@@ -309,7 +313,7 @@ function ShoeCard({ shoe, allActive, onRefresh }: { shoe: ShoeRow; allActive: Sh
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-mono text-sm font-semibold text-bone truncate">{shoe.name}</p>
             {advice && (
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-secondary-container text-on-secondary-container`}>
+              <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${advice.pill}`}>
                 {advice.badge}
               </span>
             )}
@@ -351,8 +355,16 @@ function ShoeCard({ shoe, allActive, onRefresh }: { shoe: ShoeRow; allActive: Sh
         {shoe.avg_speed_ms && <span>avg {speedToMinKm(shoe.avg_speed_ms)}</span>}
         {shoe.best_speed_ms && <span>best {speedToMinKm(shoe.best_speed_ms)}</span>}
         <span className="ml-auto">{fmtDate(shoe.last_used)}</span>
-        {pct >= 90 && <span className="text-signal-miss uppercase">Replace</span>}
-        {pct >= 70 && pct < 90 && <span className="text-signal-warn uppercase">Worn</span>}
+        {pct >= 90 && (
+          <span className="rounded-full border border-signal-miss/50 bg-signal-miss/10 text-signal-miss px-2 py-0.5 uppercase tracking-widest">
+            Replace
+          </span>
+        )}
+        {pct >= 70 && pct < 90 && (
+          <span className="rounded-full border border-signal-warn/50 bg-signal-warn/10 text-signal-warn px-2 py-0.5 uppercase tracking-widest">
+            Worn
+          </span>
+        )}
       </div>
     </div>
   );
@@ -415,27 +427,27 @@ function WorkoutCard({ workoutType, scores }: WorkoutCardProps) {
         </div>
       </div>
 
-      {/* Sub-label — brand + pace + sessions */}
-      <p className="text-xs text-on-surface-variant font-mono mb-3">
-        {top.shoeBrand ? `${top.shoeBrand} · ` : ''}
-        {fmtMinKm(top.avgPaceMinKm)} · {top.sessionCount} session{top.sessionCount !== 1 ? 's' : ''}
-      </p>
-
-      {/* Score bar */}
-      <div className="h-1.5 rounded-full bg-on-surface/10 overflow-hidden mb-1">
+      {/* Sub-label + performance ring (Kiero — replaces the linear score bar) */}
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <p className="text-xs text-on-surface-variant font-mono">
+          {top.shoeBrand ? `${top.shoeBrand} · ` : ''}
+          {fmtMinKm(top.avgPaceMinKm)} · {top.sessionCount} session{top.sessionCount !== 1 ? 's' : ''}
+        </p>
         <div
-          className="h-full rounded-full bg-primary transition-all"
-          style={{ width: `${Math.min(top.performanceScore, 100)}%` }}
           role="meter"
           aria-valuenow={Math.round(top.performanceScore)}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label={`Performance score: ${Math.round(top.performanceScore)} out of 100`}
-        />
+        >
+          <RingGauge
+            value={String(Math.round(top.performanceScore))}
+            pct={Math.min(top.performanceScore, 100)}
+            size={56}
+            className="text-primary"
+          />
+        </div>
       </div>
-      <p className="text-[10px] text-on-surface-variant font-mono text-right mb-2">
-        {Math.round(top.performanceScore)}/100
-      </p>
 
       {/* Expand / collapse ranked shoes 2 and 3 */}
       {others.length > 0 && (

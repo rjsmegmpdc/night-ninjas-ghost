@@ -1,4 +1,23 @@
 ## Branch
+feat/ui-kiero-2 (merged to main, deployed via Pages CI)
+
+## Session: 2026-07-19 (continued — Kiero across the rest of the site)
+
+### Completed
+
+**Kiero pass 2 — remaining routes** (Matt approved the deployed rebrand incl. dusk, then asked to carry on across the site)
+
+- **gear** — `rotationAdvice` badges now tone-tinted status pills (colour was previously computed then discarded); "Replace"/"Worn" wear warnings are pills; Shoe Intelligence `WorkoutCard` performance score renders as a RingGauge (was linear bar + "/100" text).
+- **vo2max** — fitness band (superior…developing) renders as a status pill via re-tooled `BAND_CLASS`.
+- **recon** — `FitnessFatigueCard` form badge now uses `formBadge()`'s tone classes (they existed but the render used a monochrome pill).
+- **strike** — athlete-state header badge tone-tinted via new `FORM_PILL`; Sleep Score + Body Battery (/100 device scores) render as RingGauges (HRV/RHR stay numerals — unbounded); LongRunCard "% of week" renders as a RingGauge.
+- Skipped as already Kiero-adequate: race severity badges, calendar/journal/vo2max source pills. Skipped as low-payoff: dojo phase text, club improvement label.
+
+Tests: 704/704. `tsc -b && vite build`: clean. Deployed by merge to main.
+
+---
+
+## Branch
 feat/ui-kiero (merged to main, deployed via Pages CI)
 
 ## Session: 2026-07-19

@@ -8,6 +8,7 @@ import { Link } from 'react-router';
 import { useDb } from '@/db/DbContext';
 import { query } from '@/db/client';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { RingGauge } from '@/components/ui/RingGauge';
 import {
   computeEwma,
   classifyForm,
@@ -558,6 +559,16 @@ const FORM_COLOR: Record<FormClass, string> = {
   overreached: 'text-signal-miss',
 };
 
+// Kiero pass: tone-tinted status-pill classes for the athlete-state header
+// badge (Patrol week-grid pattern) — replaces the monochrome pill.
+const FORM_PILL: Record<FormClass, string> = {
+  fresh: 'border-primary/50 bg-primary/10 text-primary',
+  'on-form': 'border-signal-ok/50 bg-signal-ok/10 text-signal-ok',
+  maintained: 'border-ink-line-bold bg-surface-container-high text-bone',
+  loaded: 'border-signal-warn/50 bg-signal-warn/10 text-signal-warn',
+  overreached: 'border-signal-miss/50 bg-signal-miss/10 text-signal-miss',
+};
+
 // ---------------------------------------------------------------------------
 // Utility
 // ---------------------------------------------------------------------------
@@ -788,11 +799,30 @@ function BiometricsCard({ days }: { days: ResolvedDayMetrics[] }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         {metrics.map((m) => {
           const arrow = trendArrow(m.trend, m.lowerIsBetter);
+          // Kiero pass: the two /100 device scores are naturally bounded, so
+          // they render as ring gauges; HRV/RHR are unbounded and keep the
+          // plain numeral.
+          const isScore = m.unit === '/100';
           return (
             <div key={m.label} className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
               <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">{m.label}</p>
               {m.value != null ? (
                 <>
+                  {isScore ? (
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <RingGauge
+                        value={String(Math.round(m.value))}
+                        pct={m.value}
+                        size={64}
+                        className="text-primary"
+                      />
+                      {arrow && (
+                        <span className={`font-mono text-lg leading-none ${arrow.color}`}>
+                          {arrow.symbol}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
                   <div className="flex items-baseline gap-1.5">
                     <span className="font-display tracking-widest text-4xl leading-none text-bone">
                       {m.decimals ? m.value.toFixed(m.decimals) : Math.round(m.value)}
@@ -804,6 +834,7 @@ function BiometricsCard({ days }: { days: ResolvedDayMetrics[] }) {
                       </span>
                     )}
                   </div>
+                  )}
                   {m.trend.mean != null && (
                     <p className="font-mono text-xs text-bone-mute">
                       28d avg {m.decimals ? m.trend.mean.toFixed(m.decimals) : Math.round(m.trend.mean)}{m.unit}
@@ -870,7 +901,7 @@ function AthleteStateCard({ state }: { state: AthleteStateData }) {
         <span className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">
           athlete state · CTL / ATL / TSB
         </span>
-        <span className={`rounded-full px-3 py-1 text-[11px] font-medium bg-secondary-container text-on-secondary-container`}>
+        <span className={`rounded-full border px-3 py-1 text-[11px] font-medium ${FORM_PILL[formClass]}`}>
           {FORM_LABEL[formClass]}
         </span>
       </div>
@@ -1259,11 +1290,15 @@ function LongRunCard({ data }: { data: LongRunData }) {
 
         <div className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
           <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">% of week</p>
-          <div className="flex items-baseline gap-1.5">
-            <span className="font-display tracking-widest text-4xl leading-none text-bone">
-              {pctOfWeek.toFixed(0)}
-            </span>
-            <span className="font-mono text-bone-mute text-sm">%</span>
+          {/* Kiero pass: bounded share-of-week renders as a ring gauge */}
+          <div className="pt-1">
+            <RingGauge
+              value={pctOfWeek.toFixed(0)}
+              unit="%"
+              pct={pctOfWeek}
+              size={64}
+              className="text-primary"
+            />
           </div>
           <p className="font-mono text-xs text-bone-mute">of {weekTotalKm.toFixed(1)} km total</p>
         </div>
