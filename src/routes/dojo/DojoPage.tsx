@@ -399,9 +399,11 @@ function ActivePlanBar({
         </div>
       )}
 
-      {/* Start date editor */}
-      <div className="bg-surface-container rounded-xl p-4 sm:p-5 flex items-end gap-3">
-        <div>
+      {/* Start date editor — flex-wrap so the native date input (wider than
+          the cell on phones) drops the Save button to its own line instead
+          of overflowing the card. */}
+      <div className="bg-surface-container rounded-xl p-4 sm:p-5 flex flex-wrap items-end gap-3">
+        <div className="min-w-0 max-w-full">
           <label htmlFor="bar-start-date" className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest block mb-0.5">
             Start date
           </label>

@@ -749,6 +749,7 @@ function HrvSparkline({ series }: { series: { date: string; value: number | null
       width={w}
       height={HRV_SPARK_H}
       viewBox={`0 0 ${w} ${HRV_SPARK_H}`}
+      className="max-w-full h-auto"
       aria-label="HRV 28-day sparkline"
     >
       <polyline
