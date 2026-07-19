@@ -1,4 +1,23 @@
 ## Branch
+docs/ios-investigation (merged to main)
+
+## Session: 2026-07-19 (continued — iOS "buttons don't work" investigation + eslint gate)
+
+### Completed
+
+**ESLint hooks gate** — `eslint.config.mjs` (react-hooks/rules-of-hooks = error, exhaustive-deps = warn, src-only scope), `npm run lint`, wired as a hard gate in deploy.yml before tests. Green on current codebase.
+
+**iOS "buttons don't work" report — investigated, cannot reproduce on current deployment.** Tested with real WebKit 26 via Playwright (iPhone 13 emulation, touch events):
+- Full first-run flow works: privacy acknowledge → Connect-with-Strava link (shared app id present) → backup/restore.
+- No-OPFS simulation (in-app webview conditions): MemoryVFS fallback works, app interactive.
+- Checked and cleared: viewport meta, hover-gated controls, pointer-events, fixed-overlay hit-blocking.
+- **Cloudflare Access finding**: only `/sync/start` on the oauth worker is Access-gated ("GHOST profile sync" app, anyone-with-email OTP) — deliberate identity layer, NOT a general blocker. The VELOCITY Access app gates only v1's worker.
+- **Most probable explanation**: the reporter hit one of the two now-fixed crashes (React #310 on /setup for connected users — live in prod 2026-07-12 → today; or PWA deploy-skew blank). Both made every tap dead. Fixed + guarded (self-heal reload, ErrorBoundary) earlier today; affected phones need one reload/app-relaunch to converge.
+- If it recurs after a reload: need device details (iOS version, Safari vs in-app browser, which screen/buttons).
+
+---
+
+## Branch
 fix/wizard-hooks-order (merged to main, deployed via Pages CI)
 
 ## Session: 2026-07-19 (continued — the real /setup crash)
