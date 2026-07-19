@@ -1,8 +1,32 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
+import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import './index.css';
+
+// ---------------------------------------------------------------------------
+// Version check + auto-refresh. The previous setup only *registered* the
+// service worker: after a deploy the new sw installed and took control in
+// the background, but the open page was never reloaded, so users kept
+// seeing the previous build until their next visit. registerSW in
+// autoUpdate mode reloads the page as soon as an updated sw takes control
+// (that IS the version check — the browser byte-compares sw.js). On top,
+// re-check on a timer and whenever the app returns to the foreground —
+// the path that matters for the iOS home-screen PWA, which can sit in
+// memory for days.
+// ---------------------------------------------------------------------------
+registerSW({
+  immediate: true,
+  onRegisteredSW(_swUrl, registration) {
+    if (!registration) return;
+    const check = () => registration.update().catch(() => {});
+    setInterval(check, 15 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') check();
+    });
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Apply stored display preferences before React mounts to avoid a flash of
