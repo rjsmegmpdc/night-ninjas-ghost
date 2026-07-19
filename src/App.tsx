@@ -4,6 +4,7 @@ import { DbProvider, useDb } from './db/DbContext';
 import { TopNav } from './components/nav/TopNav';
 import { PageSkeleton } from './components/ui/PageSkeleton';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { InAppBrowserBanner } from './components/ui/InAppBrowserBanner';
 import { getStoredTokens } from '@/lib/db/settings';
 
 // Route-level code-split — each screen loads on demand
@@ -82,6 +83,7 @@ function AppShell() {
 
   return (
     <div className="min-h-screen bg-surface text-on-surface">
+      <InAppBrowserBanner />
       <TopNav />
       {/* Clear the mobile bottom nav bar and the desktop rail.
           Keyed wrapper re-runs the M3 fade-through entrance per route. */}

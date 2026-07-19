@@ -855,14 +855,14 @@ export default function DojoPage() {
             </h2>
 
             {/* Level toggle */}
-            <div className="flex gap-1" role="group" aria-label="Training level">
+            <div className="flex flex-wrap gap-1" role="group" aria-label="Training level">
               {(['beginner', 'intermediate', 'advanced'] as Level[]).map((l) => (
                 <button
                   key={l}
                   type="button"
                   onClick={() => setLevel(l)}
                   aria-pressed={level === l}
-                  className={['rounded-full px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors', level === l ? 'bg-secondary-container text-on-secondary-container' : 'text-on-surface-variant hover:bg-on-surface/8'].join(' ')}
+                  className={['rounded-full px-2 sm:px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors', level === l ? 'bg-secondary-container text-on-secondary-container' : 'text-on-surface-variant hover:bg-on-surface/8'].join(' ')}
                 >
                   {l}
                 </button>

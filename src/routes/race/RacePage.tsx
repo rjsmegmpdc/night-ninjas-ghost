@@ -629,11 +629,11 @@ function CarbLoadCard({ weightKg }: { weightKg: number | null }) {
 
       <div className="grid grid-cols-3 gap-2">
         {plan.days.map((day) => (
-          <div key={day.daysOut} className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1">
+          <div key={day.daysOut} className="bg-surface-container rounded-xl p-4 sm:p-5 space-y-1 min-w-0">
             <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">
               {day.daysOut} out
             </p>
-            <p className="font-display text-3xl tracking-widest text-accent leading-none">
+            <p className="font-display text-xl sm:text-3xl tracking-widest text-accent leading-none">
               {day.gramsCarb}g
             </p>
             <p className="font-mono text-xs text-bone-mute">

@@ -1,6 +1,10 @@
 // ---------------------------------------------------------------------------
-// HelpPage — static reference screen, no data fetching, no hooks
+// HelpPage — static reference screen; the one live element is StorageStatus
+// (COMPAT audit: surface persistence state so users know when their data is
+// exposed to browser eviction).
 // ---------------------------------------------------------------------------
+import { useState, useEffect } from 'react';
+import { useDb } from '@/db/DbContext';
 
 const GETTING_STARTED: { step: string; detail: string }[] = [
   {
@@ -144,6 +148,43 @@ function Card({ title, description }: { title: string; description: string }) {
     <div className="bg-surface-container-low rounded-xl p-5 space-y-2">
       <p className="font-mono text-sm text-on-surface font-bold">{title}</p>
       <p className="font-mono text-sm text-on-surface-variant leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Live storage status — which VFS is active and whether the browser has
+// granted persistent storage (denied = data exposed to eviction under
+// Safari's 7-day ITP window / low-disk pressure).
+// ---------------------------------------------------------------------------
+
+function StorageStatus() {
+  const { storage } = useDb();
+  const [persisted, setPersisted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (navigator.storage?.persisted) {
+      navigator.storage.persisted().then(setPersisted).catch(() => setPersisted(null));
+    }
+  }, []);
+
+  const memoryOnly = storage?.startsWith('MemoryVFS') ?? false;
+  const tone = memoryOnly ? 'text-signal-miss' : persisted === false ? 'text-signal-warn' : 'text-signal-ok';
+  const verdict = memoryOnly
+    ? 'session-only — data is lost when this tab closes'
+    : persisted === false
+      ? 'not guaranteed — the browser may evict data after long inactivity (open GHOST regularly, or install it to the home screen)'
+      : persisted === true
+        ? 'persistent — the browser has committed to keeping your data'
+        : 'persistence state unknown';
+
+  return (
+    <div className="bg-surface-container-low rounded-xl p-5 space-y-2 mt-3">
+      <p className="font-mono text-sm text-on-surface font-bold">This device's storage</p>
+      <p className="font-mono text-sm text-on-surface-variant leading-relaxed">
+        Engine: <span className="text-bone">{storage ?? 'initialising…'}</span>
+        {' · '}Status: <span className={tone}>{verdict}</span>
+      </p>
     </div>
   );
 }
@@ -339,6 +380,8 @@ export default function HelpPage() {
             <Card key={title} title={title} description={description} />
           ))}
         </div>
+
+        <StorageStatus />
       </section>
 
       {/* ------------------------------------------------------------------ */}

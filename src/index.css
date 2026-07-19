@@ -100,6 +100,14 @@
     color: var(--m3-on-surface);
   }
 
+  /* 130% base is tuned for desktop/tablet; phones get 115% so rem-sized
+     layouts (stat grids, w-16 labels) fit 320–430px viewports. */
+  @media (max-width: 480px) {
+    html {
+      font-size: calc(115% * var(--font-scale, 1));
+    }
+  }
+
   [data-theme="dawn"] { color-scheme: light; }
 
   body {

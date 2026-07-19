@@ -187,7 +187,7 @@ function DisplaySection() {
         <select
           value={homePage}
           onChange={(e) => handleHome(e.target.value)}
-          className="bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-xs text-on-surface focus:outline-none focus:border-primary transition-colors"
+          className="max-w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-xs text-on-surface focus:outline-none focus:border-primary transition-colors"
         >
           {HOME_OPTIONS.map((o) => (
             <option key={o.to} value={o.to}>{o.label}</option>
@@ -795,7 +795,7 @@ function AiCoachWorkerSection() {
             id="ai-coach-model"
             value={model}
             onChange={(e) => { void handleModelChange(e); }}
-            className="bg-surface-container-high rounded-lg border border-transparent px-3 py-2 text-on-surface focus:outline-none focus:border-primary transition-colors font-mono text-sm"
+            className="max-w-full bg-surface-container-high rounded-lg border border-transparent px-3 py-2 text-on-surface focus:outline-none focus:border-primary transition-colors font-mono text-sm"
           >
             {MODEL_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -1189,7 +1189,7 @@ function GarminImportSection() {
           accept=".json,application/json"
           onChange={(e) => { void handleFiles(e); }}
           disabled={parsing || importing}
-          className="block font-mono text-xs text-bone-dim file:mr-3 file:py-1.5 file:px-3 file:border file:border-ink-line file:bg-ink-panel file:font-mono file:text-xs file:text-bone-dim file:uppercase file:tracking-widest hover:file:border-accent hover:file:text-accent file:transition-colors cursor-pointer disabled:opacity-50"
+          className="block max-w-full font-mono text-xs text-bone-dim file:mr-3 file:py-1.5 file:px-3 file:border file:border-ink-line file:bg-ink-panel file:font-mono file:text-xs file:text-bone-dim file:uppercase file:tracking-widest hover:file:border-accent hover:file:text-accent file:transition-colors cursor-pointer disabled:opacity-50"
         />
       </div>
 
