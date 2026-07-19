@@ -1,4 +1,22 @@
 ## Branch
+fix/pwa-auto-refresh (merged to main, deployed via Pages CI)
+
+## Session: 2026-07-19 (continued — version check + auto-refresh)
+
+### Completed
+
+**Fix: users see the old site after a deploy** (Matt's report: "when I connect it shows me the old site")
+
+- Root cause: the PWA only *registered* the service worker (bare injected registerSW.js). After a deploy the new sw installed and took control in the background, but the open page was never reloaded — users kept the previous build for the whole session.
+- `src/main.tsx` — proper `registerSW` from `virtual:pwa-register` (`immediate: true`): in autoUpdate mode the page reloads itself as soon as an updated sw takes control (the version check is the browser's byte-compare of sw.js). Plus update re-checks every 15 min and on every return to foreground (`visibilitychange`) — the path that matters for the iOS home-screen PWA.
+- `src/vite-env.d.ts` — `vite-plugin-pwa/client` types.
+- Verified empirically (Playwright WebKit, two-build swap on vite preview): page on build A + update check → auto-reloaded itself onto build B. Entry hashes confirmed before/after.
+
+Tests: 704/704. Lint: 0 errors. Build clean.
+
+---
+
+## Branch
 docs/ios-investigation (merged to main)
 
 ## Session: 2026-07-19 (continued — iOS "buttons don't work" investigation + eslint gate)
