@@ -538,44 +538,46 @@ function WeekSummaries({ summaries }: { summaries: WeekSummary[] }) {
       >
         weekly summaries
       </p>
-      <div className="m3-card divide-y divide-ink-line">
-        {/* Column headers */}
-        <div
-          className="grid gap-2 px-4 py-2 text-xs font-mono text-bone-mute uppercase tracking-widest"
-          style={{ gridTemplateColumns: '1fr auto auto auto auto auto' }}
-          aria-hidden="true"
-        >
-          <span>Week</span>
-          <span className="text-right w-16">Run km</span>
-          <span className="text-right w-12">Runs</span>
-          <span className="text-right w-16">Wellness</span>
-          <span className="text-right w-16">Avg nrg</span>
-          <span className="text-right w-16">Avg HRV</span>
-        </div>
-        {summaries.map((wk) => (
+      <div className="m3-card overflow-x-auto">
+        <div className="min-w-[26rem] divide-y divide-ink-line">
+          {/* Column headers */}
           <div
-            key={wk.isoMonday}
-            className="grid gap-2 px-4 py-3 font-mono text-sm"
+            className="grid gap-2 px-4 py-2 text-xs font-mono text-bone-mute uppercase tracking-widest"
             style={{ gridTemplateColumns: '1fr auto auto auto auto auto' }}
+            aria-hidden="true"
           >
-            <span className="text-bone-dim">{wk.label}</span>
-            <span className="text-right w-16 text-bone">
-              {wk.totalRunKm > 0 ? `${wk.totalRunKm.toFixed(1)}` : '—'}
-            </span>
-            <span className="text-right w-12 text-bone-mute">
-              {wk.runCount > 0 ? wk.runCount : '—'}
-            </span>
-            <span className="text-right w-16 text-bone-mute">
-              {wk.wellnessDays > 0 ? `${wk.wellnessDays}d` : '—'}
-            </span>
-            <span className="text-right w-16 text-bone-mute">
-              {wk.avgEnergy !== null ? wk.avgEnergy.toFixed(1) : '—'}
-            </span>
-            <span className="text-right w-16 text-bone-mute">
-              {wk.avgHrv !== null ? `${wk.avgHrv}ms` : '—'}
-            </span>
+            <span>Week</span>
+            <span className="text-right w-16">Run km</span>
+            <span className="text-right w-12">Runs</span>
+            <span className="text-right w-16">Wellness</span>
+            <span className="text-right w-16">Avg nrg</span>
+            <span className="text-right w-16">Avg HRV</span>
           </div>
-        ))}
+          {summaries.map((wk) => (
+            <div
+              key={wk.isoMonday}
+              className="grid gap-2 px-4 py-3 font-mono text-sm"
+              style={{ gridTemplateColumns: '1fr auto auto auto auto auto' }}
+            >
+              <span className="text-bone-dim">{wk.label}</span>
+              <span className="text-right w-16 text-bone">
+                {wk.totalRunKm > 0 ? `${wk.totalRunKm.toFixed(1)}` : '—'}
+              </span>
+              <span className="text-right w-12 text-bone-mute">
+                {wk.runCount > 0 ? wk.runCount : '—'}
+              </span>
+              <span className="text-right w-16 text-bone-mute">
+                {wk.wellnessDays > 0 ? `${wk.wellnessDays}d` : '—'}
+              </span>
+              <span className="text-right w-16 text-bone-mute">
+                {wk.avgEnergy !== null ? wk.avgEnergy.toFixed(1) : '—'}
+              </span>
+              <span className="text-right w-16 text-bone-mute">
+                {wk.avgHrv !== null ? `${wk.avgHrv}ms` : '—'}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

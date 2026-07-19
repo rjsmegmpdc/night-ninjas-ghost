@@ -1,4 +1,30 @@
 ## Branch
+feat/responsive-ios (merged to main, deployed via Pages CI)
+
+## Session: 2026-07-19 (continued — Hanzo wave: iOS/any-browser access + responsive)
+
+### Completed
+
+**Audit wave** (SCOPE static responsive audit + COMPAT cross-browser audit + live two-engine sweep):
+- Browser floor: Safari/iOS 16.4+, Chrome 111+, Firefox 128+ — set by Tailwind v4 core CSS, which also matches the OPFS floor on WebKit exactly. Nothing app-side pushes it higher.
+- iOS in-app browsers (Instagram/FB WKWebView): app runs, but no service worker → no offline/auto-update, tighter storage quota.
+- Live sweep (WebKit + Chromium × 320/375/390/768/1280px × 14 routes) found overflow on /dojo (+130px), /journal (+222px), /settings (320px minor). Chromium was fully clean.
+
+**Fix wave** (DEVA responsive fixes + Hanzo compat hardening):
+- Journal weekly-summary table → overflow-x-auto scroll container (all columns kept)
+- Dojo level toggle → flex-wrap + tighter phone padding
+- Strike CTL/ATL/TSB + LongRunCard, Race CarbLoadCard → numerals scale down at phone width, min-w-0 cells
+- Settings selects + Garmin file input → max-w-full
+- index.css: phone override — base font 130% → 115% below 480px (the systemic amplifier fix; --font-scale preserved)
+- New InAppBrowserBanner (UA allowlist: Instagram/FB/Messenger/TikTok/Line/WeChat) — dismissible "Open in Safari" advisory
+- DbContext: try/catch around worker construction (clean error instead of blank on unsupported browsers)
+- Help: live StorageStatus card — VFS engine + navigator.storage.persisted() verdict (eviction-risk warning)
+
+**Verification**: re-ran the full two-engine sweep — CLEAN (zero overflow, zero JS errors, every engine/viewport/route). 704/704 tests, lint 0 errors, build clean.
+
+---
+
+## Branch
 feat/factory-reset (merged to main, deployed via Pages CI)
 
 ## Session: 2026-07-19 (continued — factory reset)

@@ -15,7 +15,16 @@ export function DbProvider({ children }: { children: ReactNode }) {
   const [storage, setStorage] = useState<string | null>(null);
 
   useEffect(() => {
-    const w = getWorker();
+    // Defense-in-depth (COMPAT audit): if the module-worker constructor
+    // itself throws in an unsupported browser, surface it as a normal DB
+    // error instead of an uncaught exception during render.
+    let w: Worker;
+    try {
+      w = getWorker();
+    } catch (err) {
+      setError(`This browser cannot run GHOST's database worker: ${String(err)}`);
+      return;
+    }
     const handler = (e: MessageEvent) => {
       if (e.data?.type === 'ready') { setReady(true); setStorage((e.data.storage as string) ?? null); }
       if (e.data?.type === 'error') setError(e.data.error as string);
