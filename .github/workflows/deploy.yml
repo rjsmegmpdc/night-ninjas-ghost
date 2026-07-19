@@ -26,6 +26,12 @@ jobs:
         run: npm audit --audit-level=high
         continue-on-error: true
 
+      # Hard gate — react-hooks/rules-of-hooks (see eslint.config.mjs).
+      # Added after the /setup React #310 incident: a hook below an early
+      # return shipped to prod and crashed every connected user.
+      - name: Lint (rules of hooks)
+        run: npm run lint
+
       - name: Run pure-function tests
         run: npm test
 
