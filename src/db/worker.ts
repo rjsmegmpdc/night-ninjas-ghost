@@ -8,6 +8,9 @@ import wasmUrl from 'wa-sqlite/dist/wa-sqlite.wasm?url';
 
 let db: number | null = null;
 let sqlite3: SQLiteAPI | null = null;
+// Retained for factory reset — the VFS instance owns the OPFS access
+// handles, which must be released before the directory can be removed.
+let activeVfs: { close?: () => Promise<void> | void } | null = null;
 
 type SQLiteAPI = Awaited<ReturnType<typeof SQLite.Factory>>;
 type BindParams = Parameters<SQLiteAPI['bind_collection']>[1];
@@ -49,6 +52,7 @@ async function init() {
   sqlite3 = SQLite.Factory(module);
 
   const { vfs, label } = await buildVFS();
+  activeVfs = vfs as typeof activeVfs;
   sqlite3.vfs_register(vfs, true);
 
   db = await sqlite3.open_v2('ghost.db');
@@ -87,6 +91,27 @@ self.onmessage = async (e: MessageEvent) => {
     stmts?: { sql: string; params?: unknown[] }[];
   };
   const { id } = msg;
+
+  // Factory reset: close the database, release the VFS's OPFS access
+  // handles, then delete the whole OPFS directory. Runs HERE (not on the
+  // main thread) because the worker both holds the handles and is the one
+  // context guaranteed to have OPFS when the app is using it at all.
+  if (msg.type === 'resetStorage') {
+    try {
+      if (sqlite3 && db !== null) {
+        try { await sqlite3.close(db); } catch { /* best-effort */ }
+        db = null;
+      }
+      try { await activeVfs?.close?.(); } catch { /* release is best-effort */ }
+      activeVfs = null;
+      const root = await navigator.storage.getDirectory();
+      await root.removeEntry('ghost-db', { recursive: true });
+      self.postMessage({ id, rows: [] });
+    } catch (err) {
+      self.postMessage({ id, error: String(err) });
+    }
+    return;
+  }
 
   if (msg.type === 'execBatch') {
     try {

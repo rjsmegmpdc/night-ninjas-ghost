@@ -30,6 +30,35 @@ export function getWorker(): Worker {
   return worker;
 }
 
+/**
+ * Factory reset support: ask the worker to close the database, release its
+ * OPFS access handles, and delete the 'ghost-db' directory. Runs in the
+ * worker because that's the one context guaranteed to have OPFS whenever
+ * the app is persisting at all (main-thread getDirectory is missing in
+ * some WebKit builds).
+ */
+export function resetDbStorage(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const id = nextId++;
+    pending.set(id, { resolve: () => resolve(), reject });
+    getWorker().postMessage({ id, type: 'resetStorage' });
+  });
+}
+
+/**
+ * Factory reset support: kill the SQLite worker so its OPFS sync access
+ * handles are released — the 'ghost-db' directory cannot be removed while
+ * the AccessHandlePoolVFS holds them. Pending queries are rejected; the
+ * caller is expected to hard-reload immediately after the reset.
+ */
+export function terminateWorker(): void {
+  if (!worker) return;
+  worker.terminate();
+  worker = null;
+  for (const p of pending.values()) p.reject(new Error('DB worker terminated (factory reset)'));
+  pending.clear();
+}
+
 export function query(sql: string, params: unknown[] = []): Promise<unknown[][]> {
   return new Promise((resolve, reject) => {
     const id = nextId++;

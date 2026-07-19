@@ -3,6 +3,7 @@ import { useDb } from '@/db/DbContext';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { query, exec } from '@/db/client';
 import { getSetting, setSetting } from '@/lib/db/settings';
+import { factoryReset } from '@/lib/db/factory-reset';
 import {
   extractSleep,
   extractDailySummary,
@@ -443,6 +444,17 @@ function DataManagementSection() {
   const [wipeStep, setWipeStep] = useState<WipeStep>('idle');
   const [wipeInput, setWipeInput] = useState('');
   const [wiping, setWiping] = useState(false);
+  const [resetStep, setResetStep] = useState<'idle' | 'confirm'>('idle');
+  const [resetInput, setResetInput] = useState('');
+  const [resetting, setResetting] = useState(false);
+
+  async function handleFactoryReset() {
+    if (resetInput !== 'RESET') return;
+    setResetting(true);
+    // factoryReset() hard-navigates to /setup on completion; every step is
+    // fail-open so a partial failure still ends in a usable app.
+    await factoryReset();
+  }
 
   async function handleExport() {
     setExporting(true);
@@ -605,6 +617,83 @@ function DataManagementSection() {
                 type="button"
                 onClick={() => { setWipeStep('idle'); setWipeInput(''); }}
                 disabled={wiping}
+                className="font-mono text-xs uppercase tracking-widest text-bone-mute hover:text-bone disabled:opacity-30 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Factory reset — stronger than the row wipe above: revokes Strava,
+          deletes the OPFS database file itself, destroys the at-rest
+          encryption key (regenerated on next use), clears all app flags,
+          and forces a fresh connect. */}
+      <div className="space-y-4 pt-6 border-t border-ink-line">
+        <p className="font-mono text-xs text-bone-dim leading-relaxed">
+          Factory reset: sign out of Strava (access revoked), delete the local database and
+          encryption keys, and start over from a clean connect. Keys are regenerated fresh on
+          the next login. This cannot be undone — export first if you want a copy.
+        </p>
+
+        {resetStep === 'idle' && (
+          <button
+            type="button"
+            onClick={() => setResetStep('confirm')}
+            className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-2 text-error hover:bg-error/8 transition-colors"
+          >
+            Factory reset — re-login &amp; regenerate keys
+          </button>
+        )}
+
+        {resetStep === 'confirm' && (
+          <div
+            className="rounded-xl bg-error-container/30 border border-error/30 p-5 space-y-4"
+            role="alertdialog"
+            aria-labelledby="reset-warning-title"
+            aria-describedby="reset-warning-desc"
+          >
+            <div className="space-y-1">
+              <p
+                id="reset-warning-title"
+                className="font-mono text-xs text-signal-miss uppercase tracking-widest"
+              >
+                Danger — full reset
+              </p>
+              <p id="reset-warning-desc" className="font-mono text-xs text-bone-dim leading-relaxed">
+                Revokes Strava access, deletes ALL local data and encryption keys, and returns
+                to setup for a fresh connect. Type <span className="text-bone font-bold">RESET</span> to confirm.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <label htmlFor="reset-confirm-input" className="sr-only">
+                Type RESET to confirm factory reset
+              </label>
+              <input
+                id="reset-confirm-input"
+                type="text"
+                value={resetInput}
+                onChange={(e) => setResetInput(e.target.value)}
+                placeholder="RESET"
+                autoComplete="off"
+                spellCheck={false}
+                disabled={resetting}
+                className="bg-surface-container-high rounded-lg border border-transparent px-3 py-2.5 font-mono text-xs text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-error transition-colors w-32 disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={() => { void handleFactoryReset(); }}
+                disabled={resetInput !== 'RESET' || resetting}
+                className="font-mono text-xs uppercase tracking-widest rounded-full px-4 py-1.5 bg-error-container text-on-error-container hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                {resetting ? 'Resetting…' : 'Confirm reset'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setResetStep('idle'); setResetInput(''); }}
+                disabled={resetting}
                 className="font-mono text-xs uppercase tracking-widest text-bone-mute hover:text-bone disabled:opacity-30 transition-colors"
               >
                 Cancel
