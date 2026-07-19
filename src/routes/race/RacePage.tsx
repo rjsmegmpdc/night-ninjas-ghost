@@ -505,13 +505,13 @@ function PacePlanCard({
     <div className="m3-card p-6 space-y-4">
       <p className="font-mono text-xs text-bone-mute uppercase tracking-widest">pace plan</p>
 
-      {/* Strategy tabs */}
-      <div className="flex gap-1">
+      {/* Strategy tabs — wrap on narrow phones */}
+      <div className="flex flex-wrap gap-1">
         {STRATEGIES.map((s) => (
           <button
             key={s}
             onClick={() => setActiveStrategy(s)}
-            className={`font-mono text-xs uppercase tracking-widest rounded-full px-4 py-1.5 transition-colors ${
+            className={`font-mono text-xs uppercase tracking-widest rounded-full px-3 sm:px-4 py-1.5 transition-colors ${
               activeStrategy === s
                 ? 'bg-secondary-container text-on-secondary-container'
                 : 'text-on-surface-variant hover:text-on-surface'
